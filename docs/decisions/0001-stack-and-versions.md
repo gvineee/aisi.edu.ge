@@ -36,4 +36,11 @@
 ## შედეგები
 
 - ყოველი მომდევნო `composer.json`/`package.json` ცვლილება ამ დოკუმენტთან შეუსაბამობისას მოითხოვს ან დოკუმენტის განახლებას, ან დასაბუთებას commit message-ში.
-- PostgreSQL/Redis-ის ლოკალური ვერსია ჯერ არ არის დაფიქსირებული, რადგან სერვისები ჯერ არ არის დაინსტალირებული ამ მანქანაზე.
+
+## განახლება — რეალურად დაყენებული ვერსიები (იმავე დღეს)
+
+- **`laravel/react-starter-kit`-ის Packagist tag (`v1.0.1`) კვლავ Laravel 12-ზეა** (`laravel/framework: ^12.0`); Laravel 13-ის მხარდაჭერა მხოლოდ `main` branch-ზეა. დაყენებულია `composer create-project laravel/react-starter-kit:dev-main` კონსტრეინტით, `--stability=dev`-ით.
+- დაყენებული ვერსიები: `laravel/framework v13.31.0`, `inertiajs/inertia-laravel v3.3.3`, `laravel/fortify v1.39.0`, `laravel/wayfinder v0.1.21`, React 19.2, Inertia React 3.0, TypeScript strict, Tailwind v4, Vite 8, `laravel-vite-plugin` v3.
+- **PostgreSQL 17.11** — ოფიციალური EnterpriseDB Windows installer, დარეგისტრირებული როგორც Windows service (`postgresql-x64-17`).
+- **Redis 8.10.1** — Scoop-ის portable ბინარი (არა Windows service; admin უფლება არ იყო ხელმისაწვდომი ამ მანქანაზე Memurai-ს/officiial installer-ის სერვისის რეგისტრაციისთვის). დეტალები `docs/implementation-status.md`-ში.
+- `laravel/react-starter-kit`-ის `dev-main` branch-ზე დამოკიდებულობა **დროებითია** — როგორც კი ოფიციალური Laravel 13-თავსებადი tagged ვერსია გამოვა (`v1.1.0`+ სავარაუდოდ), `composer.json`-ის კონსტრეინტი უნდა შეიცვალოს tagged ვერსიაზე reproducibility-სთვის.
