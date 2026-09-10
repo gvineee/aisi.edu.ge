@@ -96,6 +96,65 @@ class TenantSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        $academicYear = $aisi->academicYears()->create([
+            'name' => '2026-2027',
+            'starts_on' => '2026-09-01',
+            'ends_on' => '2027-06-15',
+            'is_current' => true,
+        ]);
+
+        $schoolClass = $aisi->schoolClasses()->create([
+            'academic_year_id' => $academicYear->id,
+            'name' => 'VI კლასი',
+        ]);
+
+        $student = $aisi->students()->create([
+            'school_class_id' => $schoolClass->id,
+            'first_name' => 'ნიკა',
+            'last_name' => 'დემო',
+            'is_active' => true,
+        ]);
+
+        $guardian = User::factory()->create([
+            'name' => 'დემო მშობელი',
+            'email' => 'parent@aisi.test',
+        ]);
+
+        TenantMembership::create([
+            'tenant_id' => $aisi->id,
+            'user_id' => $guardian->id,
+            'role' => TenantMembership::ROLE_GUARDIAN,
+            'is_active' => true,
+        ]);
+
+        $aisi->guardianLinks()->create([
+            'user_id' => $guardian->id,
+            'student_id' => $student->id,
+            'can_view_academic' => true,
+            'can_view_financial' => true,
+            'can_pickup' => true,
+            'can_receive_notifications' => true,
+            'is_active' => true,
+        ]);
+
+        $teacher = User::factory()->create([
+            'name' => 'დემო მასწავლებელი',
+            'email' => 'teacher@aisi.test',
+        ]);
+
+        TenantMembership::create([
+            'tenant_id' => $aisi->id,
+            'user_id' => $teacher->id,
+            'role' => TenantMembership::ROLE_TEACHER,
+            'is_active' => true,
+        ]);
+
+        $aisi->teacherAssignments()->create([
+            'user_id' => $teacher->id,
+            'school_class_id' => $schoolClass->id,
+            'subject' => 'ქართული ენა',
+        ]);
+
         $aisi->pages()->create([
             'slug' => 'home',
             'locale' => 'ka',

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\LibraryCatalogController;
 use App\Http\Controllers\Public\PageController;
@@ -23,7 +24,7 @@ Route::get('/news/{slug}', [PostController::class, 'show'])->name('news.show');
 Route::get('/library', [LibraryCatalogController::class, 'index'])->name('library.index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 });
 
 require __DIR__.'/settings.php';

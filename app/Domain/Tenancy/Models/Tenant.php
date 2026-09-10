@@ -2,6 +2,11 @@
 
 namespace App\Domain\Tenancy\Models;
 
+use App\Domain\Academics\Models\AcademicYear;
+use App\Domain\Academics\Models\GuardianLink;
+use App\Domain\Academics\Models\SchoolClass;
+use App\Domain\Academics\Models\Student;
+use App\Domain\Academics\Models\TeacherAssignment;
 use App\Domain\Admissions\Models\AdmissionLead;
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
@@ -91,6 +96,46 @@ class Tenant extends Model
     public function libraryResources(): HasMany
     {
         return $this->hasMany(LibraryResource::class);
+    }
+
+    /**
+     * @return HasMany<AcademicYear, $this>
+     */
+    public function academicYears(): HasMany
+    {
+        return $this->hasMany(AcademicYear::class);
+    }
+
+    /**
+     * @return HasMany<SchoolClass, $this>
+     */
+    public function schoolClasses(): HasMany
+    {
+        return $this->hasMany(SchoolClass::class);
+    }
+
+    /**
+     * @return HasMany<Student, $this>
+     */
+    public function students(): HasMany
+    {
+        return $this->hasMany(Student::class);
+    }
+
+    /**
+     * @return HasMany<GuardianLink, $this>
+     */
+    public function guardianLinks(): HasMany
+    {
+        return $this->hasMany(GuardianLink::class);
+    }
+
+    /**
+     * @return HasMany<TeacherAssignment, $this>
+     */
+    public function teacherAssignments(): HasMany
+    {
+        return $this->hasMany(TeacherAssignment::class);
     }
 
     public function hasFeature(string $feature): bool

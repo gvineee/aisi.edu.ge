@@ -1,6 +1,6 @@
 # Implementation Status
 
-განახლებულია: 2026-09-11 · ფაზა: 1 მნიშვნელოვნად დაწინაურებული (ბრენდის სინქრონიზაცია + გაფართოებული საჯარო საიტი). ეს ვერსია აერთიანებს/ასწორებს წინა ჩანაწერების წინააღმდეგობებს (`START-HERE-CLAUDE.md`-ის მოთხოვნისამებრ) რეალურ, ახლახან გაშვებულ შემოწმებებზე დაყრდნობით.
+განახლებულია: 2026-09-11 · ეტაპი 1 დასრულებულია (ბრენდის სინქრონიზაცია + სრული საჯარო საიტი); **ეტაპი 2 დაწყებულია** (იდენტობა/ოჯახი — guardian links + პირველი data-backed პორტალის dashboard). ეს ვერსია აერთიანებს/ასწორებს წინა ჩანაწერების წინააღმდეგობებს (`START-HERE-CLAUDE.md`-ის მოთხოვნისამებრ) რეალურ, ახლახან გაშვებულ შემოწმებებზე დაყრდნობით.
 
 ## რეალურად დამოწმებული, მუშა ფუნქციონალი
 
@@ -65,9 +65,20 @@
 - **ტესტები** (5): მოქმედი ჩანაწერი, თანხმობის გარეშე უარყოფა, ბავშვის ID ველის არარსებობა, დუბლიკატის flag, 429 rate limit.
 - **არ არის აშენებული**: რეალური ვიზიტის slot/კალენდარი ტევადობის კონტროლით — ეს რჩება კონკრეტულ შემდეგ ამოცანად.
 
+### Identity & Family — ეტაპი 2 დაწყებულია (`app/Domain/Academics`)
+
+- ცხრილები: `academic_years`, `school_classes`, `students`, `guardian_links` (**ცალკე revocable permission ბულეანები**: `can_view_academic`/`can_view_financial`/`can_pickup`/`can_receive_notifications`, არა ერთი "is guardian" flag), `teacher_assignments`.
+- **`DashboardController`** (`GET /dashboard`, `auth`+`verified` middleware) — server-side განსაზღვრავს მომხმარებლის როლს მიმდინარე tenant-ში (`TenantMembership`) და აჩვენებს შესაბამის რეალურ მონაცემს:
+  - **მშობელი** (`portal/parent-dashboard.tsx`): მხოლოდ საკუთარი, აქტიური `guardian_links`-ის ბავშვები (სახელი, კლასი, უფლებები). ბავშვის switcher რეალურია (არა დემო მასივი).
+  - **როლის გარეშე მომხმარებელი** (`portal/no-role.tsx`): პატიოსანი ცარიელი მდგომარეობა, არა გამოგონილი კონტენტი.
+  - `PortalLayout` — ბრენდის ტოკენებით, "ჩემი {tenant.name}", რეალური logout ღილაკი (`Form` + wayfinder `logout.form()`).
+- **ტესტები** (`tests/Feature/Portal/`, 4): მშობელი ხედავს მხოლოდ საკუთარ ბავშვს (docs/02 კრიტიკული შემოწმება #2); **guardian_link-ის გაუქმება მაშინვე მალავს ბავშვს** (იგივე request-ში `is_active=false` → შემდეგი dashboard load 0 ბავშვს აბრუნებს); როლის გარეშე მომხმარებელი ცარიელ მდგომარეობას ხედავს; მასწავლებლის assignment query არასოდეს აბრუნებს სხვა მასწავლებლის კლასს (docs/02 კრიტიკული შემოწმება #3-ის query-pattern დონეზე).
+- **დამოწმებულია რეალურ ბრაუზერში**: login (`parent@aisi.test` / `password`) → `/dashboard` → რეალური ბავშვის ბარათი ("ნიკა დემო-ის დღე", VI კლასი, უფლებების badge-ები), 0 failed request.
+- **არ არის აშენებული**: სრული PortalLayout sidebar/bottom-navigation (docs/04-ის მაპინგი) — ეს მოვა schedule/library/payments ფუნქციონალთან ერთად; მასწავლებლის საკუთარი dashboard გვერდი (ამჟამად მხოლოდ query-pattern დამტკიცებულია ტესტით, არა UI); ადმინისტრაციის dashboard.
+
 ### Seed მონაცემები (`TenantSeeder`, მხოლოდ dev/local)
 
-- Tenant "აისი": domains `localhost`/`127.0.0.1`/`aisi.test`; brand tokens; admin user; 5 გამოქვეყნებული Page (home/about/learning/school-life/contact); 2 Post; 3 LibraryResource.
+- Tenant "აისი": domains `localhost`/`127.0.0.1`/`aisi.test`; brand tokens; admin user; 5 გამოქვეყნებული Page; 2 Post; 3 LibraryResource; 1 academic year + 1 class + 1 student + 1 guardian (`parent@aisi.test`) + 1 teacher (`teacher@aisi.test`).
 - მეორე, დამოუკიდებელი tenant ("second-school-demo") მხოლოდ იზოლაციის დასამტკიცებლად.
 
 ## ცნობილი ხარვეზები / ჯერ არ დამტკიცებული (ერთი, გასწორებული სია)
@@ -85,7 +96,7 @@
 ## შესრულებული ტესტები (ზუსტი, ბოლო გაშვება)
 
 ```
-php artisan test                               → 60/60 passed, 224 assertions
+php artisan test                               → 64/64 passed, 263 assertions
 ./vendor/bin/pint --parallel                    → 0 issues (auto-fixed 2 files this session)
 ./vendor/bin/phpstan analyse --memory-limit=1G  → 0 errors (level 7)
 npm run types:check (tsc --noEmit)              → 0 errors
@@ -103,17 +114,18 @@ composer run dev                            # server + queue + vite ერთა
 # ან: php artisan serve  &&  npm run dev
 ```
 
-`php artisan migrate:fresh --seed` აღადგენს ორივე ტესტ-tenant-ს. სადემონსტრაციო ანგარიშზე შესვლა (მხოლოდ ლოკალურად, `http://localhost:8000/login`): ელფოსტა `admin@aisi.test`, პაროლი — Laravel-ის `UserFactory`-ის სტანდარტული dev-ტესტების default (`Hash::make('password')`, ანუ სიტყვასიტყვით `password`; ეს არის framework-ის ჩვეულებრივი convention ტესტებისთვის, არა production-ის საიდუმლო). production seed-ში ეს მომხმარებელი/პაროლი არასოდეს არ უნდა გამოჩნდეს.
+`php artisan migrate:fresh --seed` აღადგენს ორივე ტესტ-tenant-ს. სადემონსტრაციო ანგარიშებზე შესვლა (მხოლოდ ლოკალურად, `http://localhost:8000/login`): `admin@aisi.test` (ადმინი), `parent@aisi.test` (მშობელი → `/dashboard` აჩვენებს "ნიკა დემო"-ს), `teacher@aisi.test` (მასწავლებელი, dashboard UI ჯერ არა). პაროლი ყველასთვის — Laravel-ის `UserFactory`-ის სტანდარტული dev-ტესტების default (`Hash::make('password')`, ანუ სიტყვასიტყვით `password`; ეს არის framework-ის ჩვეულებრივი convention ტესტებისთვის, არა production-ის საიდუმლო). production seed-ში ეს მომხმარებლები/პაროლი არასოდეს არ უნდა გამოჩნდეს.
 
 **ტესტების გაშვებამდე** დარწმუნდით `public/hot` არ არსებობს (dev server გამორთულია), თორემ Inertia SSR ერთვება ტესტების HTTP პასუხშიც და თან-ტეხავს string-ზუსტ SEO assertion-ებს (ეს ცნობილი, უვნებელი ეფექტია, არა production-ის ბაგი).
 
 ## შემდეგი კონკრეტული ამოცანა
 
-1. **იდენტობა და ოჯახი** (ეტაპი 2): staff/guardian invitations, guardian_links ცხრილი და policy, პირველი role-based dashboard (მშობელი ხედავს მხოლოდ დაკავშირებულ შვილს).
-2. კლასები/სასწავლო წელი/ჩარიცხვა — აკადემიური სტრუქტურის საფუძველი განრიგისა და დასწრებისთვის.
+1. **Staff/guardian invitations** — ამჟამად მშობელი/მასწავლებელი/admin მომხმარებლები მხოლოდ seeder-ით იქმნება; საჭიროა რეალური მოწვევის ნაკადი (ტოკენით, ვადიანი, ერთჯერადი).
+2. **განრიგი და დასწრება** — `school_classes`/`students` სტრუქტურაზე დაშენება (timetable_versions, lessons, attendance ცხრილები).
 3. CMS admin editor (draft/preview/publish/revert) რედაქტორის როლისთვის.
 4. სრული ვიზიტის slot-ჯავშანი ტევადობის კონტროლით.
-5. `docs/04`-ის დანარჩენი component-mapping (PortalLayout, TimetableDay, InvoiceTable, AttendanceRegister) — ეტაპი 2-3-ის დაწყებისას.
+5. მასწავლებლის საკუთარი dashboard UI (query-pattern უკვე დამტკიცებულია ტესტით).
+6. `docs/04`-ის დანარჩენი component-mapping (სრული PortalLayout sidebar, TimetableDay, InvoiceTable, AttendanceRegister) — ეტაპი 2-3-ის გაგრძელებისას.
 
 ## საჭირო მონაცემები გასაგრძელებლად
 
