@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { CheckCircle2, ClipboardCheck } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
+import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 
 type PreviewItem = {
     id: number;
@@ -13,9 +14,14 @@ type PreviewItem = {
 type Props = {
     pendingCount: number;
     preview: PreviewItem[];
+    actionItems: ActionItem[];
 };
 
-export default function DirectorDashboard({ pendingCount, preview }: Props) {
+export default function DirectorDashboard({
+    pendingCount,
+    preview,
+    actionItems,
+}: Props) {
     return (
         <PortalLayout>
             <Head title="ჩემი აისი" />
@@ -42,6 +48,10 @@ export default function DirectorDashboard({ pendingCount, preview }: Props) {
                     <ClipboardCheck size={16} /> სამუშაო სიის ნახვა
                 </Link>
             </section>
+
+            <div className="mt-6">
+                <ActionFeed items={actionItems} />
+            </div>
 
             <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
                 <h3 className="mb-4 text-base font-semibold">

@@ -38,7 +38,7 @@
 
 | Prototype view | სამიზნე route | სტატუსი |
 |---|---|---|
-| Today (დღის ცენტრი) | `/portal/today` | `foundation` (დღეს `/dashboard`, ლეიბლი "დღეს", ცალკე DailyActionFeed აგრეგაცია ჯერ არ აშენებულა — იხ. ქვემოთ) |
+| Today (დღის ცენტრი) | `/dashboard` (ლეიბლი "დღეს" — არ არის აშენებული ცალკე `/portal/today` route, იხ. ქვემოთ "ცნობილი გადახრები") | `verified_local` — `BuildDailyActionFeed` აერთიანებს დოკუმენტების დამტკიცებას (director/admin) და წაუკითხავ შეტყობინებებს (ყველა) ერთ სიად ყველა 5 dashboard-ზე; პატიოსანი ცარიელი მდგომარეობა ("დღეს ყველაფერი მოგვარებულია"). **production-ზე ჯერ არ დეპლოირებულა** |
 | Inbox (შეტყობინებები) | `/portal/messages` | `verified_local` — რეალური conversations/messages/deliveries, ურთიერთობაზე დაფუძნებული (guardian↔class-teacher, staff↔staff, office↔ნებისმიერი guardian) მიმღების არჩევანი, unread badge, read-receipt, master-detail UI. **production-ზე ჯერ არ არის დეპლოირებული** |
 | Portfolio | `/portal/students/{student}/portfolio` | `not_started` |
 | Progress/Gradebook/Report cards | `/portal/students/{student}/progress`, `/portal/gradebook`, `/portal/report-cards` | `not_started` |
@@ -65,6 +65,10 @@
 - 8 ტესტი (`tests/Feature/Communications/MessagingTest.php`): ნათესაობაზე დაფუძნებული წვდომის დადასტურება/უარყოფა (მათ შორის guardian→guardian აკრძალვა), staff↔staff, reply-ის მხოლოდ-სხვა-მონაწილისთვის delivery, non-participant-ის რეპლაის უარყოფა, read-მარკირება ნახვისას, tenant-იზოლაცია.
 - რეალურ ბრაუზერში დამოწმებული (Playwright, ლოკალურად): მშობელმა დაწერა მასწავლებელს → მასწავლებელმა დაინახა, უპასუხა → მშობელმა დაინახა პასუხი. 0 ქსელური შეცდომა.
 - **Production**: 4 migration-ი გაშვებულია production MySQL-ზე; `/portal/messages` რეალურ production admin ანგარიშზე Playwright-ით დამოწმებულია (სწორი სათაური, პატიოსანი ცარიელი მდგომარეობა, 0 შეცდომა). სრული guardian↔teacher round-trip production-ზე ვერ დამოწმდა, რადგან იქ ჯერ მხოლოდ ერთი რეალური მომხმარებელია (admin) — ფიქციური staff/guardian ანგარიშების შექმნა production-ზე ტესტისთვის განზრახ არ მოხდა (CLAUDE.md-ის დემო/production გამიჯვნის წესი).
+
+## Daily Action Feed (`app/Domain/Portal/Actions/BuildDailyActionFeed.php`)
+
+აერთიანებს ორ რეალურ წყაროს: director/admin-ის დასამტკიცებელი დოკუმენტები (`ListPendingApprovalRequests`) და ნებისმიერი როლის წაუკითხავი შეტყობინებები (Messaging). ერთი item = key/type/title/contextLabel/href; giant duplicate table არ არსებობს, source ცხადადაა ორივე მხრიდან re-query. თითო item authorized-ია მხოლოდ იმისთვის, ვისთვისაც რეალურად რელევანტურია (მაგ. approval — მხოლოდ director/admin-ისთვის, unread — მხოლოდ ამ საუბრის მონაწილისთვის). React-კომპონენტი `resources/js/components/portal/action-feed.tsx` ყველა 5 dashboard-ზეა ჩართული. 2 ახალი ტესტი (`DashboardRolesTest`): director-ის feed შეიცავს pending approval-ს, unread შეტყობინება ქრება ნახვის შემდეგ. რეალურ ბრაუზერში დამოწმებული (დირექტორის ცარიელი state screenshot).
 
 ## ცნობილი, განზრახ დარჩენილი გადახრები (docs/09 §7-ის მოთხოვნით ახსნილი)
 

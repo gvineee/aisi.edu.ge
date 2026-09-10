@@ -4,6 +4,7 @@ namespace Tests\Feature\Portal;
 
 use App\Domain\Academics\Models\SchoolClass;
 use App\Domain\Academics\Models\Student;
+use App\Domain\Communications\Models\Conversation;
 use App\Domain\Documents\Actions\CreateDraftDocument;
 use App\Domain\Documents\Actions\SubmitForReview;
 use App\Domain\Documents\Models\DocumentWorkspace;
@@ -173,6 +174,48 @@ class DashboardRolesTest extends TestCase
             ->where('pendingCount', 1)
             ->has('preview', 1)
             ->where('preview.0.documentTitle', 'Pending doc')
+            ->has('actionItems', 1)
+            ->where('actionItems.0.type', 'document_approval')
+        );
+    }
+
+    public function test_action_feed_shows_unread_conversation_and_clears_after_reading(): void
+    {
+        $tenant = $this->localTenant();
+
+        $teacher = User::factory()->create();
+        TenantMembership::create([
+            'tenant_id' => $tenant->id, 'user_id' => $teacher->id,
+            'role' => TenantMembership::ROLE_TEACHER, 'is_active' => true,
+        ]);
+
+        $admin = User::factory()->create();
+        TenantMembership::create([
+            'tenant_id' => $tenant->id, 'user_id' => $admin->id,
+            'role' => TenantMembership::ROLE_ADMIN, 'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)->post('/portal/messages', [
+            'recipient_id' => $teacher->id,
+            'subject' => 'ტესტის თემა',
+            'body' => 'ტესტის ტექსტი',
+        ])->assertRedirect();
+
+        $response = $this->actingAs($teacher)->get(route('dashboard'));
+        $response->assertInertia(fn ($page) => $page
+            ->component('portal/teacher-dashboard')
+            ->has('actionItems', 1)
+            ->where('actionItems.0.type', 'unread_message')
+        );
+
+        // Viewing the conversation (via the messages controller) marks it
+        // read, so it must disappear from the next dashboard load.
+        $conversation = Conversation::query()->first();
+        $this->actingAs($teacher)->get("/portal/messages/{$conversation->id}")->assertOk();
+
+        $this->actingAs($teacher)->get(route('dashboard'))->assertInertia(fn ($page) => $page
+            ->component('portal/teacher-dashboard')
+            ->has('actionItems', 0)
         );
     }
 

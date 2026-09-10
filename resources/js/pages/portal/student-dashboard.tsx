@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { CalendarClock, UserX } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
+import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 
 type ScheduleEntry = {
     subject: string;
@@ -15,6 +16,7 @@ type Props = {
     linked: boolean;
     className: string | null;
     todaySchedule: ScheduleEntry[];
+    actionItems: ActionItem[];
 };
 
 /**
@@ -27,6 +29,7 @@ export default function StudentDashboard({
     linked,
     className,
     todaySchedule,
+    actionItems,
 }: Props) {
     return (
         <PortalLayout>
@@ -42,6 +45,10 @@ export default function StudentDashboard({
                 })}
                 {className && ` · ${className}`}
             </p>
+
+            <div className="mb-6">
+                <ActionFeed items={actionItems} />
+            </div>
 
             {!linked ? (
                 <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">

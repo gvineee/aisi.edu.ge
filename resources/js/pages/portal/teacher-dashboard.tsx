@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { CalendarClock, ClipboardList } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
+import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 
 type LessonEntry = {
     lessonId: number;
@@ -15,9 +16,14 @@ type LessonEntry = {
 type Props = {
     date: string;
     lessons: LessonEntry[];
+    actionItems: ActionItem[];
 };
 
-export default function TeacherDashboard({ date, lessons }: Props) {
+export default function TeacherDashboard({
+    date,
+    lessons,
+    actionItems,
+}: Props) {
     return (
         <PortalLayout>
             <Head title="ჩემი აისი" />
@@ -31,6 +37,10 @@ export default function TeacherDashboard({ date, lessons }: Props) {
                     day: 'numeric',
                 })}
             </p>
+
+            <div className="mb-6">
+                <ActionFeed items={actionItems} />
+            </div>
 
             {lessons.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">

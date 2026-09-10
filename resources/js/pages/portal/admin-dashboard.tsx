@@ -1,10 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
 import { FileText, Palette, Users } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
+import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 
 type Props = {
     memberCount: number;
     pendingApprovals: number;
+    actionItems: ActionItem[];
 };
 
 /**
@@ -16,6 +18,7 @@ type Props = {
 export default function AdminDashboard({
     memberCount,
     pendingApprovals,
+    actionItems,
 }: Props) {
     return (
         <PortalLayout>
@@ -54,6 +57,10 @@ export default function AdminDashboard({
                         დასამტკიცებელი დოკუმენტი
                     </p>
                 </Link>
+            </div>
+
+            <div className="mt-6">
+                <ActionFeed items={actionItems} />
             </div>
 
             <section className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 text-center">

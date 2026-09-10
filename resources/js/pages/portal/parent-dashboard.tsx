@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import { CalendarClock, Users } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
+import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 
 type ScheduleEntry = {
     subject: string;
@@ -27,6 +28,7 @@ type Child = {
 
 type Props = {
     children: Child[];
+    actionItems: ActionItem[];
 };
 
 /**
@@ -35,7 +37,7 @@ type Props = {
  * and never demo data. An empty list is a real, honest state, not
  * something papered over with placeholders.
  */
-export default function ParentDashboard({ children }: Props) {
+export default function ParentDashboard({ children, actionItems }: Props) {
     const [selectedId, setSelectedId] = useState(children[0]?.id ?? null);
     const selected = children.find((c) => c.id === selectedId) ?? null;
 
@@ -52,6 +54,10 @@ export default function ParentDashboard({ children }: Props) {
                     day: 'numeric',
                 })}
             </p>
+
+            <div className="mb-6">
+                <ActionFeed items={actionItems} />
+            </div>
 
             {children.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">
