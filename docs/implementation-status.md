@@ -39,6 +39,11 @@
 ### Seed მონაცემები
 - `TenantSeeder` (მხოლოდ ლოკალური/dev, არასოდეს production-ზე): tenant "აისი" (domains: `localhost`, `127.0.0.1`, `aisi.test`), brand_settings რეალური ბრენდის ტოკენებით, admin მომხმარებელი, გამოქვეყნებული Home გვერდი; მეორე, დამოუკიდებელი tenant izoliაციის ტესტისთვის.
 
+### sitemap.xml / robots.txt
+- `GET /sitemap.xml` — გენერირებული tenant-ის საკუთარი გამოქვეყნებული გვერდებიდან (არა static ფაილი); draft გვერდები და სხვა tenant-ის URL-ები არასოდეს ჩნდება.
+- `GET /robots.txt` — Allow: /, მიუთითებს sitemap-ზე; კომენტარშია შენიშვნა, რომ პორტალის რეალური routes უნდა დაემატოს Disallow-ად ფაზა 2-ში.
+- ტესტები (`tests/Feature/Content/SitemapTest.php`): sitemap არ შეიცავს draft გვერდს და არც სხვა tenant-ის გვერდს.
+
 ## ცნობილი ხარვეზები / ჯერ არ დამტკიცებული
 
 - **SSR node-პროცესი არ არის გაშვებული** (`config/inertia.php`-ში `ssr.enabled=true` მზადაა, მაგრამ `resources/js/ssr.tsx` entry point ჯერ არ არსებობს და supervisor-იც არა). ამის ნაცვლად ავირჩიეთ CLAUDE.md-ის ალტერნატივა: „მიზანმიმართული Blade საჯარო rendering გადაწყვეტილება" — `resources/views/app.blade.php` პირდაპირ კითხულობს `$page['props']['page']['seoTitle'/'seoDescription']`-ს და გამოაქვს რეალურ `<title>`/`<meta description>`-ად, JS-ის გარეშეც. **დამოწმებულია** ტესტით (`tests/Feature/Content/HomePageSeoTest.php`) და რეალურ HTTP პასუხში. სრული body-content (არა მხოლოდ title/description) კვლავ მხოლოდ ჰიდრაციის შემდეგ ჩნდება ბრაუზერში — თუ მომავალში საჭირო გახდება crawler-ისთვის სრული body-ც JS-ის გარეშე, საჭირო იქნება სრული SSR-ის ჩართვა.
@@ -52,7 +57,7 @@
 ## შესრულებული ტესტები (ზუსტი შედეგი)
 
 ```
-php artisan test          → 49/49 passed, 172 assertions
+php artisan test          → 51/51 passed, 180 assertions
 ./vendor/bin/pint         → fixed (0 remaining issues after fix)
 ./vendor/bin/phpstan analyse --memory-limit=1G → 0 errors (level 7)
 npm run types:check       → 0 errors
@@ -82,7 +87,7 @@ npm run dev
 1. დარჩენილი საჯარო გვერდები + CMS admin editor (draft/preview/publish/revert UI).
 2. სრული ვიზიტის slot-ჯავშანი ტევადობის კონტროლით (ამჟამინდელი lead-ფორმის დამატებით).
 3. `docs/04-design-handoff.md`-ის დანარჩენი component-mapping ერთეულების გადატანა (PortalLayout, TimetableDay და ა.შ.) — ფაზა 2-ის დაწყებისას.
-4. sitemap/robots/canonical/301-mapping scaffolding.
+4. canonical/hreflang tags და ძველი საიტის 301-mapping scaffolding (sitemap/robots უკვე მზადაა).
 5. სრული Inertia SSR (თუ crawler-ს დასჭირდება page body-ც JS-ის გარეშე, არა მხოლოდ title/description).
 
 ## შენიშვნა დიზაინის პროტოტიპის განახლებაზე
