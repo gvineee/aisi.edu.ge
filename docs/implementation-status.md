@@ -41,7 +41,7 @@
 
 ## ცნობილი ხარვეზები / ჯერ არ დამტკიცებული
 
-- **SSR არ არის ჩართული.** Inertia client-side-ზეა; ნედლ HTTP პასუხში `<title>`/`<meta description>` ჯერ default (`config('app.name')`) რჩება — JS-ის შესრულების შემდეგ (ბრაუზერში) სწორი title/description ჩნდება, მაგრამ CLAUDE.md-ის მოთხოვნა „სათაური/კონტენტი/metadata JS-ის გარეშეც" ჯერ **არ არის დაკმაყოფილებული**. საჭიროა `resources/js/ssr.tsx` + `php artisan inertia:start-ssr` supervisor-ის მოწყობა შემდეგ ეტაპზე.
+- **SSR node-პროცესი არ არის გაშვებული** (`config/inertia.php`-ში `ssr.enabled=true` მზადაა, მაგრამ `resources/js/ssr.tsx` entry point ჯერ არ არსებობს და supervisor-იც არა). ამის ნაცვლად ავირჩიეთ CLAUDE.md-ის ალტერნატივა: „მიზანმიმართული Blade საჯარო rendering გადაწყვეტილება" — `resources/views/app.blade.php` პირდაპირ კითხულობს `$page['props']['page']['seoTitle'/'seoDescription']`-ს და გამოაქვს რეალურ `<title>`/`<meta description>`-ად, JS-ის გარეშეც. **დამოწმებულია** ტესტით (`tests/Feature/Content/HomePageSeoTest.php`) და რეალურ HTTP პასუხში. სრული body-content (არა მხოლოდ title/description) კვლავ მხოლოდ ჰიდრაციის შემდეგ ჩნდება ბრაუზერში — თუ მომავალში საჭირო გახდება crawler-ისთვის სრული body-ც JS-ის გარეშე, საჭირო იქნება სრული SSR-ის ჩართვა.
 - დარჩენილი საჯარო გვერდები (docs/02, თავი 4): შესახებ, სწავლა (ცალკე URL თითო პროგრამას), მიღება (სრული, ვიზიტის slot-ებით), კონტაქტი, სიახლეები, კალენდარი, რესურსები — ჯერ არ არის აშენებული, მხოლოდ Home.
 - CMS რედაქტორის UI (draft/preview/publish/revert) — მხოლოდ schema, არა admin ეკრანი.
 - sitemap/robots/canonical/hreflang/301-mapping — ჯერ არ არის.
@@ -52,7 +52,7 @@
 ## შესრულებული ტესტები (ზუსტი შედეგი)
 
 ```
-php artisan test          → 48/48 passed, 169 assertions
+php artisan test          → 49/49 passed, 172 assertions
 ./vendor/bin/pint         → fixed (0 remaining issues after fix)
 ./vendor/bin/phpstan analyse --memory-limit=1G → 0 errors (level 7)
 npm run types:check       → 0 errors
@@ -79,11 +79,11 @@ npm run dev
 
 ## შემდეგი ნაბიჯები (პრიორიტეტით)
 
-1. Inertia SSR ჩართვა (SEO მოთხოვნის დასაკმაყოფილებლად).
-2. დარჩენილი საჯარო გვერდები + CMS admin editor (draft/preview/publish/revert UI).
-3. სრული ვიზიტის slot-ჯავშანი ტევადობის კონტროლით (ამჟამინდელი lead-ფორმის დამატებით).
-4. `docs/04-design-handoff.md`-ის დანარჩენი component-mapping ერთეულების გადატანა (PortalLayout, TimetableDay და ა.შ.) — ფაზა 2-ის დაწყებისას.
-5. sitemap/robots/canonical/301-mapping scaffolding.
+1. დარჩენილი საჯარო გვერდები + CMS admin editor (draft/preview/publish/revert UI).
+2. სრული ვიზიტის slot-ჯავშანი ტევადობის კონტროლით (ამჟამინდელი lead-ფორმის დამატებით).
+3. `docs/04-design-handoff.md`-ის დანარჩენი component-mapping ერთეულების გადატანა (PortalLayout, TimetableDay და ა.შ.) — ფაზა 2-ის დაწყებისას.
+4. sitemap/robots/canonical/301-mapping scaffolding.
+5. სრული Inertia SSR (თუ crawler-ს დასჭირდება page body-ც JS-ის გარეშე, არა მხოლოდ title/description).
 
 ## შენიშვნა დიზაინის პროტოტიპის განახლებაზე
 

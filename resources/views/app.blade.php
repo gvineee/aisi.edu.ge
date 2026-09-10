@@ -36,10 +36,24 @@
 
         @fonts
 
+        @php
+            // Deliberate Blade-based public rendering path (docs/02 section 7,
+            // CLAUDE.md tech decisions): without a running Inertia SSR
+            // server, this is what makes a public page's real title and
+            // description visible in the initial HTML for crawlers/JS-less
+            // clients, instead of the generic app-name fallback.
+            $seoTitle = data_get($page, 'props.page.seoTitle');
+            $seoDescription = data_get($page, 'props.page.seoDescription');
+            $siteName = data_get($page, 'props.name', config('app.name', 'Laravel'));
+        @endphp
+
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ $seoTitle ?: $siteName }}</title>
+            @if ($seoDescription)
+                <meta name="description" content="{{ $seoDescription }}">
+            @endif
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">
