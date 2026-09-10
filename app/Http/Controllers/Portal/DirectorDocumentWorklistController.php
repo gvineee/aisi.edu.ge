@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Domain\Documents\Actions\ListPendingApprovalRequests;
 use App\Domain\Documents\Models\ApprovalRequest;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
@@ -17,7 +18,7 @@ use Inertia\Response;
  */
 class DirectorDocumentWorklistController extends Controller
 {
-    public function __invoke(Request $request, CurrentTenant $currentTenant): Response
+    public function __invoke(Request $request, CurrentTenant $currentTenant, ListPendingApprovalRequests $listPendingApprovalRequests): Response
     {
         $tenant = $currentTenant->get();
         $user = $request->user();
@@ -29,12 +30,7 @@ class DirectorDocumentWorklistController extends Controller
             403,
         );
 
-        $requests = ApprovalRequest::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('state', ApprovalRequest::STATE_PENDING)
-            ->with(['documentVersion.document.workspace', 'documentVersion.author', 'initiator'])
-            ->oldest('created_at')
-            ->get();
+        $requests = $listPendingApprovalRequests->handle($tenant->id);
 
         return Inertia::render('portal/documents/director-worklist', [
             'requests' => $requests->map(fn (ApprovalRequest $approvalRequest) => [

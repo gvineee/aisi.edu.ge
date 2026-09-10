@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { CalendarClock, ClipboardList, FileText } from 'lucide-react';
+import { CalendarClock, ClipboardList } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 
 type LessonEntry = {
@@ -22,15 +22,7 @@ export default function TeacherDashboard({ date, lessons }: Props) {
         <PortalLayout>
             <Head title="ჩემი აისი" />
 
-            <div className="mb-2 flex items-center justify-between">
-                <h1 className="text-2xl">დღევანდელი გაკვეთილები</h1>
-                <Link
-                    href="/documents"
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium"
-                >
-                    <FileText size={16} /> დოკუმენტები
-                </Link>
-            </div>
+            <h1 className="mb-2 text-2xl">დღევანდელი გაკვეთილები</h1>
             <p className="mb-8 text-sm text-slate-500">
                 {new Date(date).toLocaleDateString('ka-GE', {
                     weekday: 'long',
@@ -52,11 +44,11 @@ export default function TeacherDashboard({ date, lessons }: Props) {
                     {lessons.map((lesson) => (
                         <li
                             key={lesson.lessonId}
-                            className={`flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 ${
+                            className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5 ${
                                 lesson.cancelled ? 'opacity-50' : ''
                             }`}
                         >
-                            <div>
+                            <div className="min-w-0">
                                 <p className="text-xs text-slate-500 tabular-nums">
                                     {lesson.startsAt}–{lesson.endsAt}
                                 </p>
@@ -77,7 +69,7 @@ export default function TeacherDashboard({ date, lessons }: Props) {
                             {!lesson.cancelled && (
                                 <Link
                                     href={`/lessons/${lesson.lessonId}/attendance?date=${date}`}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white"
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white"
                                 >
                                     <ClipboardList size={16} /> დასწრება
                                 </Link>

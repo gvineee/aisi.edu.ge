@@ -10,6 +10,7 @@ export interface Brand {
     name: string;
     shortName: string | null;
     logoUrl: string | null;
+    heroImageUrl: string | null;
     colors: BrandColors;
     locale: string;
     contact: {

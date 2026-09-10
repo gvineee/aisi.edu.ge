@@ -78,3 +78,24 @@ h2{line-height:1.3}
 .brand-lockup>img.aisi-wordmark{width:130px;height:67px;object-fit:contain}
 .portal-header .brand-lockup>img.aisi-wordmark,.mini-app .brand-lockup>img.aisi-wordmark{width:112px;height:58px}
 @media(max-width:700px){.brand-lockup{gap:5px}.brand-lockup>img.aisi-wordmark,.portal-header .brand-lockup>img.aisi-wordmark,.mini-app .brand-lockup>img.aisi-wordmark{width:103px;height:53px}.identity-white .brand-lockup{transform:scale(1.45)}}
+
+/* Main navigation follows the Georgian heading typography. */
+.public-header nav a{
+ font-family:'BPG Nino Mtavruli','Noto Sans Georgian',sans-serif;
+ font-size:19px;font-weight:700;line-height:1.25;letter-spacing:.01em;
+ text-transform:none;color:var(--orange);padding-block:10px;
+ text-decoration-thickness:2px;text-underline-offset:6px;
+}
+.public-header nav a:hover,.public-header nav a:focus-visible{color:var(--orange);text-decoration:underline}
+@media(min-width:951px) and (max-width:1200px){.public-header nav a{font-size:17px}}
+@media(max-width:950px){.public-header nav.expanded a{font-size:21px}}
+
+/* More restrained menu scale. */
+.public-header nav a{font-size:16px}
+@media(min-width:951px) and (max-width:1200px){.public-header nav a{font-size:15px}}
+@media(max-width:950px){.public-header nav.expanded a{font-size:18px}}
+
+.brand-lockup>img.aisi-drawn-logo{display:block;width:210px;height:70px;object-fit:contain}
+.concept-links,.concept-links>a{display:flex;align-items:center;gap:16px}.concept-links>a{gap:6px;color:#ff9c7c}
+.portal-header .brand-lockup>img.aisi-drawn-logo,.mini-app .brand-lockup>img.aisi-drawn-logo{width:174px;height:58px}
+@media(max-width:700px){.brand-lockup>img.aisi-drawn-logo,.portal-header .brand-lockup>img.aisi-drawn-logo,.mini-app .brand-lockup>img.aisi-drawn-logo{width:150px;height:50px}}

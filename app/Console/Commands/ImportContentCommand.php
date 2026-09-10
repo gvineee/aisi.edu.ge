@@ -17,7 +17,7 @@ class ImportContentCommand extends Command
     protected $signature = 'content:import
         {--tenant= : Tenant slug to import into (required, must already exist)}
         {--commit : Actually write to the database. Without this flag, nothing is written.}
-        {--only=pages,posts : Comma-separated source types to import}';
+        {--only=pages,posts,documents,teachers : Comma-separated source types to import}';
 
     protected $description = 'Idempotent, dry-run-by-default import of content-migration/cms-import.json into draft Pages/Posts.';
 
@@ -104,6 +104,19 @@ class ImportContentCommand extends Command
             $this->warn('Merge candidates (never auto-merged — pick the canonical one by hand):');
             foreach ($flagged as $row) {
                 $this->line("  [{$row['merge_group']}] {$row['key']} — {$row['title']}");
+            }
+        }
+
+        $withMedia = array_filter($report, fn (array $row) => isset($row['media_hint']));
+        if ($withMedia !== []) {
+            $this->newLine();
+            $this->info('Featured-image hints (reported only — nothing copied, no cover_image_path written; every asset is still rights_status=school_confirmation_required):');
+            foreach ($withMedia as $row) {
+                $hint = $row['media_hint'];
+                $status = $hint['resolved']
+                    ? "resolved -> {$hint['local_path']} (rights: {$hint['rights_status']})"
+                    : "unresolved ({$hint['reason']})";
+                $this->line("  {$row['key']} — media #{$hint['featured_media_id']}: {$status}");
             }
         }
 

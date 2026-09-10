@@ -52,7 +52,7 @@ class ImportContentRecordsTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function postRecord(string $key, int $sourceId, string $title = 'სიახლე', string $body = 'ორიგინალი სიახლის ტექსტი.'): array
+    private function postRecord(string $key, int $sourceId, string $title = 'სიახლე', string $body = 'ორიგინალი სიახლის ტექსტი.', int $featuredMedia = 0): array
     {
         return [
             'key' => $key,
@@ -64,6 +64,45 @@ class ImportContentRecordsTest extends TestCase
             'original_clean_text' => $body,
             'body' => $body,
             'target_path' => "/posts/{$sourceId}",
+            'featured_media' => $featuredMedia,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function documentRecord(string $key, string $sourceUrl, string $title, string $body = 'ტექსტი.'): array
+    {
+        return [
+            'key' => $key,
+            'source_id' => null,
+            'type' => 'documents',
+            'source_url' => $sourceUrl,
+            'title' => $title,
+            'excerpt' => 'excerpt',
+            'original_clean_text' => $body,
+            'body' => $body,
+            'target_path' => '/documents/'.$key,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function teacherRecord(string $key, string $name, string $subject = 'ინგლისური ენა'): array
+    {
+        $body = "{$name}\n\n{$subject}";
+
+        return [
+            'key' => $key,
+            'source_id' => null,
+            'type' => 'teachers',
+            'source_url' => 'https://aisi.edu.ge/instructor/'.$key.'/',
+            'title' => $name,
+            'excerpt' => $body,
+            'original_clean_text' => $body,
+            'body' => $body,
+            'target_path' => '/teachers/'.$key,
         ];
     }
 
@@ -229,6 +268,107 @@ class ImportContentRecordsTest extends TestCase
 
         $this->assertSame(['blocked'], array_column($report, 'action'));
         $this->assertSame(0, Page::query()->where('tenant_id', $tenant->id)->count());
+    }
+
+    public function test_theme_demo_course_document_is_template_review_not_imported(): void
+    {
+        $tenant = $this->makeTenant('demo-course-tenant');
+        $records = [$this->documentRecord('legacy-course-1', 'https://aisi.edu.ge/courses/learn-php-programming-from-scratch/', 'Related Courses', 'Lorem Ipsum is simply dummy text.')];
+
+        $report = (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertSame(['template_review'], array_column($report, 'action'));
+        $this->assertSame(0, Page::query()->where('tenant_id', $tenant->id)->count());
+        $this->assertSame(
+            ContentImportRecord::STATUS_TEMPLATE_REVIEW,
+            ContentImportRecord::query()->where('tenant_id', $tenant->id)->sole()->review_status,
+        );
+    }
+
+    public function test_theme_demo_event_document_is_template_review_not_imported(): void
+    {
+        $tenant = $this->makeTenant('demo-event-tenant');
+        $records = [$this->documentRecord('legacy-event-1', 'https://aisi.edu.ge/event/basis-international-award-night/', 'EVENT INFO :', 'Melbourne, Australia. Lorem Ipsum dummy text.')];
+
+        $report = (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertSame(['template_review'], array_column($report, 'action'));
+        $this->assertSame(0, Page::query()->where('tenant_id', $tenant->id)->count());
+    }
+
+    public function test_real_aisi_event_document_is_imported_despite_event_url_pattern(): void
+    {
+        $tenant = $this->makeTenant('real-event-tenant');
+        $records = [$this->documentRecord('legacy-ca0b723d7c8b', 'https://aisi.edu.ge/event/კერძო-სკოლა-აისი-და-ism-university-of-management-and-e/', 'EVENT INFO :', 'კერძო სკოლა "აისი" და ISM University-ის ვებინარი.')];
+
+        $report = (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertSame(['created'], array_column($report, 'action'));
+        $page = Page::query()->where('tenant_id', $tenant->id)->sole();
+        $this->assertSame('კერძო სკოლა "აისი" და ISM University-ის ვებინარი.', $page->blocks[0]['body']);
+    }
+
+    public function test_research_archive_document_is_imported_as_a_draft_page(): void
+    {
+        $tenant = $this->makeTenant('research-tenant');
+        $records = [$this->documentRecord('legacy-research-i', 'https://aisi.edu.ge/research/i/', 'საარქივო გვერდი', 'ქართული, მათემატიკა, ინგლისური.')];
+
+        $report = (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertSame(['created'], array_column($report, 'action'));
+        $this->assertSame(1, Page::query()->where('tenant_id', $tenant->id)->count());
+    }
+
+    public function test_teacher_record_is_imported_as_a_generic_draft_page(): void
+    {
+        $tenant = $this->makeTenant('teacher-tenant');
+        $records = [$this->teacherRecord('legacy-teacher-1', 'თორნიკე მუშკუდიანი', 'დაწყებითის პედაგოგი')];
+
+        $report = (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertSame(['created'], array_column($report, 'action'));
+        $this->assertStringContainsString('no dedicated staff-profile model exists yet', $report[0]['reason']);
+        $page = Page::query()->where('tenant_id', $tenant->id)->sole();
+        $this->assertSame(Page::STATUS_DRAFT, $page->status);
+        $this->assertStringContainsString('თორნიკე მუშკუდიანი', $page->blocks[0]['body']);
+    }
+
+    public function test_second_commit_run_over_template_review_document_does_not_duplicate_or_crash(): void
+    {
+        $tenant = $this->makeTenant('template-review-rerun-tenant');
+        $records = [$this->documentRecord('legacy-course-1', 'https://aisi.edu.ge/courses/learn-php-programming-from-scratch/', 'Related Courses')];
+
+        (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+        $report = (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertSame(['blocked'], array_column($report, 'action'));
+        $this->assertSame(1, ContentImportRecord::query()->where('tenant_id', $tenant->id)->count());
+    }
+
+    public function test_post_with_unresolvable_featured_media_reports_an_unresolved_hint(): void
+    {
+        $tenant = $this->makeTenant('media-hint-tenant');
+        // A featured_media id guaranteed not to exist in any real/local
+        // media dump, so this assertion holds regardless of whether the
+        // gitignored content-migration/raw/ working files happen to be
+        // present on the machine running the test.
+        $records = [$this->postRecord('wp-posts-1', 201, featuredMedia: 999999999)];
+
+        $report = (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertArrayHasKey('media_hint', $report[0]);
+        $this->assertFalse($report[0]['media_hint']['resolved']);
+        $this->assertSame(999999999, $report[0]['media_hint']['featured_media_id']);
+    }
+
+    public function test_post_without_featured_media_has_no_media_hint(): void
+    {
+        $tenant = $this->makeTenant('no-media-hint-tenant');
+        $records = [$this->postRecord('wp-posts-1', 201)];
+
+        $report = (new ImportContentRecords)->run($tenant, $records, ['pages', 'posts', 'documents', 'teachers'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertArrayNotHasKey('media_hint', $report[0]);
     }
 
     public function test_type_not_in_only_is_skipped_out_of_scope(): void

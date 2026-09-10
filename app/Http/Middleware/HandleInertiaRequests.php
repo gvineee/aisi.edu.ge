@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Tenancy\CurrentTenant;
+use App\Domain\Tenancy\PortalContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
@@ -54,6 +55,7 @@ class HandleInertiaRequests extends Middleware
                 'name' => $displayName,
                 'shortName' => $brand?->short_name,
                 'logoUrl' => $brand?->logo_path ? Storage::disk('public')->url($brand->logo_path) : null,
+                'heroImageUrl' => $brand?->hero_image_path ? Storage::disk('public')->url($brand->hero_image_path) : null,
                 'colors' => $brand === null ? [] : $brand->colors,
                 'locale' => $tenant->locale,
                 'contact' => [
@@ -64,13 +66,21 @@ class HandleInertiaRequests extends Middleware
             ];
         }
 
+        $user = $request->user();
+        $portalProp = null;
+
+        if ($tenant !== null && $user !== null) {
+            $portalProp = app(PortalContext::class)->propsFor($request, $tenant, $user);
+        }
+
         return [
             ...parent::share($request),
             'name' => $appName,
             'brand' => $brandProp,
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            'portal' => $portalProp,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

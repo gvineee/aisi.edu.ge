@@ -2,50 +2,50 @@ import type { Brand } from '@/types';
 
 type Props = {
     brand: Brand | null;
-    size?: 'default' | 'compact';
+    size?: 'default' | 'compact' | 'portal';
 };
 
 /**
- * The sun-and-open-book mark stays; the wordmark is set in the BPG Nino
- * Mtavruli heading font with a single quiet "სკოლა" descriptor underneath
- * (docs/03's rebrand direction — no more bilingual "სკოლა • AISI SCHOOL"
- * line). Name/logo always come from the `brand` prop, never hardcoded, so
- * a second tenant renders its own mark here without any code change.
+ * Renders the tenant's approved logo as a single complete horizontal
+ * lockup (icon + wordmark already combined in one image, per the user's
+ * approved `aisi-drawn-logo.png` — no second, separately-typed name is
+ * drawn alongside it anymore). The image always comes from `brand.logoUrl`
+ * (tenant brand settings, CLAUDE.md invariant #8), never hardcoded, so a
+ * second tenant's own logo renders here with zero code change. When a
+ * tenant has no logo configured yet, the name renders as plain text so the
+ * header never goes blank.
+ *
+ * Reference box sizes (design/04-design-handoff.md): 210×70 desktop header,
+ * 150×50 mobile, 174×58 portal header — all a fixed 3:1 aspect ratio, so
+ * `object-contain` never needs to crop or stretch the mark.
  */
 export default function Logo({ brand, size = 'default' }: Props) {
     const name = brand?.name ?? '';
-    const imgSize = size === 'compact' ? 44 : 56;
+
+    const boxClassName =
+        size === 'portal'
+            ? 'h-[58px] w-[174px]'
+            : size === 'compact'
+              ? 'h-[50px] w-[150px]'
+              : 'h-[50px] w-[150px] md:h-[70px] md:w-[210px]';
+
+    if (!brand?.logoUrl) {
+        return (
+            <span
+                className="font-bold text-[var(--brand-primary,#132B45)]"
+                style={{ fontFamily: 'var(--font-heading)' }}
+                aria-label={`სკოლა ${name}`}
+            >
+                {name}
+            </span>
+        );
+    }
 
     return (
-        <span
-            className="inline-flex items-center gap-2"
-            aria-label={`სკოლა ${name}`}
-        >
-            {brand?.logoUrl && (
-                <img
-                    src={brand.logoUrl}
-                    alt=""
-                    width={imgSize}
-                    height={imgSize}
-                    className="shrink-0 object-contain"
-                    style={{ width: imgSize, height: imgSize }}
-                />
-            )}
-            <span className="flex flex-col items-start leading-none">
-                <span
-                    className={
-                        size === 'compact'
-                            ? 'text-2xl font-bold tracking-wide text-[var(--brand-primary,#132B45)]'
-                            : 'text-3xl font-bold tracking-wide text-[var(--brand-primary,#132B45)]'
-                    }
-                    style={{ fontFamily: 'var(--font-heading)' }}
-                >
-                    {name}
-                </span>
-                <small className="mt-1 text-[10px] font-semibold tracking-[0.3em] text-slate-500">
-                    სკოლა
-                </small>
-            </span>
-        </span>
+        <img
+            src={brand.logoUrl}
+            alt={`სკოლა ${name}`}
+            className={`${boxClassName} shrink-0 object-contain object-left`}
+        />
     );
 }

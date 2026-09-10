@@ -8,6 +8,7 @@ use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\LessonController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
+use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\LibraryCatalogController;
 use App\Http\Controllers\Public\PageController;
@@ -32,6 +33,7 @@ Route::get('/library', [LibraryCatalogController::class, 'index'])->name('librar
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::post('portal/active-role', [PortalRoleController::class, 'update'])->name('portal.active-role.update');
 
     Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
 

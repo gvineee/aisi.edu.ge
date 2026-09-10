@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Domain\Content\Models\Page;
+use App\Domain\Content\Models\Post;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -58,6 +59,39 @@ class PageController extends Controller
                 'seoTitle' => $page->seo_title,
                 'seoDescription' => $page->seo_description,
             ],
+            'latestPosts' => $this->latestPostsIfNeeded($tenant->id, $page->blocks),
         ]);
+    }
+
+    /**
+     * The "life" block renders real news teasers, so only query for posts
+     * when a page actually has one — most pages don't.
+     *
+     * @param  array<int, array<string, mixed>>  $blocks
+     * @return array<int, array<string, mixed>>
+     */
+    private function latestPostsIfNeeded(int $tenantId, array $blocks): array
+    {
+        $hasLifeBlock = collect($blocks)->contains(fn (array $block) => ($block['type'] ?? null) === 'life');
+
+        if (! $hasLifeBlock) {
+            return [];
+        }
+
+        return Post::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', Post::STATUS_PUBLISHED)
+            ->whereNotNull('published_at')
+            ->orderByDesc('published_at')
+            ->limit(3)
+            ->get(['slug', 'title', 'excerpt', 'published_at'])
+            ->map(fn (Post $post) => [
+                'slug' => $post->slug,
+                'title' => $post->title,
+                'excerpt' => $post->excerpt,
+                'publishedAt' => $post->published_at?->toIso8601String(),
+            ])
+            ->values()
+            ->all();
     }
 }

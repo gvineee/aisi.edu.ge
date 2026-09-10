@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Content\HomePageBlueprint;
 use App\Domain\Content\Models\Page;
 use App\Domain\Documents\Models\DocumentWorkspace;
 use App\Domain\Tenancy\Models\BrandSetting;
@@ -110,10 +111,23 @@ class TenantSeeder extends Seeder
             'name' => 'VI კლასი',
         ]);
 
+        $studentUser = User::factory()->create([
+            'name' => 'ნიკა დემო',
+            'email' => 'student@aisi.test',
+        ]);
+
         $student = $aisi->students()->create([
             'school_class_id' => $schoolClass->id,
+            'user_id' => $studentUser->id,
             'first_name' => 'ნიკა',
             'last_name' => 'დემო',
+            'is_active' => true,
+        ]);
+
+        TenantMembership::create([
+            'tenant_id' => $aisi->id,
+            'user_id' => $studentUser->id,
+            'role' => TenantMembership::ROLE_STUDENT,
             'is_active' => true,
         ]);
 
@@ -203,32 +217,7 @@ class TenantSeeder extends Seeder
             'locale' => 'ka',
             'title' => 'მთავარი',
             'excerpt' => 'აქ იწყება შენი ხვალ.',
-            'blocks' => [
-                [
-                    'type' => 'hero',
-                    'eyebrow' => 'სკოლა ახალი შესაძლებლობებისთვის',
-                    'heading' => 'აქ იწყება შენი ხვალ.',
-                    'body' => 'სივრცე, სადაც ცნობისმოყვარეობა ცოდნად იქცევა, ბავშვები კი საკუთარი გზის პოვნას სწავლობენ.',
-                ],
-                [
-                    'type' => 'programs',
-                    'heading' => 'ყოველ ეტაპს — თავისი აღმოჩენა.',
-                    'items' => [
-                        ['title' => 'პირველი ნაბიჯები', 'grade' => 'დაწყებითი საფეხური', 'body' => 'კითხვის სიხარული, პირველი აღმოჩენები და სწავლის სიყვარული.'],
-                        ['title' => 'ინტერესების აღმოჩენა', 'grade' => 'საბაზო საფეხური', 'body' => 'კითხვებიდან იდეებამდე — მეტი დამოუკიდებლობა და თანამშრომლობა.'],
-                        ['title' => 'საკუთარი გზა', 'grade' => 'საშუალო საფეხური', 'body' => 'გაცნობიერებული არჩევანი და მომავლისთვის მზადება.'],
-                    ],
-                ],
-                [
-                    'type' => 'life',
-                    'heading' => 'დღეები, რომლებიც გვზრდის.',
-                ],
-                [
-                    'type' => 'contact_cta',
-                    'heading' => 'გავიცნოთ ერთმანეთი.',
-                    'body' => 'აირჩიეთ დრო სკოლასთან სასაუბროდ.',
-                ],
-            ],
+            'blocks' => HomePageBlueprint::blocks(),
             'status' => Page::STATUS_PUBLISHED,
             'published_at' => now(),
             'seo_title' => 'სკოლა აისი — აქ იწყება შენი ხვალ',
@@ -254,7 +243,7 @@ class TenantSeeder extends Seeder
                     'heading' => 'მისია და ისტორია',
                     // Sourced from docs/01 audit (school history page); dated
                     // 2000-founding claim not independently re-verified here.
-                    'body' => 'სკოლა აისი დაარსდა თბილისში, დიდ დიღომში. სკოლასა და ოჯახს შორის კავშირი ბავშვის ყოველდღიურობის ბუნებრივი ნაწილია. ეს ტექსტი დასაზუსტებელია სკოლის დამტკიცებული მასალით.',
+                    'body' => 'სკოლა „აისი" 2000 წელს თბილისში დაარსდა. მისი დამფუძნებელია პედაგოგიკის დოქტორი იანა ტორჩინავა. სკოლის მისია აერთიანებს განათლებას, პიროვნულ განვითარებასა და ოჯახის თანამშრომლობას.',
                 ],
             ],
             'status' => Page::STATUS_PUBLISHED,

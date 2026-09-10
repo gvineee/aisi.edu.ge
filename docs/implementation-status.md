@@ -1,6 +1,17 @@
 # Implementation Status
 
-განახლებულია: 2026-09-10 · ეტაპი 1 დასრულებულია (ბრენდის სინქრონიზაცია + სრული საჯარო საიტი); **ეტაპი 2 მნიშვნელოვნად დაწინაურებულია** (იდენტობა/ოჯახი + განრიგი + დასწრება, ორივე data-backed პორტალის dashboard-ით; ახლა ემატება დოკუმენტების ცენტრის Stage 1+2 და კონტენტის მიგრაციის importer). ეს ვერსია აერთიანებს/ასწორებს წინა ჩანაწერების წინააღმდეგობებს (`START-HERE-CLAUDE.md`-ის მოთხოვნისამებრ) რეალურ, ახლახან გაშვებულ შემოწმებებზე დაყრდნობით. სრული ტესტ-suite: **98/98 passed, 362 assertions** (Pint/PHPStan level 7/`npm run check`/`npm run build` ყველა სუფთა).
+განახლებულია: 2026-09-11 · ეტაპი 1 დასრულებულია (ბრენდის სინქრონიზაცია + სრული საჯარო საიტი, ახლა დიზაინთან მჭიდრო fidelity-თი — იხ. ქვემოთ); **ეტაპი 2 მნიშვნელოვნად დაწინაურებულია** (როლზე დაფუძნებული dashboard-ები ყველა როლისთვის — guardian/teacher/student/director/admin —, სრული sidebar/bottom-nav portal layout, დოკუმენტების ცენტრის Stage 1+2, კონტენტის მიგრაციის importer ყველა 92 source key-ს ცხადი გადაწყვეტილებით). `CLAUDE-PLATFORM-MODULES.md`-ის 12 ახალი მოდული (Daily Center, Messaging, Portfolio, Assessment, Finance და ა.შ.) **ჯერ არ დაწყებულა** — დეტალები `docs/design-parity-checklist.md`-ში. სრული ტესტ-suite: **118/118 passed, 468 assertions** (Pint/PHPStan level 7/`npm run check`/`npm run types:check`/`npm run build` ყველა სუფთა).
+
+### 2026-09-11 — დიზაინის ზუსტი fidelity (`design/app/AisiConcept.tsx`-თან)
+
+მომხმარებლის ცხადი მითითებით („გამოიყენე დამტკიცებული... ტექსტები ზუსტად ისე როგორც ფაილებია, არ გადაუხვიო"), საჯარო მთავარი გვერდი განახლდა AisiConcept.tsx-ის ტექსტთან/სექციებთან სიტყვასიტყვითი თანხვედრით (ადრე გამარტივებული ვერსია იყო):
+
+- **ჰერო**: დაემატა რეალური ფოტო (`school-life.jpg` → `BrandSetting.hero_image_path`, ახალი idempotent `brand:sync-hero-image` command, იგივე პატერნი რაც `brand:sync-logo`-ს აქვს), floating card, hero-note. **დოკუმენტირებული გაფრთხილება კოდის კომენტარში**: ეს ფოტო არქიტექტურული ვიზუალიზაციაა, არა დადასტურებული დღევანდელი ფოტო — აქტუალობა/უფლება სკოლას ჯერ არ დაუდასტურებია (`docs/09-design-source-map.md`-ის ცხადი მითითებით).
+- **ახალი `values` ბლოკის ტიპი** — 3-icon "ცოდნა/გარემო/შესაძლებლობა" ზოლი, ზუსტად reference-ის ტექსტით.
+- **History ბლოკის ზუსტი ტექსტი**: "სკოლა აისი 2000 წელს... დამფუძნებელია პედაგოგიკის დოქტორი იანა ტორჩინავა" — ჩანაცვლდა წინა ფრთხილი placeholder-ი ("ეს ტექსტი დასაზუსტებელია..."), მომხმარებლის ცხადი გადაწყვეტილებით გამოეყენებინა დამტკიცებული ტექსტი ზუსტად. იგივე ტექსტი განახლდა `/about` გვერდზეც (`TenantSeeder`, `ProductionSeeder`).
+- **Programs ბლოკი**: დაემატა ნომერი (01/02/03) და ფერადი აქცენტი თითო ბარათზე (reference-ის peach/blue/green), მაგრამ click→dialog დეტალი **არ აშენებულა** (მომავალი პოლიშისთვის დარჩა — checklist-ში მონიშნული).
+- Real browser verification (Playwright, 360/390/768/1440px): ერთი რეალური mobile ბაგი ნაპოვნი და გასწორებული — hero-photo-ს caption pill (`bottom-3 right-3`) ეჯახებოდა floating card-ს ვიწრო ეკრანებზე; გადავიდა `top-3 right-3`-ზე, კონფლიქტი აღარ არის.
+- ახალი, სავალდებულო `docs/design-parity-checklist.md` (`docs/09-design-source-map.md`-ის ფორმატით) — თითო ეკრანი/სექცია → route → component → backend → roles → states → responsive evidence → სტატუსი.
 
 ## რეალურად დამოწმებული, მუშა ფუნქციონალი
 

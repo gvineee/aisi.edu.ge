@@ -7,7 +7,7 @@ function Make-Line($face,$codes,$height,$gap,$targetX,$targetY){
  foreach($code in $codes){
   $g=$face.GetGlyphOutline($face.CharacterToGlyphMap[$code],100,100)
   $b=$g.Bounds;$s=$height/$b.Height
-  $path=$g.ToString($ci)
+  $path=$g.ToString($ci) -replace '^F[01]', ''
   $tx=$x-$b.X*$s;$ty=-$b.Y*$s
   $parts += '<path transform="translate('+ $tx.ToString($ci)+' '+$ty.ToString($ci)+') scale('+$s.ToString($ci)+')" d="'+$path+'"/>'
   $x+=$b.Width*$s+$gap

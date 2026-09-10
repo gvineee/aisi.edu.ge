@@ -52,7 +52,13 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             <Logo brand={brand} />
                         </Link>
 
-                        <nav className="hidden gap-8 text-sm font-medium md:flex">
+                        <nav
+                            className="hidden gap-8 font-bold md:flex md:text-[15px] lg:text-base"
+                            style={{
+                                fontFamily: 'var(--font-heading)',
+                                color: 'var(--brand-accent)',
+                            }}
+                        >
                             {nav.map((item) => (
                                 <Link key={item.href} href={item.href}>
                                     {item.label}
@@ -86,7 +92,13 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                     </div>
 
                     {menuOpen && (
-                        <nav className="flex flex-col gap-1 border-t border-slate-200 bg-white p-4 text-sm font-medium md:hidden">
+                        <nav
+                            className="flex flex-col gap-1 border-t border-slate-200 bg-white p-4 text-lg font-bold md:hidden"
+                            style={{
+                                fontFamily: 'var(--font-heading)',
+                                color: 'var(--brand-accent)',
+                            }}
+                        >
                             {nav.map((item) => (
                                 <Link
                                     key={item.href}

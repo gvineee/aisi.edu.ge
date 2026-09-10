@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $short_name
  * @property string|null $logo_path
  * @property string|null $favicon_path
+ * @property string|null $hero_image_path
  * @property array<string, string> $colors
  * @property string $font_family
  * @property string|null $contact_email
@@ -21,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<int, array<string, string>>|null $social_links
  */
 #[Fillable([
-    'tenant_id', 'display_name', 'short_name', 'logo_path', 'favicon_path',
+    'tenant_id', 'display_name', 'short_name', 'logo_path', 'favicon_path', 'hero_image_path',
     'colors', 'font_family', 'contact_email', 'contact_phone', 'contact_address', 'social_links',
 ])]
 class BrandSetting extends Model

@@ -44,6 +44,41 @@ class ImportContentRecords
     ];
 
     /**
+     * The `documents` source type has no numeric source_id (scraped without
+     * a WordPress post ID), so it can't use BLOCKED_SOURCE_IDS above. Manual
+     * inspection of all 30 records found three distinct sub-groups by URL
+     * pattern: /courses/* (11, WordPress theme demo "Related Courses"
+     * catalog, Lorem Ipsum body), /event/* (7, all but one a theme demo
+     * event — Lorem Ipsum body, non-Georgian placeholder city/date), and
+     * /research/* (12, real per-grade curriculum archive pages linking out
+     * to Drive/Scribd documents). Matched in order below; first hit wins.
+     *
+     * @var array<string, string>
+     */
+    private const DOCUMENT_URL_TEMPLATE_JUNK_PATTERNS = [
+        '/courses/' => 'WordPress theme demo "Related Courses" catalog card (Lorem Ipsum body, no Aisi-specific content) — flagged for human review, not imported as a real page.',
+        '/event/' => 'WordPress theme demo event listing (Lorem Ipsum body, non-Aisi placeholder city/date) — flagged for human review, not imported as a real page.',
+    ];
+
+    /**
+     * One real record mixed into the otherwise-all-demo /event/* URL set:
+     * a genuine Aisi/ISM University of Management and Economics (Warsaw)
+     * webinar announcement, in Georgian, with a real 2021 date. Checked
+     * BEFORE the generic /event/ junk pattern above so it isn't caught by it.
+     *
+     * @var array<int, string>
+     */
+    private const DOCUMENT_KEY_IMPORT_OVERRIDES = [
+        'legacy-ca0b723d7c8b',
+    ];
+
+    /** @var array<int, string>|null */
+    private ?array $mediaIdToUrlCache = null;
+
+    /** @var array<string, array<string, mixed>>|null */
+    private ?array $assetManifestCache = null;
+
+    /**
      * @param  array<int, array<string, mixed>>  $records  Decoded cms-import.json "records" array.
      * @param  array<int, string>  $only  Source types to actually act on (others report as skipped_out_of_scope).
      * @param  array<int, string>  $failedUrls  source_url values already known to have failed collection (failures.json).
@@ -119,10 +154,145 @@ class ImportContentRecords
             return $base + ['action' => 'blocked', 'reason' => 'source_url is listed in content-migration/failures.json — content not reliably collected'];
         }
 
+        if ($type === 'documents') {
+            $classification = $this->classifyDocumentRecord($key, $sourceUrl);
+
+            if ($classification !== null) {
+                $this->recordDecision($tenant, $record, ContentImportRecord::STATUS_TEMPLATE_REVIEW, null, $importBatchId, $commit);
+
+                return $base + ['action' => 'template_review', 'reason' => $classification];
+            }
+        }
+
         $sourceText = $this->sourceText($record);
         $sourceChecksum = hash('sha256', $sourceText);
+        $row = $base + $this->create($tenant, $record, $sourceText, $sourceChecksum, $group, $importBatchId, $commit);
 
-        return $base + $this->create($tenant, $record, $sourceText, $sourceChecksum, $group, $importBatchId, $commit);
+        $media = $this->describeFeaturedMedia($record);
+        if ($media !== null) {
+            $row['media_hint'] = $media;
+        }
+
+        return $row;
+    }
+
+    /**
+     * Real content decided per-record for `documents` (see the class-level
+     * doc comments on the two constants above); returns a human reason
+     * string if the record should be flagged template_review instead of
+     * imported, or null if it should proceed to the normal create() path
+     * (the /research/* pages, and the one real /event/* override).
+     */
+    private function classifyDocumentRecord(string $key, string $sourceUrl): ?string
+    {
+        if (in_array($key, self::DOCUMENT_KEY_IMPORT_OVERRIDES, true)) {
+            return null;
+        }
+
+        foreach (self::DOCUMENT_URL_TEMPLATE_JUNK_PATTERNS as $pattern => $reason) {
+            if (str_contains($sourceUrl, $pattern)) {
+                return $reason;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Reports (never writes anywhere) a resolved featured-image hint for
+     * `posts` records that carry a nonzero WordPress `featured_media` id.
+     * Resolution: featured_media id -> source image URL, via the raw media
+     * API dump (content-migration/raw/api/media-*.json, gitignored working
+     * data, present locally) -> local downloaded file + rights status, via
+     * content-migration/asset-manifest.json. Deliberately does NOT write a
+     * cover_image_path or copy any bytes: every asset in the manifest is
+     * still `rights_status: school_confirmation_required`, so actually
+     * wiring/display a resolved image is a follow-up, not this importer's
+     * call to make. `pages`/`documents`/`teachers` records never carry a
+     * featured_media id in this dataset, so this only ever fires for posts.
+     *
+     * @param  array<string, mixed>  $record
+     * @return array<string, mixed>|null
+     */
+    private function describeFeaturedMedia(array $record): ?array
+    {
+        $mediaId = (int) ($record['featured_media'] ?? 0);
+
+        if ($mediaId === 0) {
+            return null;
+        }
+
+        $mediaUrl = $this->mediaIdToUrl()[$mediaId] ?? null;
+
+        if ($mediaUrl === null) {
+            return ['featured_media_id' => $mediaId, 'resolved' => false, 'reason' => 'id not found in raw media API dump'];
+        }
+
+        $asset = $this->assetManifestByUrl()[$mediaUrl] ?? null;
+
+        if ($asset === null) {
+            return ['featured_media_id' => $mediaId, 'source_url' => $mediaUrl, 'resolved' => false, 'reason' => 'not present in asset-manifest.json'];
+        }
+
+        return [
+            'featured_media_id' => $mediaId,
+            'source_url' => $mediaUrl,
+            'local_path' => $asset['local_path'] ?? null,
+            'rights_status' => $asset['rights_status'] ?? null,
+            'resolved' => true,
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function mediaIdToUrl(): array
+    {
+        if ($this->mediaIdToUrlCache !== null) {
+            return $this->mediaIdToUrlCache;
+        }
+
+        $map = [];
+
+        foreach (glob(base_path('content-migration/raw/api/media-*.json')) ?: [] as $file) {
+            $decoded = json_decode((string) file_get_contents($file), true);
+
+            if (! is_array($decoded)) {
+                continue;
+            }
+
+            foreach ($decoded as $entry) {
+                if (is_array($entry) && isset($entry['id'], $entry['source_url']) && is_string($entry['source_url'])) {
+                    $map[(int) $entry['id']] = $entry['source_url'];
+                }
+            }
+        }
+
+        return $this->mediaIdToUrlCache = $map;
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function assetManifestByUrl(): array
+    {
+        if ($this->assetManifestCache !== null) {
+            return $this->assetManifestCache;
+        }
+
+        $path = base_path('content-migration/asset-manifest.json');
+        $decoded = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+        $map = [];
+
+        if (is_array($decoded)) {
+            foreach ($decoded as $entry) {
+                if (is_array($entry) && isset($entry['source_url']) && is_string($entry['source_url'])) {
+                    $map[$entry['source_url']] = $entry;
+                }
+            }
+        }
+
+        return $this->assetManifestCache = $map;
     }
 
     /**
@@ -133,26 +303,35 @@ class ImportContentRecords
     {
         $slug = 'import-'.Str::slug((string) $record['key']);
         $type = (string) $record['type'];
+        // Only the `posts` source type becomes a Post; `pages`, the real
+        // (non-junk) `documents` records, and `teachers` all become a plain
+        // draft Page — there is no dedicated staff-profile model yet, so a
+        // Page is the closest real thing a `teachers` record can become
+        // without inventing a new feature under this ticket (a future
+        // Teacher/Staff model should reclaim these later).
+        $extraReason = $type === 'teachers'
+            ? ' (imported as a generic Page — no dedicated staff-profile model exists yet)'
+            : '';
 
         if (! $commit) {
             return [
                 'action' => 'create',
-                'reason' => $group !== null
+                'reason' => ($group !== null
                     ? "new draft; flagged merge candidate group '{$group}' — not auto-merged"
-                    : 'new draft',
+                    : 'new draft').$extraReason,
                 'slug' => $slug,
             ];
         }
 
-        $importable = $type === 'pages'
-            ? $this->createPage($tenant, $record, $sourceText, $slug)
-            : $this->createPost($tenant, $record, $sourceText, $slug);
+        $importable = $type === 'posts'
+            ? $this->createPost($tenant, $record, $sourceText, $slug)
+            : $this->createPage($tenant, $record, $sourceText, $slug);
 
         $this->recordDecision($tenant, $record, ContentImportRecord::STATUS_IMPORTED, $importable, $importBatchId, true, $sourceChecksum, $sourceChecksum);
 
         return [
             'action' => 'created',
-            'reason' => $group !== null ? "flagged merge candidate group '{$group}' — not auto-merged" : 'created as draft',
+            'reason' => ($group !== null ? "flagged merge candidate group '{$group}' — not auto-merged" : 'created as draft').$extraReason,
             'slug' => $slug,
         ];
     }
