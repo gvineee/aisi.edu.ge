@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { CalendarClock, ClipboardList } from 'lucide-react';
+import { BookMarked, CalendarClock, ClipboardList } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 
@@ -40,6 +40,15 @@ export default function TeacherDashboard({
 
             <div className="mb-6">
                 <ActionFeed items={actionItems} />
+            </div>
+
+            <div className="mb-6">
+                <Link
+                    href="/portal/portfolio/review-queue"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:border-slate-300"
+                >
+                    <BookMarked size={16} /> პორტფოლიოს განხილვა
+                </Link>
             </div>
 
             {lessons.length === 0 ? (

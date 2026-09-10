@@ -10,6 +10,7 @@ use App\Http\Controllers\Portal\LessonController;
 use App\Http\Controllers\Portal\MessageController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PortalRoleController;
+use App\Http\Controllers\Portal\PortfolioController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\LibraryCatalogController;
 use App\Http\Controllers\Public\PageController;
@@ -37,6 +38,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/active-role', [PortalRoleController::class, 'update'])->name('portal.active-role.update');
 
     Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
+
+    Route::get('portal/students/{student}/portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
+    Route::post('portal/students/{student}/portfolio', [PortfolioController::class, 'store'])->name('portfolio.store');
+    Route::get('portal/portfolio/review-queue', [PortfolioController::class, 'reviewQueue'])->name('portfolio.review-queue');
+    Route::get('portal/portfolio/{portfolioItem}', [PortfolioController::class, 'show'])->name('portfolio.show');
+    Route::post('portal/portfolio/{portfolioItem}/assets', [PortfolioController::class, 'storeAsset'])->name('portfolio.assets.store');
+    Route::get('portal/portfolio/{portfolioItem}/assets/{asset}/download', [PortfolioController::class, 'downloadAsset'])
+        ->middleware('signed')
+        ->name('portfolio.assets.download');
+    Route::post('portal/portfolio/{portfolioItem}/submit', [PortfolioController::class, 'submit'])->name('portfolio.submit');
+    Route::post('portal/portfolio/{portfolioItem}/decide', [PortfolioController::class, 'decide'])->name('portfolio.decide');
 
     Route::get('portal/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::post('portal/messages', [MessageController::class, 'store'])->name('messages.store');

@@ -40,7 +40,7 @@
 |---|---|---|
 | Today (დღის ცენტრი) | `/dashboard` (ლეიბლი "დღეს" — არ არის აშენებული ცალკე `/portal/today` route, იხ. ქვემოთ "ცნობილი გადახრები") | `verified_local` + `verified_production` — `BuildDailyActionFeed` აერთიანებს დოკუმენტების დამტკიცებას (director/admin) და წაუკითხავ შეტყობინებებს (ყველა) ერთ სიად ყველა 5 dashboard-ზე; პატიოსანი ცარიელი მდგომარეობა ("დღეს ყველაფერი მოგვარებულია"). Production-ის რეალურ admin ანგარიშზე Playwright-ით დამოწმებული. |
 | Inbox (შეტყობინებები) | `/portal/messages` | `verified_local` — რეალური conversations/messages/deliveries, ურთიერთობაზე დაფუძნებული (guardian↔class-teacher, staff↔staff, office↔ნებისმიერი guardian) მიმღების არჩევანი, unread badge, read-receipt, master-detail UI. **production-ზე ჯერ არ არის დეპლოირებული** |
-| Portfolio | `/portal/students/{student}/portfolio` | `not_started` |
+| Portfolio | `/portal/students/{student}/portfolio` | `verified_local` — draft→submitted→published/returned workflow (`app/Domain/Portfolio`), student/teacher/guardian visibility rules, mandatory return-feedback, teacher scoped to own assigned class only. **Achievements, tags, PDF export, public-share tokens explicitly NOT built this pass** (spec's own §5 lists these; deferred as a distinct, real MVP boundary, not silently dropped). |
 | Progress/Gradebook/Report cards | `/portal/students/{student}/progress`, `/portal/gradebook`, `/portal/report-cards` | `not_started` |
 | Safety (pickup/consent) | `/portal/pickup`, `/portal/consents` | `not_started` |
 | Health | `/portal/students/{student}/health` | `not_started` |
@@ -69,6 +69,18 @@
 ## Daily Action Feed (`app/Domain/Portal/Actions/BuildDailyActionFeed.php`)
 
 აერთიანებს ორ რეალურ წყაროს: director/admin-ის დასამტკიცებელი დოკუმენტები (`ListPendingApprovalRequests`) და ნებისმიერი როლის წაუკითხავი შეტყობინებები (Messaging). ერთი item = key/type/title/contextLabel/href; giant duplicate table არ არსებობს, source ცხადადაა ორივე მხრიდან re-query. თითო item authorized-ია მხოლოდ იმისთვის, ვისთვისაც რეალურად რელევანტურია (მაგ. approval — მხოლოდ director/admin-ისთვის, unread — მხოლოდ ამ საუბრის მონაწილისთვის). React-კომპონენტი `resources/js/components/portal/action-feed.tsx` ყველა 5 dashboard-ზეა ჩართული. 2 ახალი ტესტი (`DashboardRolesTest`): director-ის feed შეიცავს pending approval-ს, unread შეტყობინება ქრება ნახვის შემდეგ. რეალურ ბრაუზერში დამოწმებული (დირექტორის ცარიელი state screenshot).
+
+## Portfolio (`app/Domain/Portfolio`) — რას მოიცავს
+
+- ცხრილები: `portfolio_items` (student/subject/title/description/status/visibility/creator/published_at), `portfolio_assets`, `portfolio_feedback`.
+- Workflow: `draft` → `submitted` → `published`/`returned`; `returned`-იდან მოსწავლეს კვლავ შეუძლია რედაქტირება და ხელახლა გაგზავნა (იგივე პატერნი, რაც Documents domain-ს აქვს `changes_requested`-ისთვის).
+- ხილვადობა: მოსწავლეს (მფლობელს) — ყოველთვის; მასწავლებელს (მხოლოდ საკუთარი კლასის) — submitted/published; მშობელს — მხოლოდ published, არასდროს draft/submitted/returned.
+- `DecidePortfolioItem` — row lock (`lockForUpdate`) ორმაგი გადაწყვეტილების თავიდან ასაცილებლად; დაბრუნებისას feedback სავალდებულოა (validation).
+- ფაილები: იგივე private-disk + real MIME sniffing პატერნი, რაც Documents domain-ს აქვს (`PortfolioFileStorage`, 20MB ზღვარი, signed short-lived download).
+- 5 ტესტი (`tests/Feature/Portfolio/PortfolioWorkflowTest.php`): სრული draft→submit→publish გზა, submit-ს სჭირდება მინიმუმ 1 ფაილი, არასწორი მასწავლებელი ვერ წყვეტს, დაბრუნება მოითხოვს feedback-ს და ხელახლა რედაქტირებადს ხდის, tenant-იზოლაცია.
+- **რეალურ ბრაუზერში დამოწმებული** (Playwright, ლოკალურად): მოსწავლემ დაასრულა submit → მშობელმა 403 მიიღო publish-მდე → მასწავლებელმა review-queue-ში ნახა → გამოაქვეყნა feedback-ით → მშობელმა 200 მიიღო და დაინახა ტექსტი და feedback.
+- **ცნობილი გარემოს შეზღუდვა (არა კოდის ბაგი)**: `php artisan serve`-ის ჩაშენებული dev-server ამ Windows მანქანაზე ვერ ამუშავებს რეალურ multipart ფაილის ატვირთვას (PHP შეცდომა `UPLOAD_ERR_NO_TMP_DIR` — `upload_tmp_dir`-ის expicit override-იც ვერ შველის). ეს ბლოკავს მხოლოდ ბრაუზერიდან ცოცხალი ფაილის ატვირთვის ბოლომდე-ტესტს ამ კონკრეტულ dev-გარემოში — production-ზე (nginx+php-fpm CloudPanel-ზე) ეს შეზღუდვა არ ვრცელდება. აპლიკაციის ფაილის ატვირთვის ლოგიკა (`AddPortfolioAsset`/`PortfolioFileStorage`) სრულად დაფარულია ავტომატური ტესტებით (`UploadedFile::fake()`), ხოლო დანარჩენი მთელი workflow (submit/decide/ხილვადობა) რეალურ ბრაუზერში დამოწმდა ხელით ჩასმული ასეტით.
+- **production-ზე ჯერ არ დეპლოირებულა**.
 
 ## ცნობილი, განზრახ დარჩენილი გადახრები (docs/09 §7-ის მოთხოვნით ახსნილი)
 

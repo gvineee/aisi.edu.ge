@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react';
-import { CalendarClock, UserX } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { BookMarked, CalendarClock, UserX } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 
@@ -14,6 +14,7 @@ type ScheduleEntry = {
 
 type Props = {
     linked: boolean;
+    studentId?: number;
     className: string | null;
     todaySchedule: ScheduleEntry[];
     actionItems: ActionItem[];
@@ -27,6 +28,7 @@ type Props = {
  */
 export default function StudentDashboard({
     linked,
+    studentId,
     className,
     todaySchedule,
     actionItems,
@@ -49,6 +51,17 @@ export default function StudentDashboard({
             <div className="mb-6">
                 <ActionFeed items={actionItems} />
             </div>
+
+            {linked && studentId !== undefined && (
+                <div className="mb-6">
+                    <Link
+                        href={`/portal/students/${studentId}/portfolio`}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:border-slate-300"
+                    >
+                        <BookMarked size={16} /> ჩემი პორტფოლიო
+                    </Link>
+                </div>
+            )}
 
             {!linked ? (
                 <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">

@@ -154,6 +154,7 @@ class DashboardController extends Controller
 
         return Inertia::render('portal/student-dashboard', [
             'linked' => true,
+            'studentId' => $student->id,
             'className' => $student->schoolClass?->name,
             'todaySchedule' => $todaySchedule,
             'actionItems' => $actionItems,

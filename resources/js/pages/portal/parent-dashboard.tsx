@@ -1,6 +1,6 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { CalendarClock, Users } from 'lucide-react';
+import { BookMarked, CalendarClock, Users } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 
@@ -126,6 +126,18 @@ export default function ParentDashboard({ children, actionItems }: Props) {
                                     )}
                                 </ul>
                             </section>
+
+                            {selected.permissions.academic && (
+                                <div className="mt-4">
+                                    <Link
+                                        href={`/portal/students/${selected.id}/portfolio`}
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:border-slate-300"
+                                    >
+                                        <BookMarked size={16} /> {selected.name}
+                                        -ის პორტფოლიო
+                                    </Link>
+                                </div>
+                            )}
 
                             <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
                                 <div className="mb-4 flex items-center gap-2">
