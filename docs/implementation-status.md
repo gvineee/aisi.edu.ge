@@ -39,6 +39,14 @@
 ### Seed მონაცემები
 - `TenantSeeder` (მხოლოდ ლოკალური/dev, არასოდეს production-ზე): tenant "აისი" (domains: `localhost`, `127.0.0.1`, `aisi.test`), brand_settings რეალური ბრენდის ტოკენებით, admin მომხმარებელი, გამოქვეყნებული Home გვერდი; მეორე, დამოუკიდებელი tenant izoliაციის ტესტისთვის.
 
+### რეალურ ბრაუზერში გატესტვა (Playwright, headless Chromium)
+
+- `composer run dev` გაშვებულია, `http://localhost:8000/` გახსნილია headless ბრაუზერში 1280×900 და 390×844 (მობილური) ზომებზე — ორივეზე გვერდი სწორად რენდერდება, ჰორიზონტალური overflow არ არის, ლოგო/ფერები/ტექსტი სწორია. სქრინშოთები დათვალიერებულია ვიზუალურად.
+- „დაგეგმე ვიზიტი" ღილაკი რეალურად ხსნის დიალოგს ყველა ველით (სახელი, ტელეფონი/ელფოსტა, კლასი, თარიღი, თანხმობა).
+- **ნაპოვნი და გასწორებული რეალური ბაგი**: Noto Sans Georgian ფონტები (`@font-face src: url('/fonts/...')`) 404-ობდა dev რეჟიმში, რადგან absolute `/fonts/...` bare path Vite dev server-ის საკუთარ origin-თან (`[::1]:5173`) იჭრებოდა, არა Laravel-ის `public/`-თან. გადავიდა Vite-ის asset pipeline-ზე: ფონტის ფაილები გადავიდა `public/fonts/` → `resources/fonts/`, CSS-ში `url('../fonts/...')` ფარდობითი მისამართით — Vite ორივე რეჟიმში (dev და `npm run build`) სწორად ამუშავებს/hash-ავს მათ. დამოწმებულია Playwright-ის request-monitoring-ით (0 failed request).
+- **საინტერესო აღმოჩენა**: dev რეჟიმში (`vp dev`) Inertia-ს SSR module graph ავტომატურად თბება და რეალურად რენდერავს სრულ body-ს (`data-server-rendered="true"`), მიუხედავად იმისა, რომ production SSR supervisor არ გვაქვს გაშვებული — ეს მხოლოდ dev convenience-ია, production build-ს ეს არ ეხება (`build:ssr` script არსებობს, მაგრამ persistant SSR პროცესი ჯერ არ არის სქემაში).
+- **ოპერაციული შენიშვნა ტესტებზე**: `public/hot` ფაილის არსებობისას (ანუ `composer run dev`/`npm run dev` გაშვებულია) `php artisan test`-იც გადადის Vite dev-server რეჟიმზე და Inertia SSR ერთვება ტესტების HTTP პასუხშიც, რაც ცვლის `<title>`-ის ფორმატს (client-side app.tsx-ის `title` callback-ის მიხედვით ემატება ` - {app.name}`). ეს ნორმალურია და production/CI-ს არ ეხება (იქ `public/hot` არ არსებობს), მაგრამ **ტესტების გაშვებამდე დარწმუნდით, რომ dev server გამორთულია** (`rm public/hot` საკმარისია, თუ პროცესი უკვე მოკლულია).
+
 ### sitemap.xml / robots.txt
 - `GET /sitemap.xml` — გენერირებული tenant-ის საკუთარი გამოქვეყნებული გვერდებიდან (არა static ფაილი); draft გვერდები და სხვა tenant-ის URL-ები არასოდეს ჩნდება.
 - `GET /robots.txt` — Allow: /, მიუთითებს sitemap-ზე; კომენტარშია შენიშვნა, რომ პორტალის რეალური routes უნდა დაემატოს Disallow-ად ფაზა 2-ში.
