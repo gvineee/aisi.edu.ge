@@ -54,6 +54,10 @@ export default defineConfig({
             // docs/decisions/0002-design-source-of-truth.md) — it is not
             // part of the maintained app and isn't held to its lint rules.
             'design/**',
+            // content-migration/ is a raw scrape of the old WordPress site
+            // (docs/08-content-migration.md) — third-party HTML/JSON snapshots,
+            // not app source, and not expected to pass our style rules.
+            'content-migration/**',
         ],
         options: {
             denyWarnings: true,
@@ -75,6 +79,7 @@ export default defineConfig({
             'design/**',
             'docs/**',
             'CLAUDE.md',
+            'content-migration/**',
         ],
         sortTailwindcss: {
             functions: ['clsx', 'cn', 'cva'],

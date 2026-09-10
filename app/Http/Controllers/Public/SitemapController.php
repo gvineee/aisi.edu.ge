@@ -47,7 +47,12 @@ class SitemapController extends Controller
             ->concat($postUrls)
             ->push(['loc' => url('/library'), 'lastmod' => null]);
 
-        $xml = view('sitemap', ['urls' => $urls])->render();
+        // The XML declaration is prepended here rather than living in the
+        // Blade view: production runs with short_open_tag=On, where PHP lexes
+        // a literal "<?xml" in a template as a PHP open tag, so Blade leaves
+        // that region uncompiled and the view dies with a syntax error.
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n"
+            .view('sitemap', ['urls' => $urls])->render();
 
         return response($xml, 200)->header('Content-Type', 'application/xml');
     }

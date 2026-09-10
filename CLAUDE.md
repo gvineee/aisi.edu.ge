@@ -20,7 +20,9 @@
 
 ## ტექნიკური გადაწყვეტილებები
 
-Laravel `^13.0`, PHP 8.4 (ყველა dependency-სთან გადაამოწმე), ოფიციალური Laravel React starter kit, TypeScript strict, Inertia, Vite, PostgreSQL, Redis, S3-compatible storage. გამოიყენე ოფიციალურად მხარდაჭერილი მიმდინარე თავსებადი ვერსიები და commit lockfiles. Laravel 13 მოითხოვს მინიმუმ PHP 8.3-ს; იხილე https://laravel.com/framework/docs/13.x/releases და https://laravel.com/framework/docs/13.x/starter-kits . შეუთავსებელი package არ დაამატო მხოლოდ ნაცნობობის გამო.
+Laravel `^13.0`, PHP 8.4 (ყველა dependency-სთან გადაამოწმე), ოფიციალური Laravel React starter kit, TypeScript strict, Inertia, Vite, PostgreSQL, Redis, S3-compatible storage. გამოიყენე ოფიციალურად მხარდაჭერილი მიმდინარე თავსებადი ვერსიები და commit lockfiles.
+
+**განახლება (2026-09-10):** production-ის რეალური DB engine არის **MySQL/Percona**, არა PostgreSQL — მასპინძელ CloudPanel-სერვერზე PostgreSQL საერთოდ არ არსებობს და მის დასაყენებლად root წვდომა საჭირო იქნებოდა, რომელიც არ გვაქვს. ლოკალური დეველოპმენტი/ტესტები ჯერჯერობით რჩება PostgreSQL/SQLite-ზე. სრული დასაბუთება, MySQL-თან თავსებადობის რეალური გადამოწმების შედეგები და გასწორებული ერთი migration-ბაგი → `docs/decisions/0001-stack-and-versions.md`. ახალი migration/query ორივე engine-თან თავსებადობაზე შემოწმდეს. Laravel 13 მოითხოვს მინიმუმ PHP 8.3-ს; იხილე https://laravel.com/framework/docs/13.x/releases და https://laravel.com/framework/docs/13.x/starter-kits . შეუთავსებელი package არ დაამატო მხოლოდ ნაცნობობის გამო.
 
 ერთი მოდულური მონოლითი, არა მიკროსერვისები. Laravel routes/controllers/Form Requests/policies + domain actions/services; React pages/components მხოლოდ UI-სა და local interaction state-ს მართავს. ბიზნესლოგიკა და უფლებები server-ზეა. საჯარო კონტენტი ხელმისაწვდომი იყოს initial HTML-ში SSR/დოკუმენტირებული rendering გადაწყვეტით; private პორტალი არ ინდექსირდეს.
 

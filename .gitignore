@@ -30,6 +30,17 @@ yarn-error.log
 
 # Design prototype tooling (kept for reference; not part of the app build)
 /design/node_modules
+*.tsbuildinfo
 
 # Local-only decision docs may reference secrets in the future; scratch never committed
 *.local.md
+
+# content-migration/ working data (docs/08-content-migration.md): raw HTML
+# dumps, downloaded media, and the giant per-page extraction dump are scrape
+# working files already condensed into cms-import.json (the file the real
+# importer reads) and asset-manifest.json (source->local mapping). Keeping
+# ~85MB of raw/rendered scrape output in git history forever isn't worth it;
+# the smaller manifests/reports/cleaned-text stay tracked for auditability.
+/content-migration/raw
+/content-migration/assets
+/content-migration/rendered-pages.json

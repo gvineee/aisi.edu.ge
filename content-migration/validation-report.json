@@ -1,0 +1,10 @@
+{
+  "records": 92,
+  "unique_keys": 92,
+  "all_draft": true,
+  "assets_checked": 317,
+  "asset_issues": [],
+  "unvisited_discovered_urls": 724,
+  "page_timeouts": 37,
+  "validation_scope": "File existence, checksum, HTML error response detection, draft status and key uniqueness. Not malware scan or editorial approval."
+}

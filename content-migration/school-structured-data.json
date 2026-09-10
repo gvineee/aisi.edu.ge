@@ -1,0 +1,21 @@
+{
+  "status": "needs_school_approval",
+  "school": {
+    "name": "აისი",
+    "founded_year": 2000,
+    "founder": "იანა ტორჩინავა",
+    "source_page_id": 2371
+  },
+  "contact": {
+    "address": "თბილისი, დიდი დიღომი, დავარის ქუჩა 64",
+    "phone_e164": "+995599159800",
+    "email": "info@aisi.edu.ge",
+    "source_page_id": 1111
+  },
+  "current_student_count": null,
+  "current_teacher_count": null,
+  "current_director": null,
+  "current_admission_year": null,
+  "authorization_current_status": "requires_registry_verification",
+  "partnership_current_terms": "requires_school_confirmation"
+}

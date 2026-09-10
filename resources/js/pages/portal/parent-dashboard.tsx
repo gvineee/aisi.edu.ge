@@ -1,7 +1,16 @@
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
-import { Users } from 'lucide-react';
+import { CalendarClock, Users } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
+
+type ScheduleEntry = {
+    subject: string;
+    startsAt: string;
+    endsAt: string;
+    teacherName: string;
+    roomName: string | null;
+    cancelled: boolean;
+};
 
 type Child = {
     id: number;
@@ -13,6 +22,7 @@ type Child = {
         pickup: boolean;
         notifications: boolean;
     };
+    todaySchedule: ScheduleEntry[];
 };
 
 type Props = {
@@ -83,37 +93,88 @@ export default function ParentDashboard({ children }: Props) {
                     )}
 
                     {selected && (
-                        <section className="rounded-xl bg-[var(--brand-primary)] p-8 text-white">
-                            <p className="text-xs tracking-wide text-white/70">
-                                {selected.className ??
-                                    'კლასი მინიჭებული არ არის'}
-                            </p>
-                            <h2 className="mt-2 text-xl">
-                                {selected.name}-ის დღე
-                            </h2>
-                            <p className="mt-3 max-w-md text-sm text-white/80">
-                                განრიგი, დავალებები და დასწრება ჯერ არ არის
-                                გააქტიურებული — ეს ფუნქციონალი მომდევნო ეტაპზეა
-                                დაგეგმილი.
-                            </p>
-                            <ul className="mt-6 flex flex-wrap gap-3 text-xs">
-                                {selected.permissions.academic && (
-                                    <li className="rounded-full bg-white/15 px-3 py-1">
-                                        აკადემიური ინფორმაცია
-                                    </li>
+                        <>
+                            <section className="rounded-xl bg-[var(--brand-primary)] p-8 text-white">
+                                <p className="text-xs tracking-wide text-white/70">
+                                    {selected.className ??
+                                        'კლასი მინიჭებული არ არის'}
+                                </p>
+                                <h2 className="mt-2 text-xl">
+                                    {selected.name}-ის დღე
+                                </h2>
+                                <ul className="mt-6 flex flex-wrap gap-3 text-xs">
+                                    {selected.permissions.academic && (
+                                        <li className="rounded-full bg-white/15 px-3 py-1">
+                                            აკადემიური ინფორმაცია
+                                        </li>
+                                    )}
+                                    {selected.permissions.financial && (
+                                        <li className="rounded-full bg-white/15 px-3 py-1">
+                                            ფინანსები
+                                        </li>
+                                    )}
+                                    {selected.permissions.pickup && (
+                                        <li className="rounded-full bg-white/15 px-3 py-1">
+                                            წაყვანის უფლება
+                                        </li>
+                                    )}
+                                </ul>
+                            </section>
+
+                            <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <CalendarClock
+                                        size={18}
+                                        className="text-slate-500"
+                                    />
+                                    <h3 className="text-base font-semibold">
+                                        დღევანდელი განრიგი
+                                    </h3>
+                                </div>
+
+                                {!selected.permissions.academic ? (
+                                    <p className="text-sm text-slate-500">
+                                        აკადემიური ინფორმაციის ნახვის უფლება არ
+                                        გაქვთ ამ ბავშვისთვის.
+                                    </p>
+                                ) : selected.todaySchedule.length === 0 ? (
+                                    <p className="text-sm text-slate-500">
+                                        დღეს გამოქვეყნებული გაკვეთილი არ არის.
+                                    </p>
+                                ) : (
+                                    <ul className="divide-y divide-slate-100">
+                                        {selected.todaySchedule.map(
+                                            (lesson, index) => (
+                                                <li
+                                                    key={index}
+                                                    className={`flex items-center justify-between py-3 text-sm ${lesson.cancelled ? 'opacity-50' : ''}`}
+                                                >
+                                                    <div>
+                                                        <p className="font-medium">
+                                                            {lesson.subject}
+                                                            {lesson.cancelled && (
+                                                                <span className="ml-2 text-xs text-red-600">
+                                                                    გაუქმებულია
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                        <p className="text-slate-500">
+                                                            {lesson.teacherName}
+                                                            {lesson.roomName &&
+                                                                ` · ${lesson.roomName}`}
+                                                        </p>
+                                                    </div>
+                                                    <span className="text-slate-500 tabular-nums">
+                                                        {lesson.startsAt}–
+                                                        {lesson.endsAt}
+                                                    </span>
+                                                </li>
+                                            ),
+                                        )}
+                                    </ul>
                                 )}
-                                {selected.permissions.financial && (
-                                    <li className="rounded-full bg-white/15 px-3 py-1">
-                                        ფინანსები
-                                    </li>
-                                )}
-                                {selected.permissions.pickup && (
-                                    <li className="rounded-full bg-white/15 px-3 py-1">
-                                        წაყვანის უფლება
-                                    </li>
-                                )}
-                            </ul>
-                        </section>
+                            </section>
+                        </>
                     )}
                 </>
             )}

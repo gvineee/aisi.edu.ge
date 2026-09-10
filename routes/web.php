@@ -1,6 +1,13 @@
 <?php
 
+use App\Http\Controllers\Portal\AttendanceController;
 use App\Http\Controllers\Portal\DashboardController;
+use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
+use App\Http\Controllers\Portal\DocumentApprovalController;
+use App\Http\Controllers\Portal\DocumentController;
+use App\Http\Controllers\Portal\DocumentVersionController;
+use App\Http\Controllers\Portal\LessonController;
+use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\LibraryCatalogController;
 use App\Http\Controllers\Public\PageController;
@@ -25,6 +32,23 @@ Route::get('/library', [LibraryCatalogController::class, 'index'])->name('librar
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+    Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
+
+    Route::get('lessons/{lesson}/attendance', [AttendanceController::class, 'show'])->name('attendance.show');
+    Route::post('lessons/{lesson}/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+
+    Route::get('documents/my-work', MyDocumentWorkController::class)->name('documents.my-work');
+    Route::get('documents/director-worklist', DirectorDocumentWorklistController::class)->name('documents.director-worklist');
+    Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
+    Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::post('documents/{document}/versions', [DocumentVersionController::class, 'store'])->name('documents.versions.store');
+    Route::get('documents/{document}/versions/{version}/download', [DocumentVersionController::class, 'download'])
+        ->middleware('signed')
+        ->name('documents.versions.download');
+    Route::post('documents/{document}/submit', [DocumentApprovalController::class, 'submit'])->name('documents.submit');
+    Route::post('approval-requests/{approvalRequest}/decide', [DocumentApprovalController::class, 'decide'])->name('documents.approvals.decide');
 });
 
 require __DIR__.'/settings.php';

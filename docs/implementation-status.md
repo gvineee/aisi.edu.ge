@@ -1,6 +1,6 @@
 # Implementation Status
 
-განახლებულია: 2026-09-11 · ეტაპი 1 დასრულებულია (ბრენდის სინქრონიზაცია + სრული საჯარო საიტი); **ეტაპი 2 დაწყებულია** (იდენტობა/ოჯახი — guardian links + პირველი data-backed პორტალის dashboard). ეს ვერსია აერთიანებს/ასწორებს წინა ჩანაწერების წინააღმდეგობებს (`START-HERE-CLAUDE.md`-ის მოთხოვნისამებრ) რეალურ, ახლახან გაშვებულ შემოწმებებზე დაყრდნობით.
+განახლებულია: 2026-09-10 · ეტაპი 1 დასრულებულია (ბრენდის სინქრონიზაცია + სრული საჯარო საიტი); **ეტაპი 2 მნიშვნელოვნად დაწინაურებულია** (იდენტობა/ოჯახი + განრიგი + დასწრება, ორივე data-backed პორტალის dashboard-ით; ახლა ემატება დოკუმენტების ცენტრის Stage 1+2 და კონტენტის მიგრაციის importer). ეს ვერსია აერთიანებს/ასწორებს წინა ჩანაწერების წინააღმდეგობებს (`START-HERE-CLAUDE.md`-ის მოთხოვნისამებრ) რეალურ, ახლახან გაშვებულ შემოწმებებზე დაყრდნობით. სრული ტესტ-suite: **98/98 passed, 362 assertions** (Pint/PHPStan level 7/`npm run check`/`npm run build` ყველა სუფთა).
 
 ## რეალურად დამოწმებული, მუშა ფუნქციონალი
 
@@ -13,6 +13,18 @@
 - **Redis 8.10.1** — Scoop-ის portable ბინარი; **არ არის Windows service** (admin არ იყო ხელმისაწვდომი) — სესიის დასაწყისში საჭირო: `powershell -File scripts/dev-services.ps1`.
 - Laravel `laravel/react-starter-kit:dev-main`-იდან (Packagist tag ჯერ Laravel 12-ზეა): `laravel/framework v13.31.0`, `inertiajs/inertia-laravel v3.3.3`, `laravel/fortify v1.39.0`, `laravel/wayfinder v0.1.21`, React 19.2, TypeScript strict, Tailwind v4.
 - Georgian UI: `APP_LOCALE=ka`, `<html lang="ka">` დამოწმებული რეალურ HTTP პასუხში.
+
+### Production infrastructure — სერვერზე წვდომა და DB engine-ის გადაწყვეტილება (2026-09-10)
+
+- მომხმარებელმა მოგვცა SSH წვდომა რეალურ CloudPanel-სერვერზე (`165.245.223.56`, site user `ais`, dedicated `~/.ssh/aisi_server_deploy` keypair, არა პირადი გასაღების ხელახალი გამოყენება). Read-only reconnaissance: PHP 7.1–8.5 ყველა ხელმისაწვდომია, Node.js არ არის, disk-ზე 68GB თავისუფალია, საიტი placeholder-ზეა (`/home/aisi/htdocs/aisi.edu.ge/public/index.php`).
+- **აღმოჩენილი კონფლიქტი**: სერვერზე დაყენებულია მხოლოდ MySQL-თავსებადი Percona Server 8.4.10-10 — PostgreSQL საერთოდ არ არსებობს, site-user-ს root/sudo არ აქვს (`clpctl`-იც site-scoped) და დამოუკიდებლად ვერ დააყენებდით. ეს ეწინააღმდეგებოდა `CLAUDE.md`-ის თავდაპირველ PostgreSQL-ის დაშვებას.
+- მომხმარებელს დაესვა კონკრეტული არჩევანი (AskUserQuestion) და აირჩია: **production-ის DB engine იცვლება MySQL/Percona-ზე**, ლოკალურად ტესტებისთვის ჯერჯერობით რჩება PostgreSQL/SQLite. სრული დასაბუთება/დეტალები → `docs/decisions/0001-stack-and-versions.md`-ის „განახლება 2026-09-10" სექცია.
+- **რეალურად გადამოწმებული (არა თეორიულად)**: ლოკალურად აიგო MariaDB 12.3.3 (Scoop portable, დროებით, მხოლოდ ამ შემოწმებისთვის) და მასზე გაეშვა 26-ივე migration + სრული ტესტ-suite (`phpunit.xml`-ის დროებითი override-ით) → **73/73 გავლილი**. ერთი რეალური ბაგი ნაპოვნი და გასწორებულია: `database/migrations/2026_09_11_000007_create_teacher_assignments_table.php`-ის ოთხსვეტიანი unique constraint-ის auto-generated სახელი (70 სიმბოლო) აღემატებოდა MySQL-ის 64-სიმბოლოიან identifier-ლიმიტს — დაემატა ხელით მოკლე სახელი (`teacher_assignments_unique_assignment`). დანარჩენი მთელი schema (მათ შორის ყველა `json()` სვეტი და მრავალსვეტიანი unique constraint-ი) იმუშავა უცვლელად.
+- MariaDB-ის ლოკალური ინსტანცია შემოწმების შემდეგ **გაჩერებულია** — ის არ არის ლოკალური dev-გარემოს მუდმივი ნაწილი; ლოკალურად კვლავ PostgreSQL/SQLite გამოიყენება.
+- **2026-09-10: production deploy რეალურად შესრულებულია** მომხმარებლის პირდაპირი მითითებით („გაუშვი დეფლოი"). სრული, ნაბიჯ-ნაბიჯ ჩანაწერი, ორი გარემოსპეციფიკური ბაგი (რომლებიც deploy-ის დროს ნაპოვნი და გასწორებული იქნა) და დარჩენილი Cloudflare-ის blocker → `docs/deployment-and-rollback.md`-ის „რეალურად შესრულებული deploy" სექცია.
+  - მოკლედ: 32 migration რეალურ Percona MySQL 8.4-ზე გავლილი; `ProductionSeeder`-ით tenant „აისი" + ერთი რეალური ადმინი + 5 გამოქვეყნებული გვერდი (**არცერთი დემო ანგარიში/tenant production-ში — გადამოწმებული `total_users=1`, `total_tenants=1`**); `content:import` -ით 44 draft (15 გვერდი + 29 პოსტი) ძველი საიტიდან; ყველა საჯარო route origin-ზე **200**, `/dashboard` → 302 login-ზე.
+  - **საიტი საჯაროდ ჯერ არ ჩანს** — Cloudflare აბრუნებს `526 Invalid SSL Certificate`, რადგან origin-ს მხოლოდ CloudPanel-ის self-signed სერტიფიკატი აქვს. ეს **ჩვენს წვდომას გარეთაა** (საიტის `clpctl`-ს არ აქვს `lets-encrypt` ბრძანება, sudo/root არ არის) და მოითხოვს ან Cloudflare-ის SSL რეჟიმის „Full"-ზე გადართვას, ან ვალიდური სერტიფიკატის გამოშვებას CloudPanel-ის admin UI-დან.
+- **security note**: სერვერის SSH პაროლი და MySQL DB პაროლი მომხმარებელმა chat-ში გამოაშკარა ტექსტად გამოგზავნა (CloudPanel-ის auto-generated credentials) — ეს არცერთ ფაილში/commit-ში/log-ში არ ჩაწერილა; მომხმარებელს ურჩიეთ ორივეს rotation.
 
 ### ბრენდი და ტიპოგრაფია — 2026-09-11-ის რებრენდინგის სინქრონიზაცია
 
@@ -76,6 +88,44 @@
 - **დამოწმებულია რეალურ ბრაუზერში**: login (`parent@aisi.test` / `password`) → `/dashboard` → რეალური ბავშვის ბარათი ("ნიკა დემო-ის დღე", VI კლასი, უფლებების badge-ები), 0 failed request.
 - **არ არის აშენებული**: სრული PortalLayout sidebar/bottom-navigation (docs/04-ის მაპინგი) — ეს მოვა schedule/library/payments ფუნქციონალთან ერთად; მასწავლებლის საკუთარი dashboard გვერდი (ამჟამად მხოლოდ query-pattern დამტკიცებულია ტესტით, არა UI); ადმინისტრაციის dashboard.
 
+### განრიგი და დასწრება — ეტაპი 2 გაგრძელება (`app/Domain/Timetable`, `app/Domain/Learning`, `app/Domain/Governance`)
+
+- ცხრილები: `subjects`, `rooms`, `lessons` (კვირის განმეორებადი slot — `starts_at`/`ends_at` სკოლის დროის სარტყელში, არა UTC, დანარჩენი "date-like" ველების ანალოგიურად), `lesson_exceptions` (cancelled/substitution/room_change), `attendance_records`, `audit_events`.
+- **`CheckLessonConflicts`** (`app/Domain/Timetable/Actions`) — server-side ბლოკავს ერთდროულ overlap-ს იმავე მასწავლებელზე, ოთახზე ან კლასზე, `[start, end)` წესით (შეხების წერტილი კონფლიქტი არ არის). გამოძახებულია `StoreLessonRequest::withValidator`-იდან — ვალიდაციის შეცდომა, არა გამონაკლისი.
+- **`LessonController@store`** — მხოლოდ `academic_manager`/`admin` როლს შეუძლია განრიგის შექმნა (`TenantMembership::userHasAnyActiveRole`).
+- **`ResolveDailyLessons`** — კვირის განმეორებად lessons-ს კონკრეტულ თარიღზე გადააქცევს, `lesson_exceptions`-ის გათვალისწინებით (გაუქმება/ჩანაცვლება/ოთახის შეცვლა). გამოიყენება პარენტისა და მასწავლებლის dashboard-ებში.
+- **`AttendanceController`** — მხოლოდ ლექციის საკუთარმა მასწავლებელმა (`lesson.teacher_id === auth user`) შეუძლია ნახოს/ჩაწეროს დასწრება; ერთი ჩანაწერი თითო (lesson, student, occurred_on) კომბინაციაზე (DB unique + upsert, არა დუბლიკატი); **ცვლილება იწერება `audit_events`-ში** (CLAUDE.md ინვარიანტი #7).
+- **პორტალის dashboard-ები** ახლა რეალურ განრიგს აჩვენებენ: მშობელი ხედავს შვილის დღევანდელ გაკვეთილებს (თუ `can_view_academic`), მასწავლებელი — საკუთარ დღევანდელ გაკვეთილებს "დასწრება" ბმულით.
+- **ტესტები** (`tests/Feature/Timetable/`, 9): იმავე მასწავლებლის/ოთახის overlap ბლოკირდება; საზღვრის შეხება (`09:45`→`09:45`) **არ** არის კონფლიქტი; სხვა დღეს არასდროს არ ეჯახება; მხოლოდ manager/admin ქმნის lesson-ს; დანიშნული მასწავლებელი წერს დასწრებას; **სხვა** მასწავლებელი 403-ს იღებს; ხელახალი submission ანახლებს არსებულ ჩანაწერს (არა დუბლიკატი); დასწრების ცვლილება წერს audit event-ს.
+- **დამოწმებულია რეალურ ბრაუზერში**: login as `teacher@aisi.test` → დღევანდელი გაკვეთილი ჩანს → "დასწრება" → მოსწავლის მონიშვნა "ესწრება" → შენახვა → real success toast; login as `parent@aisi.test` → იგივე გაკვეთილი ჩანს ბავშვის დღევანდელ განრიგში სწორი მასწავლებლითა და ოთახით. 0 failed request.
+- **არ არის აშენებული**: განრიგის რედაქტირების/წაშლის UI (`store` მხოლოდ), `lesson_exceptions`-ის შექმნის UI (schema/logic მზადაა, ფორმა არა), კვირის ბადის/დღის სრული ვიზუალური კალენდარი (ამჟამად მხოლოდ "დღეს" სიაა), მასწავლებლის კლასის სრული ჟურნალის ისტორიის ნახვის გვერდი.
+
+### დოკუმენტების ცენტრი — Stage 1+2 (`app/Domain/Documents`)
+
+`docs/07-document-management-spec.md`-ის Stage 1+2 (workspace/permissions/upload/version/preview საფუძველი + მასწავლებელი→დირექტორი single-reviewer დამტკიცების ნაკადი). **Stage 3-5 (publish-ის ცალკე ეტაპი, acknowledgement, template registry, მრავალსაფეხურიანი განხილვა, retention/OCR/გარე editor) განზრახ არ არის დაწყებული.**
+
+- ცხრილები (`2026_09_13_0000{01..06}`): `document_workspaces`, `documents`, `document_versions`, `document_access_grants`, `approval_requests`, `approval_decisions`. `documents.latest_version_id`/`published_version_id` შეგნებულად არ არის DB foreign key (circular reference migration-ის დროს) — მთლიანობა დაცულია მხოლოდ Action-კლასებიდან ამ სვეტების ჩაწერით (`CreateDraftDocument`, `UploadDocumentVersion`, `DecideApproval`, `RestoreAsDraft`).
+- ახალი role `TenantMembership::ROLE_DIRECTOR`, seed-ით `director@aisi.test`.
+- `DocumentFileStorage`: private disk, tenant-prefixed path, რეალური MIME sniffing (არა client extension), 20MB ზღვარი, signed short-lived download.
+- **რეალური immutability და concurrency დამოწმებულია ტესტით**: approved ვერსია არასდროს იცვლება ახალი draft-ის ატვირთვისას; ერთსა და იმავე `approval_requests` row-ზე ორი გადაწყვეტილება (`lockForUpdate()`-ით) — მეორე უარყოფილია 409-ით. Multi-connection race ნამდვილ production DB-ზე (MySQL/Postgres) დაცულია row-lock-ით; ეს sqlite in-memory ტესტ-გარემოში პირდაპირ ვერ სიმულირდება (ცნობილი ტესტ-შეზღუდვა, არა კოდის ხარვეზი).
+- Portal routes `/documents*` + 4 React გვერდი (`index`/`show`/`my-work`/`director-worklist`), `teacher-dashboard.tsx`-ზე "დოკუმენტები" ბმული.
+- ტესტები: `tests/Feature/Documents/DocumentWorkflowTest.php` → **14/14 passed, 40 assertions** (tenant-იზოლაცია, თვითდამტკიცების აკრძალვა, draft/published გამიჯვნა, ორმაგი გადაწყვეტილების უარყოფა, MIME/ზომა/quarantine/expired-URL, guardian-ს წვდომა არ აქვს).
+- რეალურ ბრაუზერში დამოწმებული (Playwright, Postgres dev-ბაზაზე, fixture-ები ტესტის შემდეგ წაშლილია): მასწავლებელმა ატვირთა → submit → დირექტორმა დაამტკიცა → DB-ში დადასტურდა `published_version_id`. **გარემოს აღმოჩენა (არა ამ ფუნქციის ბაგი)**: `php artisan serve` + production build ერთად ვერ უმკლავდება ბრაუზერის ერთდროულ ბევრ asset-მოთხოვნას (ვლინდება `/login`-ზეც, ჩვენი კოდის გარეშე) — გამოსავალი რეალური `npm run dev` flow-ია.
+- **ცნობილი, განზრახ გადადებული ხარვეზები**: `DocumentAccessGrant` ცხრილი არსებობს, მაგრამ არცერთ policy-შემოწმებაში ჯერ არ გამოიყენება (მხოლოდ base role: owner/director/admin); admin/director-ს არ აქვს საკუთარი dashboard ეკრანი (პირდაპირ URL-ით მოდის `/documents/director-worklist`-ზე); ტექსტური preview/OCR არ არსებობს, მხოლოდ metadata+download; ახალი workspace-ის შექმნის UI არ არსებობს (ერთი, "სასწავლო გეგმები", მხოლოდ seeder-შია).
+
+### კონტენტის მიგრაცია — Content Import Command (`app/Domain/Content/Actions/ImportContentRecords`)
+
+`docs/08-content-migration.md`-ის §6 (რეალური CMS importer უკვე შეგროვებული `content-migration/cms-import.json`-იდან — 92 ჩანაწერი, `collection-report.json`-ის მიხედვით 476/513 გვერდი და 317 asset რეალურად არქივირებული).
+
+- ცხრილი `content_import_records` (`2026_09_13_000001`) — idempotency key `(tenant_id, source_system, source_key)`, morph კავშირი `Page`/`Post`-თან, `source_checksum`/`local_checksum` conflict-დეტექციისთვის; `Page`/`Post` მოდელები თავად უცვლელი დარჩა.
+- `php artisan content:import {--tenant=} {--commit} {--only=pages,posts}` — default dry-run, `--tenant` სავალდებულო (არასდროს default tenant-ს არ ირჩევს), ყველაფერი შექმნილი უპირობოდ `draft`-ია (importer-ს არასდროს შეუძლია გამოქვეყნება).
+- ტესტები: `tests/Feature/ContentImport/ImportContentRecordsTest.php` → **11/11 passed, 38 assertions** (dry-run=0 ცვლილება; idempotent მეორე commit; ლოკალურად რედაქტირებული გვერდი `conflict`-ად ინიშნება და არ გადაიწერება; tenant A/B იზოლაცია; უცნობი tenant slug ჩავარდება; დასახელებული merge-candidate ჯგუფები დროშავდება, არ ერწყმის ავტომატურად).
+- **რეალურად ნაპოვნი და გასწორებული ბაგი**: პირველ ვერსიაში blocked ჩანაწერზე მეორე `--commit` აწარმოებდა unique-constraint crash-ს (idempotency lookup ხდებოდა blocked-შემოწმების შემდეგ, არა მის წინ) — გასწორებულია, რეგრესიის ტესტით დაფარული.
+- **რეალურად გაშვებულია** ლოკალურ "aisi" tenant-ზე (არა თეორიულად): 44 draft Page/Post შექმნილია, 1 დაბლოკილი (ძველი placeholder-გვერდი, source id 54), 47 out-of-scope (`documents`/`teachers` ტიპები — შესაბამისი მოდელი ჯერ არ არსებობს, მონაცემიც არასანდოა). ხელით პროვოცირებული conflict (ლოკალურად რედაქტირებული გვერდი) სწორად აღინიშნა და არ გადაიწერა.
+- **Data quality — ადამიანის განხილვა სჭირდება**: `posts`-ის რამდენიმე ჩანაწერი (source id 13, 30–36, 40) აშკარად WordPress თემის ინგლისურენოვანი დემო სტატიებია ("Harvard University Tops the Shanghai Ranking Again" და სხვ.), არა აისის რეალური სიახლე — importer-მა ისინი (სწორად) draft-ად შემოიტანა, მაგრამ განხილვისას უნდა დაარქივდეს, არ გამოქვეყნდეს.
+- **განზრახ გადადებული**: 301 redirect-ების ჩართვა, media ბაიტების რეალური გადატანა (checksum/path მხოლოდ manifest-შია), OCR, `documents`/`teachers` ტიპების იმპორტი, ავტომატური merge (5 ცნობილი დუბლიკატი ცალკე draft-ადაა, გადაწყვეტილება ადამიანს რჩება), ნებისმიერი გამოქვეყნება.
+- **მნიშვნელოვანი**: ლოკალურ dev ბაზაში ახლა რეალურად არსებობს 44 ახალი draft გვერდი/პოსტი, რომელთა სანახავად/დასამტკიცებლად **ჯერ არ არსებობს admin UI** (CMS editor ეკრანი კვლავ ცნობილი ხარვეზია — იხ. ქვემოთ). ისინი ხელმისაწვდომია მხოლოდ პირდაპირი DB query-თი/tinker-ით, სანამ editor screen არ აშენდება.
+
 ### Seed მონაცემები (`TenantSeeder`, მხოლოდ dev/local)
 
 - Tenant "აისი": domains `localhost`/`127.0.0.1`/`aisi.test`; brand tokens; admin user; 5 გამოქვეყნებული Page; 2 Post; 3 LibraryResource; 1 academic year + 1 class + 1 student + 1 guardian (`parent@aisi.test`) + 1 teacher (`teacher@aisi.test`).
@@ -84,23 +134,25 @@
 ## ცნობილი ხარვეზები / ჯერ არ დამტკიცებული (ერთი, გასწორებული სია)
 
 - **SSR node-პროცესი არ არის მუდმივად გაშვებული.** `config/inertia.php`-ში `ssr.enabled=true`; dev-ში (`vp dev`) SSR module graph ავტომატურად თბება და სრულ body-საც რენდერავს (`data-server-rendered="true"`) — ეს dev convenience-ია, **production-ისთვის persistent SSR პროცესი ჯერ არ არის მოწყობილი**. ამის ნაცვლად, production-ისთვის `app.blade.php` პირდაპირ კითხულობს `page.props.page.seoTitle/seoDescription`-ს და გამოაქვს რეალურ `<title>`/`<meta description>`-ად JS-ის გარეშეც (დამტკიცებული ტესტით `HomePageSeoTest`). **სრული body-content კვლავ მხოლოდ ჰიდრაციის შემდეგ ჩნდება production build-ში** — თუ crawler-ს/JS-less კლიენტს დასჭირდება სრული HTML, საჭირო იქნება `resources/js/ssr.tsx` + supervisor.
-- CMS admin editor (draft→preview→publish→revert UI) — მხოლოდ schema, არა ეკრანი.
+- **CMS admin editor (draft→preview→publish→revert UI) — მხოლოდ schema, არა ეკრანი.** ეს ახლა უფრო აქტუალურია: content-import command-მა უკვე შექმნა 44 რეალური draft გვერდი/პოსტი ლოკალურ dev ბაზაში, რომელთა განსახილველად/გამოსაქვეყნებლად admin UI ჯერ არ არსებობს (მხოლოდ პირდაპირი DB წვდომაა შესაძლებელი).
+- დოკუმენტების ცენტრის Stage 3-5 (publish-ის ცალკე ეტაპი, acknowledgement, multi-reviewer, template registry, retention/OCR, გარე editor ინტეგრაცია) — განზრახ არ დაწყებულა; დეტალები ზემოთ.
+- Content import-ის შემდეგი ეტაპები (301 redirects, media byte migration, `documents`/`teachers` ტიპები, ავტომატური merge) — განზრახ არ დაწყებულა; დეტალები ზემოთ.
 - სრული ვიზიტის/მიღების ნაკადი (slot booking, ტევადობა, staff სამუშაო სია) — მხოლოდ საწყისი lead-ფორმაა.
-- canonical/hreflang tags, ძველი საიტის 301-mapping — ჯერ არ არის (sitemap/robots უკვე მზადაა).
-- Identity/Family (ეტაპი 2): onboarding, invitations, guardian links, permissions — არ დაწყებულა.
-- Academics/Portals (ეტაპი 2-3): კლასები, განრიგი, დასწრება, შეფასებები, დავალებები, პორტალის dashboards — არ დაწყებულა.
+- canonical/hreflang tags, ძველი საიტის 301-mapping — ჯერ არ არის (sitemap/robots უკვე მზადაა; `redirect-map.csv` მხოლოდ შემოთავაზებული რუკაა, გააქტიურებული არაა).
+- შეფასებები/დავალებები, წიგნადის სრული ცირკულაცია — არ დაწყებულა.
 - Finance (ეტაპი 4), Communications (ეტაპი 3), Platform onboarding (ეტაპი 5), Deployment/UAT (ეტაპი 6) — არ დაწყებულა.
 - `logo-concept.png`/`school-life.jpg` კვლავ კონცეფციური მასალაა — production-მდე სჭირდება ვექტორიზაცია/სკოლის დადასტურება.
 - Georgian date formatting (`toLocaleDateString('ka-GE')`) headless Chromium-ის ერთ ვარიანტში (`chrome-headless-shell`) ციფრულ ფორმატზე დაბრუნდა შეზღუდული ICU მონაცემების გამო (`9/9/2026` ნაცვლად ქართული თვის სახელისა); სრულ Chromium/რეალურ ბრაუზერებში `Intl`-ს ka-GE მხარდაჭერა სტანდარტულია — გადასამოწმებელია რეალურ მოწყობილობაზე.
+- `php artisan serve` (single-threaded PHP built-in server) production build-თან ერთად ვერ უმკლავდება ბრაუზერის ერთდროულ ბევრ asset-მოთხოვნას (ვლინდება `/login`-ზეც, ახალი კოდის გარეშეც) — ლოკალური გადამოწმებისას აუცილებლად გამოიყენეთ `npm run dev`/`composer run dev`, არა production build + `artisan serve` კომბინაცია.
 
-## შესრულებული ტესტები (ზუსტი, ბოლო გაშვება)
+## შესრულებული ტესტები (ზუსტი, ბოლო გაშვება — 2026-09-10, დოკუმენტების ცენტრისა და კონტენტ-იმპორტის დამატების შემდეგ)
 
 ```
-php artisan test                               → 64/64 passed, 263 assertions
-./vendor/bin/pint --parallel                    → 0 issues (auto-fixed 2 files this session)
+php artisan test                               → 98/98 passed, 362 assertions
+./vendor/bin/pint --test                        → passed
 ./vendor/bin/phpstan analyse --memory-limit=1G  → 0 errors (level 7)
 npm run types:check (tsc --noEmit)              → 0 errors
-npm run check                                   → 0 warnings/errors, 72 files (design/, docs/, CLAUDE.md excluded — vite.config.ts)
+npm run check                                   → 0 warnings/errors, 80 files (design/, docs/, CLAUDE.md, content-migration/ excluded — vite.config.ts)
 npm run build                                   → succeeds; BPG + Noto fonts hashed into public/build/assets
 Playwright (headless Chromium): home, about, learning, school-life, news index, library, contact
   → ყველა 200, 0 failed network request, BPG font computed-style დამტკიცებული

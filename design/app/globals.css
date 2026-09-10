@@ -72,3 +72,9 @@ h2{line-height:1.3}
 .portal-header .brand-lockup .brand strong,.mini-app .brand-lockup .brand strong{font-size:2.3rem}
 .portal-header .brand-lockup>img,.mini-app .brand-lockup>img{width:57px;height:57px}
 @media(max-width:700px){.brand-lockup{gap:4px}.brand-lockup>img{width:50px;height:50px}.brand-lockup .brand{min-width:63px}.brand-lockup .brand strong,.portal-header .brand-lockup .brand strong,.mini-app .brand-lockup .brand strong{font-size:2.2rem}.brand-lockup .brand small{font-size:8px;letter-spacing:.3em;margin-top:2px}.portal-header .brand-lockup>img,.mini-app .brand-lockup>img{width:50px;height:50px}}
+
+/* Outlined Georgian signature: independent of browser font loading. */
+.brand-lockup{gap:10px;flex-shrink:0}
+.brand-lockup>img.aisi-wordmark{width:130px;height:67px;object-fit:contain}
+.portal-header .brand-lockup>img.aisi-wordmark,.mini-app .brand-lockup>img.aisi-wordmark{width:112px;height:58px}
+@media(max-width:700px){.brand-lockup{gap:5px}.brand-lockup>img.aisi-wordmark,.portal-header .brand-lockup>img.aisi-wordmark,.mini-app .brand-lockup>img.aisi-wordmark{width:103px;height:53px}.identity-white .brand-lockup{transform:scale(1.45)}}

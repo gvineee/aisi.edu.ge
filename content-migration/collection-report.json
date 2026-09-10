@@ -1,0 +1,15 @@
+{
+  "retrieved_at": "2026-09-10T10:48:29Z",
+  "api_counts": {
+    "pages": 16,
+    "posts": 29,
+    "media": 141
+  },
+  "pages_archived": 476,
+  "pages_attempted": 513,
+  "assets_saved": 317,
+  "asset_bytes": 33725019,
+  "external_links": 7659,
+  "failures": 38,
+  "scope": "Public REST pages/posts/media + sitemap and reachable same-site no-query links. No authentication, external books or database export."
+}

@@ -3,11 +3,13 @@
 namespace Database\Seeders;
 
 use App\Domain\Content\Models\Page;
+use App\Domain\Documents\Models\DocumentWorkspace;
 use App\Domain\Tenancy\Models\BrandSetting;
 use App\Domain\Tenancy\Models\FeatureEntitlement;
 use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantDomain;
 use App\Domain\Tenancy\Models\TenantMembership;
+use App\Domain\Timetable\Models\Lesson;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -154,6 +156,47 @@ class TenantSeeder extends Seeder
             'school_class_id' => $schoolClass->id,
             'subject' => 'ქართული ენა',
         ]);
+
+        $director = User::factory()->create([
+            'name' => 'დემო დირექტორი',
+            'email' => 'director@aisi.test',
+        ]);
+
+        TenantMembership::create([
+            'tenant_id' => $aisi->id,
+            'user_id' => $director->id,
+            'role' => TenantMembership::ROLE_DIRECTOR,
+            'is_active' => true,
+        ]);
+
+        $aisi->documentWorkspaces()->create([
+            'title' => 'სასწავლო გეგმები',
+            'classification' => DocumentWorkspace::CLASSIFICATION_CURRICULUM,
+            'created_by' => $admin->id,
+        ]);
+
+        $subject = $aisi->subjects()->create(['name' => 'ქართული ენა']);
+        $room = $aisi->rooms()->create(['name' => 'ოთახი 204']);
+
+        // Published every weekday so the parent/teacher "today" dashboards
+        // have something real to show regardless of which day this seeder
+        // happens to run on.
+        foreach (range(1, 5) as $dayOfWeek) {
+            $lesson = new Lesson([
+                'academic_year_id' => $academicYear->id,
+                'school_class_id' => $schoolClass->id,
+                'subject_id' => $subject->id,
+                'teacher_id' => $teacher->id,
+                'room_id' => $room->id,
+                'day_of_week' => $dayOfWeek,
+                'starts_at' => '09:00:00',
+                'ends_at' => '09:45:00',
+                'status' => Lesson::STATUS_PUBLISHED,
+                'created_by' => $admin->id,
+            ]);
+            $lesson->tenant_id = $aisi->id;
+            $lesson->save();
+        }
 
         $aisi->pages()->create([
             'slug' => 'home',

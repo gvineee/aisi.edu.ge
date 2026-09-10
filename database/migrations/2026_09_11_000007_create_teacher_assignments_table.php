@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('subject')->nullable();
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'user_id', 'school_class_id', 'subject']);
+            $table->unique(['tenant_id', 'user_id', 'school_class_id', 'subject'], 'teacher_assignments_unique_assignment');
         });
     }
 

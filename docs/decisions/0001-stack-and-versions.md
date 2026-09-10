@@ -37,6 +37,22 @@
 
 - ყოველი მომდევნო `composer.json`/`package.json` ცვლილება ამ დოკუმენტთან შეუსაბამობისას მოითხოვს ან დოკუმენტის განახლებას, ან დასაბუთებას commit message-ში.
 
+## განახლება 2026-09-10 — production DB engine იცვლება PostgreSQL-დან MySQL-ზე
+
+**კონტექსტი:** მომხმარებელმა მოგვცა SSH წვდომა რეალურ CloudPanel-სერვერზე (`165.245.223.56`), სადაც საიტისთვის უკვე გამოყოფილია საკუთარი disk/DB. Read-only reconnaissance-მა დაადასტურა:
+
+- სერვერზე დაყენებულია მხოლოდ **MySQL-თავსებადი Percona Server 8.4.10-10** — PostgreSQL საერთოდ არ არსებობს.
+- საიტის SSH მომხმარებელს (`ais`) არ აქვს `sudo`/root წვდომა და `clpctl`-იც site-scoped-ია (მხოლოდ db import/export, permissions reset, varnish purge) — ანუ PostgreSQL-ის დაყენება ამ სერვერზე შესაძლებელი არ არის ჩვენი მხრიდან.
+- CloudPanel-მა ამ საიტისთვის უკვე შექმნა MySQL ბაზა (`ais`/`ais`), რომლის re-provisioning root-ის გარეშე შეუძლებელია.
+
+**გადაწყვეტილება:** production-ის DB engine ხდება **MySQL/Percona** (ის, რაც სერვერზე რეალურად არსებობს), PostgreSQL-ის მაგივრად, რომელიც `CLAUDE.md`-ში იყო თავდაპირველი დაშვება. ეს არის ცნობილი, დოკუმენტირებული გადახრა თავდაპირველი tech-decision-იდან — მიზეზი ინფრასტრუქტურული შეზღუდვაა (host-ს არ აქვს root/PostgreSQL), არა კოდის დიზაინის არჩევანი.
+
+- **Production**: `DB_CONNECTION=mysql`, MySQL/Percona 8.4.x.
+- **ლოკალური დეველოპმენტი/ტესტები**: ჯერჯერობით რჩება PostgreSQL 17 (ლოკალურად უკვე დაყენებული და მუშა) და/ან SQLite ტესტების scoped run-ებისთვის. ეს ნიშნავს, რომ ლოკალური და production DB engine დროებით განსხვავდება — მისაღები რისკია, რადგან კოდი იყენებს მხოლოდ Eloquent Schema Builder-ის სტანდარტულ, cross-database მეთოდებს (არცერთ migration-ში არ არის Postgres-სპეციფიკური raw SQL, `ilike`, array/enum ტიპები თუ Postgres-ონლი constraint-ები). `LibraryCatalogController`-ის ძიების query-ც უკვე დაწერილია `like`-ით (არა `ilike`) სპეციალურად ამ cross-compatibility-სთვის.
+- **გადამოწმება (ჩატარებულია, არა თეორიული)**: ლოკალურად დაყენდა MariaDB 12.3.3 (MySQL-თავსებადი, Scoop portable) და მასზე გაეშვა მთლიანი migration set (26 migration) + სრული ტესტ-suite (`phpunit.xml`-ის დროებითი `DB_CONNECTION=mysql` override-ით). შედეგი: **73/73 ტესტი გავლილია MySQL-ზეც**. ერთი რეალური შეუთავსებლობა აღმოჩნდა და გასწორდა — `teacher_assignments`-ის ოთხსვეტიანი unique constraint-ის auto-generated სახელი (`teacher_assignments_tenant_id_user_id_school_class_id_subject_unique`, 70 სიმბოლო) აღემატებოდა MySQL-ის 64-სიმბოლოიან identifier-ლიმიტს (PostgreSQL-ს ეს ლიმიტი არ აქვს ამ ფორმით — assign-ისას მოკლდება). მიგრაციაში დაემატა მოკლე, ხელით მითითებული სახელი (`teacher_assignments_unique_assignment`). დანარჩენი ყველა migration/query (`json()` სვეტები, `foreignId`+`constrained`, მრავალსვეტიანი unique-ები, `LibraryCatalogController`-ის `like`-ძებნა) იმუშავა უცვლელად.
+- MariaDB-ის ლოკალური ინსტანცია მხოლოდ ამ ერთჯერადი გადამოწმებისთვის იყო აწყობილი (Scoop-ის portable ბინარი, არა service) და შემოწმების დასრულების შემდეგ გაჩერდა — ის არ არის მუდმივი ლოკალური dev-გარემოს ნაწილი.
+- **სამომავლო**: როცა/თუ production infra შეიცვლება (მაგ. root წვდომა გაჩნდება ან სერვერი შეიცვლება), ეს გადაწყვეტილება შეიძლება გადაისინჯოს. მანამდე ყველა ახალი migration/query წერილობით უნდა შემოწმდეს MySQL-თან თავსებადობაზეც, არა მხოლოდ PostgreSQL-თან.
+
 ## განახლება — რეალურად დაყენებული ვერსიები (იმავე დღეს)
 
 - **`laravel/react-starter-kit`-ის Packagist tag (`v1.0.1`) კვლავ Laravel 12-ზეა** (`laravel/framework: ^12.0`); Laravel 13-ის მხარდაჭერა მხოლოდ `main` branch-ზეა. დაყენებულია `composer create-project laravel/react-starter-kit:dev-main` კონსტრეინტით, `--stability=dev`-ით.

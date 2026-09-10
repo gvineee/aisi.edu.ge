@@ -31,6 +31,8 @@ class TenantMembership extends Model
 
     public const ROLE_ADMIN = 'admin';
 
+    public const ROLE_DIRECTOR = 'director';
+
     protected function casts(): array
     {
         return [
@@ -52,5 +54,33 @@ class TenantMembership extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The one place role-gated controllers should ask "does this user hold
+     * this role, right now, in this tenant?" — never trust a client-sent
+     * role claim instead of this query.
+     */
+    public static function userHasActiveRole(int $tenantId, int $userId, string $role): bool
+    {
+        return static::query()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('role', $role)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     */
+    public static function userHasAnyActiveRole(int $tenantId, int $userId, array $roles): bool
+    {
+        return static::query()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->whereIn('role', $roles)
+            ->where('is_active', true)
+            ->exists();
     }
 }
