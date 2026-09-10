@@ -38,8 +38,8 @@
 
 | Prototype view | სამიზნე route | სტატუსი |
 |---|---|---|
-| Today (დღის ცენტრი) | `/portal/today` | `not_started` |
-| Inbox (შეტყობინებები) | `/portal/messages` | `not_started` |
+| Today (დღის ცენტრი) | `/portal/today` | `foundation` (დღეს `/dashboard`, ლეიბლი "დღეს", ცალკე DailyActionFeed აგრეგაცია ჯერ არ აშენებულა — იხ. ქვემოთ) |
+| Inbox (შეტყობინებები) | `/portal/messages` | `verified_local` — რეალური conversations/messages/deliveries, ურთიერთობაზე დაფუძნებული (guardian↔class-teacher, staff↔staff, office↔ნებისმიერი guardian) მიმღების არჩევანი, unread badge, read-receipt, master-detail UI. **production-ზე ჯერ არ არის დეპლოირებული** |
 | Portfolio | `/portal/students/{student}/portfolio` | `not_started` |
 | Progress/Gradebook/Report cards | `/portal/students/{student}/progress`, `/portal/gradebook`, `/portal/report-cards` | `not_started` |
 | Safety (pickup/consent) | `/portal/pickup`, `/portal/consents` | `not_started` |
@@ -56,6 +56,15 @@
 `https://aisi.edu.ge`-ზე რეალურად დაყენებული და Playwright-ით ცოცხალ დომენზე გადამოწმებული (არა მხოლოდ ლოკალურად): hero photo (`naturalWidth=1536`, არა broken image), floating card, values strip, ზუსტი history ტექსტი "იანა ტორჩინავა" (მთავარ და `/about` გვერდზეც), programs-ის ნომერი/ფერი, 0 failed network request. საჯარო route-ები (`/`, `/about`, `/news`, `/library`, `/contact`, `/login`) — ყველა 200. News სექცია production-ზე სწორად აჩვენებს პატიოსან ცარიელ მდგომარეობას ("სიახლეები მალე გამოქვეყნდება"), რადგან production-ის `ProductionSeeder` განზრახ არ ქმნის დემო/საჩვენებელ პოსტებს — ეს სწორი ქცევაა, არა ხარვეზი. ახალი migrations (3), `content:import --commit` (30 ახალი draft), `content:import-library --commit` (70 ბიბლიოთეკის ბმული) რეალურად გაშვებულია production MySQL-ზე.
 
 ზემოთ ცხრილების public-საიტის სექციები ახლა `verified_local` + `verified_production` ორივეა.
+
+## Messaging (`app/Domain/Communications`) — რას მოიცავს
+
+- ცხრილები: `conversations`, `conversation_participants`, `messages`, `message_deliveries`.
+- `ResolveMessageableUsers` — ერთადერთი ადგილი, სადაც წყდება "ვისთან შეუძლია ამ მომხმარებელს საუბრის დაწყება": მშობელი↔შვილის კლასის მასწავლებელ(ებ)ი + admin/director/academic_manager/accountant/editor ("office" როლები, კლასთან არშეზღუდული); მასწავლებელი↔საკუთარი კლასების მშობლები + ყველა თანამშრომელი; office როლი↔ნებისმიერი მშობელი/თანამშრომელი. მშობელს მშობელთან საუბარი არ შეუძლია.
+- `StartConversation`/`SendMessage`/`MarkConversationRead` — თითოეული transaction-ში, row lock-ით (`lockForUpdate`) ორმაგი submit-ის თავიდან ასაცილებლად; გამგზავნი ყოველთვის ცხადად მოწმდება როგორც აქტიური participant, არასდროს — მხოლოდ როლით.
+- 8 ტესტი (`tests/Feature/Communications/MessagingTest.php`): ნათესაობაზე დაფუძნებული წვდომის დადასტურება/უარყოფა (მათ შორის guardian→guardian აკრძალვა), staff↔staff, reply-ის მხოლოდ-სხვა-მონაწილისთვის delivery, non-participant-ის რეპლაის უარყოფა, read-მარკირება ნახვისას, tenant-იზოლაცია.
+- რეალურ ბრაუზერში დამოწმებული (Playwright, ლოკალურად): მშობელმა დაწერა მასწავლებელს → მასწავლებელმა დაინახა, უპასუხა → მშობელმა დაინახა პასუხი. 0 ქსელური შეცდომა.
+- **production-ზე ჯერ არ დეპლოირებულა** ამ commit-ის დროისთვის — შემდეგი ნაბიჯია.
 
 ## ცნობილი, განზრახ დარჩენილი გადახრები (docs/09 §7-ის მოთხოვნით ახსნილი)
 

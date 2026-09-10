@@ -7,6 +7,7 @@ use App\Http\Controllers\Portal\DocumentApprovalController;
 use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\LessonController;
+use App\Http\Controllers\Portal\MessageController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Public\AdmissionLeadController;
@@ -36,6 +37,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/active-role', [PortalRoleController::class, 'update'])->name('portal.active-role.update');
 
     Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
+
+    Route::get('portal/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::post('portal/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::get('portal/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
+    Route::post('portal/messages/{conversation}/reply', [MessageController::class, 'reply'])->name('messages.reply');
 
     Route::get('lessons/{lesson}/attendance', [AttendanceController::class, 'show'])->name('attendance.show');
     Route::post('lessons/{lesson}/attendance', [AttendanceController::class, 'store'])->name('attendance.store');

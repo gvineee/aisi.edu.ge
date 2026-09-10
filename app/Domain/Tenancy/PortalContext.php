@@ -123,6 +123,7 @@ class PortalContext
     {
         $items = [
             ['key' => 'dashboard', 'label' => 'დღეს', 'href' => route('dashboard'), 'icon' => 'home'],
+            ['key' => 'messages', 'label' => 'შეტყობინებები', 'href' => route('messages.index'), 'icon' => 'messages'],
         ];
 
         if (in_array($activeRole, self::DOCUMENT_ACCESS_ROLES, true)) {
