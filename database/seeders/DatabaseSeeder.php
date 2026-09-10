@@ -2,24 +2,20 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
+     *
+     * Local/dev only — see TenantSeeder's own docblock. Model events are
+     * deliberately NOT disabled here: BelongsToTenant relies on Eloquent's
+     * `creating` event to stamp tenant_id, and the tenant relation calls
+     * used below rely on the same event lifecycle.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $this->call(TenantSeeder::class);
     }
 }

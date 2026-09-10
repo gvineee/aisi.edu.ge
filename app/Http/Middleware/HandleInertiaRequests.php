@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Tenancy\CurrentTenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -35,9 +37,37 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $tenant = app(CurrentTenant::class)->get();
+
+        $appName = config('app.name');
+        $brandProp = null;
+
+        if ($tenant !== null) {
+            $brand = $tenant->brandSetting;
+            $displayName = $brand !== null ? $brand->display_name : $tenant->name;
+            $appName = $displayName;
+
+            // "brand" is the ONLY source pages should read school name/logo/
+            // colors/locale/contact from — never hardcode "aisi" in a
+            // component (see CLAUDE.md invariant #8).
+            $brandProp = [
+                'name' => $displayName,
+                'shortName' => $brand?->short_name,
+                'logoUrl' => $brand?->logo_path ? Storage::disk('public')->url($brand->logo_path) : null,
+                'colors' => $brand === null ? [] : $brand->colors,
+                'locale' => $tenant->locale,
+                'contact' => [
+                    'email' => $brand?->contact_email,
+                    'phone' => $brand?->contact_phone,
+                    'address' => $brand?->contact_address,
+                ],
+            ];
+        }
+
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => $appName,
+            'brand' => $brandProp,
             'auth' => [
                 'user' => $request->user(),
             ],

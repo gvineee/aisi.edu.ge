@@ -50,6 +50,10 @@ export default defineConfig({
             'resources/js/components/ui/*',
             'resources/js/routes/**',
             'resources/js/wayfinder/**',
+            // design/ is kept as a visual/interaction reference only (see
+            // docs/decisions/0002-design-source-of-truth.md) — it is not
+            // part of the maintained app and isn't held to its lint rules.
+            'design/**',
         ],
         options: {
             denyWarnings: true,
@@ -68,6 +72,9 @@ export default defineConfig({
             'composer.json',
             'resources/js/components/ui/*',
             'resources/views/mail/*',
+            'design/**',
+            'docs/**',
+            'CLAUDE.md',
         ],
         sortTailwindcss: {
             functions: ['clsx', 'cn', 'cva'],

@@ -7,10 +7,29 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Self-hosted Noto Sans Georgian (SIL OFL — see public/fonts/FONT-LICENSE.txt).
+ * Georgian UI is primary per docs/02 section 10, so it leads the font stack;
+ * Instrument Sans (loaded by the Vite `bunny()` plugin) covers Latin text.
+ */
+@font-face {
+    font-family: 'Noto Sans Georgian';
+    src: url('/fonts/noto-georgian-regular.ttf') format('truetype');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Noto Sans Georgian';
+    src: url('/fonts/noto-georgian-bold.ttf') format('truetype');
+    font-weight: 600 900;
+    font-display: swap;
+}
+
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Sans Georgian', 'Instrument Sans', ui-sans-serif, system-ui,
+        sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
     --radius-lg: var(--radius);

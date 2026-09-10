@@ -1,66 +1,99 @@
 # Implementation Status
 
-განახლებულია: 2026-09-10 (გვიან ღამით) · ფაზა: 1 დაწყებულია (foundation + skeleton)
+განახლებულია: 2026-09-10 (ღამის სესია) · ფაზა: 1 მიმდინარეობს (tenancy + საჯარო მთავარი გვერდის პირველი ვერტიკალური slice)
 
-## რა შემოწმდა / შესრულდა
+## რეალურად დამოწმებული, მუშა ფუნქციონალი
+
+ყველა ქვემოთ ჩამოთვლილი შემოწმებულია ავტომატური ტესტებით და/ან რეალურ ლოკალურ სერვერზე (`php artisan serve` + PostgreSQL + Redis), არა მხოლოდ დაწერილი კოდით.
 
 ### გარემო
+- PHP 8.4.24 (Herd), Composer 2.10.2, Node 24.20.0 — უცვლელი ფაზა 0-დან.
+- **PostgreSQL 17.11** — ოფიციალური Windows service (`postgresql-x64-17`), ავტომატურად იწყება. `aisi_local` ბაზა, superuser `postgres`/`postgres` (ლოკალური dev).
+- **Redis 8.10.1** — Scoop-ის portable ბინარი; **არ არის Windows service** (admin უფლება არ იყო ხელმისაწვდომი) — ყოველ სესიაზე ხელით/სკრიპტით გასაშვები: `powershell -File scripts/dev-services.ps1`.
+- Laravel skeleton `laravel/react-starter-kit:dev-main`-იდან: `laravel/framework v13.31.0`, `inertiajs/inertia-laravel v3.3.3`, `laravel/fortify v1.39.0`, `laravel/wayfinder v0.1.21`, React 19.2, TypeScript strict, Tailwind v4.
+- Georgian UI: `APP_LOCALE=ka`, self-hosted Noto Sans Georgian (`public/fonts/`, SIL OFL), `<html lang="ka">` დამოწმებულია რეალურ HTTP პასუხში.
 
-- PHP 8.4.24 (Herd), Composer 2.10.2, Node 24.20.0, npm 11.19.0, Git 2.55.0 — ყველა ხელმისაწვდომი.
-- **PostgreSQL 17.11** დაყენებულია როგორც ოფიციალური Windows service (`postgresql-x64-17`, EnterpriseDB installer). ავტომატურად იწყება Windows-ის ჩართვისას. `aisi_local` ბაზა შექმნილია; superuser `postgres` / პაროლი `postgres` (მხოლოდ ლოკალური dev, `.env`-შია).
-  - შენიშვნა ინსტალაციაზე: winget-ით გაშვებული installer თავიდან ჩამოიკიდა (non-admin სესიაში elevation-ს ელოდებოდა), მაგრამ საბოლოოდ თვითონ ავიდა ადმინის უფლებით და service-ად დარეგისტრირდა — გაუგებარია ზუსტად რატომ (შესაძლოა ანგარიშს აქვს silent-elevation policy). თუ სამომავლოდ საჭირო გახდება ხელახლა დაყენება, გაითვალისწინეთ, რომ ეს პროცესი შეიძლება არაპროგნოზირებადად დაიკიდოს non-interactive shell-ში.
-- **Redis 8.10.1** დაყენებულია Scoop-ის (`scoop install redis`) portable ბინარებით `C:\Users\Gvineee\scoop\apps\redis`. **არ არის Windows service** — ამ მანქანაზე ადმინის უფლება არ იყო ხელმისაწვდომი (`Memurai` MSI-ის ინსტალაცია ჩავარდა access-denied-ით სერვისის რეგისტრაციაზე). ყოველ სესიაზე ხელით გაშვება საჭიროა: `powershell -File scripts/dev-services.ps1` (ან პირდაპირ `redis-server.exe`). PHP-ს აქვს `redis` (phpredis) გაფართოება უკვე ჩართული.
-- Docker Desktop და WSL2 არ არის დაყენებული ამ მანქანაზე (არც სცადა — Scoop-ის portable მარშრუტმა იმუშავა უფრო სწრაფად non-admin სესიაში).
-- Scoop თავად დაყენდა non-admin, user-scope პაკეტის მენეჯერად (`~/scoop`), რადგან `winget`-ით Memurai-ს service-ის რეგისტრაცია ვერ მოხერხდა ადმინის უფლების გარეშე.
+### Tenancy foundation (`app/Domain/Tenancy`)
+- ცხრილები: `tenants`, `tenant_domains`, `tenant_memberships`, `brand_settings`, `feature_entitlements`.
+- `App\Domain\Tenancy\CurrentTenant` — request-scoped context, `App\Http\Middleware\ResolveTenant` — global middleware, სანდო request host-იდან (`tenant_domains.domain`) იჭერს tenant-ს; უცნობი host → 404 (არა default tenant-ზე fallback).
+- `App\Domain\Tenancy\Concerns\BelongsToTenant` trait — global scope + auto-stamp on create, დოკუმენტირებული როგორც **დამხმარე**, არა ერთადერთი დაცვა (CLAUDE.md-ის მოთხოვნისამებრ).
+- `HandleInertiaRequests` აზიარებს `brand` prop-ს (სახელი/ლოგო/ფერები/locale/კონტაქტი) ყოველ გვერდზე — **არსად არაა "აისი" ან ფერები hardcoded** React კომპონენტში.
+- **ტესტები** (`tests/Feature/Tenancy/TenantIsolationTest.php`, 4 ტესტი): უცნობი host → 404; თითო domain მხოლოდ საკუთარ tenant-ს ემსახურება; global scope მალავს სხვა tenant-ის ჩანაწერებს; **explicit tenant_id ფილტრიც** (defense-in-depth გზა) ბლოკავს cross-tenant წვდომას თუნდაც global scope-ის გარეშე.
 
-### Laravel skeleton
+### Content (CMS საწყისი) — `app/Domain/Content`
+- `pages` + `page_revisions` ცხრილები (draft/published სტატუსი, `published_at`, SEO title/description, ვერსიის ისტორიისთვის საფუძველი). **რედაქტორის UI (draft→preview→publish→revert) ჯერ არ არის აშენებული** — მხოლოდ schema/model საფუძველი.
+- `HomeController` რეალურად კითხულობს tenant-ის გამოქვეყნებულ "home" გვერდს DB-დან (არა hardcoded ტექსტი) და აძლევს Inertia-ს.
 
-- `composer create-project laravel/react-starter-kit:dev-main` — **მნიშვნელოვანი დაკვირვება**: `laravel/react-starter-kit`-ის Packagist-ზე tagged ვერსია (`v1.0.1`) კვლავ `laravel/framework: ^12.0`-ზეა დამოკიდებული; Laravel 13-ის მხარდაჭერა (`^13.17`, Fortify, Wayfinder, Inertia 3.x) მხოლოდ `main` branch-ზეა, ჯერ არ არის tagged release-ად. ამიტომ დაყენებულია `dev-main` კონსტრეინტით.
-- დაყენებული ვერსიები: `laravel/framework v13.31.0`, `inertiajs/inertia-laravel v3.3.3`, `laravel/fortify v1.39.0`, `laravel/wayfinder v0.1.21`, PHP-ის მოთხოვნა `^8.3` (ჩვენთან 8.4.24).
-- Frontend: React 19.2, Inertia React 3.0, TypeScript strict (`"strict": true`), Tailwind v4, Radix UI პრიმიტივები, `laravel-vite-plugin` v3, Vite 8.
-- Skeleton გადმოტანილია პროექტის root-ში (`robocopy /MOVE`); `docs/`, `design/`, `CLAUDE.md`, `.git` ხელუხლებელია.
-- `.env`/`.env.example` მორგებულია: `APP_NAME=Aisi`, `APP_LOCALE=ka`, `DB_CONNECTION=pgsql` → `aisi_local`, `SESSION/CACHE/QUEUE_CONNECTION=redis`.
-- **დამოწმებულია მუშაობს**: `php artisan --version` → `Laravel Framework 13.31.0`; `php artisan migrate:fresh` წარმატებით გაეშვა PostgreSQL-ზე (users/cache/jobs/passkeys/2FA მიგრაციები); `Cache::put/get` წარმატებით გაეშვა Redis-ზე; `npm run types:check` — 0 შეცდომა.
-- **ჯერ არ შემოწმებულა**: `npm run dev`/`vite build` რეალურ ბრაუზერში, `composer run dev` concurrently-სკრიპტი (server+queue+logs+vite ერთად), SSR build.
+### საჯარო მთავარი გვერდი (`resources/js/pages/public/home.tsx`)
+- აშენებულია `AisiConcept.tsx`-ის სტრუქტურის მიხედვით (`docs/04`-ის component-mapping ცხრილის დაცვით): hero, პროგრამების ბარათები, "სასკოლო ცხოვრება" სექცია, კონტაქტის CTA — ყველა მონაცემი DB-ის `page.blocks`-იდან.
+- `PublicLayout` (header/nav/footer) — ბრენდის ტოკენები CSS custom properties-ით (`--brand-primary` და ა.შ.), მობილური მენიუ, 44px+ touch targets.
+- **დამოწმებულია რეალურ სერვერზე**: `GET /` → 200, `<html lang="ka">`, Inertia-ს `data-page` payload შეიცავს რეალურ ბრენდისა და გვერდის მონაცემებს (არა demo/hardcoded).
 
-### დიზაინის წყარო — გასწორებული დასკვნა
+### მიღების ლიდის ფორმა (Admissions — ნაწილობრივი)
+- `admission_leads` ცხრილი + `AdmissionLead` მოდელი + `StoreAdmissionLeadRequest` (მხოლოდ სახელი/კონტაქტი/სასურველი კლასი/თანხმობა — **არანაირი ბავშვის პირადი ნომერი ან სამედიცინო ინფორმაცია**, spec-ის მოთხოვნისამებრ).
+- `VisitRequestDialog` (React, shadcn/ui + Inertia `<Form>` კომპონენტი) რეალურად აგზავნის `POST /admissions/leads`-ზე — **არა დემო local-state success**, კონცეფციისგან განსხვავებით.
+- Rate limiting (`throttle:5,1`), დუბლიკატის აღნიშვნა (იგივე კონტაქტი 24 საათში → `duplicate_of_lead_id`), flash toast წარმატებაზე.
+- **ტესტები** (`tests/Feature/Admissions/AdmissionLeadTest.php`, 5 ტესტი): მოქმედი ჩანაწერი, თანხმობის გარეშე უარყოფა, ბავშვის პირადი ველის არარსებობა, დუბლიკატის აღნიშვნა, rate limit 429.
+- **არ არის აშენებული**: სრული ვიზიტის slot/კალენდრის ჯავშანი ტევადობის კონტროლით (spec-ის „ვიზიტები: დროის სლოტები, ტევადობა..." ჯერ არ სრულდება — ეს ამჟამად მხოლოდ ინტერესის ლიდის ფორმაა).
 
-პირველი ინვენტარისას (`docs/decisions/0002`) `design/`-ში მხოლოდ ინგლისურენოვანი loading-skeleton იყო. მას შემდეგ handoff-ს დაემატა:
+### Seed მონაცემები
+- `TenantSeeder` (მხოლოდ ლოკალური/dev, არასოდეს production-ზე): tenant "აისი" (domains: `localhost`, `127.0.0.1`, `aisi.test`), brand_settings რეალური ბრენდის ტოკენებით, admin მომხმარებელი, გამოქვეყნებული Home გვერდი; მეორე, დამოუკიდებელი tenant izoliაციის ტესტისთვის.
 
-- `design/app/AisiConcept.tsx` — სრული, ქართულენოვანი, აისი-ბრენდირებული საჯარო საიტისა და პორტალის ინტერაქციული კონცეფცია (როლის გადამრთველით: მშობელი/მოსწავლე/მასწავლებელი/ადმინისტრაცია).
-- `design/app/globals.css` — რეალური ბრენდის token-ები (`docs/03`-თან შესაბამისი Midnight/Dawn), Noto Sans Georgian ფონტები, სრული responsive/accessibility grooming.
-- `design/public/logo-concept.png`, `school-life.jpg`, ფონტის ფაილები.
-- `brand-assets/logo-concept.png` (root-ში) — იგივე ლოგოს კონცეფცია (გახსნილი წიგნი + ამომავალი მზე), დამოუკიდებლად დამატებული.
-- `CLAUDE.md`-ში ახალი მითითება `docs/04-design-handoff.md`-ზე — **ეს ფაილი ჯერ არ არსებობს დისკზე**. ველოდებით; `docs/decisions/0002` განახლდა შესაბამისად და გავაგრძელებთ `AisiConcept.tsx` + `docs/03`-ის საფუძველზე.
+## ცნობილი ხარვეზები / ჯერ არ დამტკიცებული
 
-დეტალები: `docs/decisions/0002-design-source-of-truth.md` (განახლებული ვერსია).
+- **SSR არ არის ჩართული.** Inertia client-side-ზეა; ნედლ HTTP პასუხში `<title>`/`<meta description>` ჯერ default (`config('app.name')`) რჩება — JS-ის შესრულების შემდეგ (ბრაუზერში) სწორი title/description ჩნდება, მაგრამ CLAUDE.md-ის მოთხოვნა „სათაური/კონტენტი/metadata JS-ის გარეშეც" ჯერ **არ არის დაკმაყოფილებული**. საჭიროა `resources/js/ssr.tsx` + `php artisan inertia:start-ssr` supervisor-ის მოწყობა შემდეგ ეტაპზე.
+- დარჩენილი საჯარო გვერდები (docs/02, თავი 4): შესახებ, სწავლა (ცალკე URL თითო პროგრამას), მიღება (სრული, ვიზიტის slot-ებით), კონტაქტი, სიახლეები, კალენდარი, რესურსები — ჯერ არ არის აშენებული, მხოლოდ Home.
+- CMS რედაქტორის UI (draft/preview/publish/revert) — მხოლოდ schema, არა admin ეკრანი.
+- sitemap/robots/canonical/hreflang/301-mapping — ჯერ არ არის.
+- `npm run dev`-ის ცოცხალი (HMR) რეჟიმი არ შემოწმებულა ბრაუზერში ვიზუალურად — მხოლოდ production build + HTTP smoke test.
+- Portal (Phase 2 scope): dashboards, schedule, attendance, library, payments — არ დაწყებულა.
+- `logo-concept.png`/`school-life.jpg` კვლავ კონცეფციური მასალაა (იხ. `docs/04`, სექცია 4) — production-მდე სჭირდება ვექტორიზაცია და სკოლის დადასტურება.
 
-## შესრულებული (checklist)
+## შესრულებული ტესტები (ზუსტი შედეგი)
 
-- [x] ფაილების/runtime-ების ინვენტარი
-- [x] `docs/decisions/0001-stack-and-versions.md`, `0002-design-source-of-truth.md` (გასწორებული)
-- [x] `.env.example`, `.env` (ლოკალური, placeholder-ების გარეშე მხოლოდ .env.example-ში)
-- [x] git repository ინიციალიზებული, Phase 0 commit
-- [x] PostgreSQL 17 (Windows service) + Redis 8.10.1 (Scoop portable) ლოკალურად მუშაობს
-- [x] Laravel 13 + React starter kit (dev-main) დაყენებული და გადატანილი root-ში
-- [x] მიგრაციები გაეშვა PostgreSQL-ზე; cache გაეშვა Redis-ზე
-- [x] `scripts/dev-services.ps1` — Redis-ის ხელით გაშვების დამხმარე სკრიპტი
+```
+php artisan test          → 48/48 passed, 169 assertions
+./vendor/bin/pint         → fixed (0 remaining issues after fix)
+./vendor/bin/phpstan analyse --memory-limit=1G → 0 errors (level 7)
+npm run types:check       → 0 errors
+npm run check             → 0 warnings/errors (68 files; design/, docs/, CLAUDE.md excluded — see vite.config.ts)
+npm run build             → succeeds, manifest includes public/home
+```
 
-## შემდეგი ნაბიჯები
+## აწყობის/გაშვების ინსტრუქცია (ეს მანქანა)
 
-1. **Tenancy foundation**: `tenants`, `tenant_domains`, `tenant_memberships`, `brand_settings`, `feature_entitlements` მიგრაციები + მოდელები + domain-resolving middleware + policy scaffolding. მეორე tenant-ის seed იზოლაციის ტესტისთვის (`docs/02`, თავი 7.1 და კრიტიკული შემოწმება #1).
-2. საჯარო საიტის გვერდები (`AisiConcept.tsx`-ის სექციური სტრუქტურის მიხედვით, მაგრამ DB-ით backed კონტენტით): მთავარი, შესახებ, სწავლა, სასკოლო ცხოვრება, კონტაქტი.
-3. მიღება/ვიზიტის ჯავშნის რეალური backend (ტევადობის კონტროლი, queued შეტყობინება) — კონცეფციის დემო ფორმის ნაცვლად.
-4. `npm run dev` / `composer run dev` რეალურ ბრაუზერში გატესტვა მანამდე, სანამ "მუშაობს" ჩაითვლება დასრულებულად.
-5. `docs/04-design-handoff.md`-ის გამოჩენისას გადავამოწმოთ ხომ არ ცვლის ზემოთ მოცემულ გეგმას.
+```powershell
+# ერთხელ, სესიის დასაწყისში (Redis არ არის service):
+powershell -File scripts/dev-services.ps1
 
-## ცნობილი ხარვეზები / რისკები
+# დეველოპმენტი:
+composer run dev   # server + queue + logs + vite ერთად
+# ან ცალ-ცალკე:
+php artisan serve
+npm run dev
+```
 
-- **Redis არ არის Windows service** — მანქანის გადატვირთვის შემდეგ საჭიროა ხელით გაშვება (`scripts/dev-services.ps1`). Staging/production-ზე ეს არ იქნება პრობლემა (Linux-based hosting), მაგრამ ლოკალურ dev-ზე გასათვალისწინებელია.
-- **პროექტი დევს OneDrive-სინქრონიზებულ საქაღალდეში.** `vendor/`, `node_modules/` ახლა ათასობით ფაილს ამატებს ამ საქაღალდეს, რომელსაც OneDrive შეეცდება დასინქრონება — ეს ანელებს file I/O-ს (`php artisan` ბრძანებები 10-30 წამს იღებდა პირველ გაშვებაზე) და შეიძლება OneDrive-ის quota/სინქრონიზაციის საკითხები შექმნას. რეკომენდაცია: დაამატეთ ეს საქაღალდე OneDrive-ის "always keep on this device" გამონაკლისებში, ან გადაიტანეთ პროექტი non-synced მდებარეობაზე — ეს მომხმარებლის გადასაწყვეტია, არ შევცვალე ავტომატურად.
-- PostgreSQL-ის winget-installer-ის თავდაპირველი ჩამოკიდების მიზეზი ბოლომდე ახსნილი არ არის (იხ. ზემოთ).
-- ყველა დანარჩენი `docs/02`-ის მე-14 თავის დაუდასტურებელი საკითხი (რეალური საფასური, მოსწავლეთა რაოდენობა, EduPage წვდომა და ა.შ.) ჯერ კვლავ ღიაა.
+`.env`-ში: `DB_CONNECTION=pgsql`, `DB_DATABASE=aisi_local`, `DB_USERNAME=postgres`, `DB_PASSWORD=postgres`; `SESSION/CACHE/QUEUE_CONNECTION=redis`.
+
+`php artisan migrate:fresh --seed` აღადგენს ორივე ტესტ-tenant-ს (`aisi`, `second-school-demo`) `TenantSeeder`-იდან.
+
+## შემდეგი ნაბიჯები (პრიორიტეტით)
+
+1. Inertia SSR ჩართვა (SEO მოთხოვნის დასაკმაყოფილებლად).
+2. დარჩენილი საჯარო გვერდები + CMS admin editor (draft/preview/publish/revert UI).
+3. სრული ვიზიტის slot-ჯავშანი ტევადობის კონტროლით (ამჟამინდელი lead-ფორმის დამატებით).
+4. `docs/04-design-handoff.md`-ის დანარჩენი component-mapping ერთეულების გადატანა (PortalLayout, TimetableDay და ა.შ.) — ფაზა 2-ის დაწყებისას.
+5. sitemap/robots/canonical/301-mapping scaffolding.
+
+## შენიშვნა დიზაინის პროტოტიპის განახლებაზე
+
+სესიის განმავლობაში `design/`-ს დაემატა სათაურის შრიფტი **BPG Nino Mtavruli Bold** (`design/public/bpg-nino-mtavruli-bold.ttf`, წყარო fonts.ge). `docs/04-design-handoff.md`-ის განახლება თავადვე აღნიშნავს, რომ ამ 2008 წლის შრიფტის კომერციული SaaS-ში embedding-ის ლიცენზია **დაუდასტურებელია** და გადასამოწმებელია production-მდე. სანამ ეს არ დადასტურდება, რეალურ Laravel აპში (`resources/css/app.css`, `public/fonts/`) ეს შრიფტი **არ არის და არ უნდა დაემატოს** — ამჟამად მხოლოდ Noto Sans Georgian (SIL OFL, უკვე დამოწმებული ლიცენზია) გამოიყენება `home.tsx`/`public-layout.tsx`-ში.
+
+## ცნობილი გარემოს რისკები
+
+- პროექტი დევს OneDrive-სინქრონიზებულ საქაღალდეში — რეკომენდირებულია გამონაკლისში ჩამატება ან non-synced მდებარეობაზე გადატანა (მომხმარებლის გადასაწყვეტი, არ შევცვალე).
+- PostgreSQL-ის winget-installer-ის თავდაპირველი დაკიდების მიზეზი ბოლომდე ახსნილი არ არის, თუმცა საბოლოოდ წარმატებით დარეგისტრირდა Windows service-ად.
 
 ## საჭირო მონაცემები გასაგრძელებლად
 
-იხილეთ `docs/02-product-and-platform-spec.md`-ის მე-14 თავი — არაფერი შეცვლილა აქედან.
+უცვლელი — იხილეთ `docs/02-product-and-platform-spec.md`-ის მე-14 თავი.
