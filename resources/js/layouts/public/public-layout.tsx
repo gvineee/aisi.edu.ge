@@ -1,7 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren, useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { login } from '@/routes';
 import { Button } from '@/components/ui/button';
+import Logo from '@/components/public/logo';
 import VisitRequestDialog from '@/components/public/visit-request-dialog';
 import { VisitDialogContext } from '@/components/public/visit-dialog-context';
 import type { Brand } from '@/types';
@@ -28,10 +30,12 @@ export default function PublicLayout({ children }: PropsWithChildren) {
     } as CSSProperties;
 
     const nav = [
-        { href: '#about', label: 'სკოლის შესახებ' },
-        { href: '#learning', label: 'სწავლა' },
-        { href: '#life', label: 'სასკოლო ცხოვრება' },
-        { href: '#contact', label: 'კონტაქტი' },
+        { href: '/about', label: 'სკოლის შესახებ' },
+        { href: '/learning', label: 'სწავლა' },
+        { href: '/school-life', label: 'სასკოლო ცხოვრება' },
+        { href: '/news', label: 'ამბები' },
+        { href: '/library', label: 'ბიბლიოთეკა' },
+        { href: '/contact', label: 'კონტაქტი' },
     ];
 
     const openVisitDialog = () => setVisitOpen(true);
@@ -44,34 +48,25 @@ export default function PublicLayout({ children }: PropsWithChildren) {
             >
                 <header className="relative border-b border-slate-200 bg-white">
                     <div className="mx-auto flex h-[76px] max-w-6xl items-center justify-between gap-6 px-6">
-                        <Link
-                            href="/"
-                            className="flex items-center gap-3"
-                            aria-label={`${name} — მთავარი`}
-                        >
-                            {brand?.logoUrl && (
-                                <img
-                                    src={brand.logoUrl}
-                                    alt=""
-                                    width={48}
-                                    height={48}
-                                    className="h-12 w-12 object-contain"
-                                />
-                            )}
-                            <span className="text-2xl font-extrabold tracking-tight">
-                                {name}
-                            </span>
+                        <Link href="/" aria-label={`${name} — მთავარი`}>
+                            <Logo brand={brand} />
                         </Link>
 
                         <nav className="hidden gap-8 text-sm font-medium md:flex">
                             {nav.map((item) => (
-                                <a key={item.href} href={item.href}>
+                                <Link key={item.href} href={item.href}>
                                     {item.label}
-                                </a>
+                                </Link>
                             ))}
                         </nav>
 
                         <div className="flex items-center gap-3">
+                            <Link
+                                href={login()}
+                                className="hidden text-sm font-semibold sm:inline-flex sm:items-center sm:gap-1"
+                            >
+                                ჩემი {name}
+                            </Link>
                             <Button
                                 className="hidden bg-[var(--brand-accent)] text-[var(--brand-primary)] hover:brightness-95 sm:inline-flex"
                                 onClick={() => setVisitOpen(true)}
@@ -93,15 +88,21 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                     {menuOpen && (
                         <nav className="flex flex-col gap-1 border-t border-slate-200 bg-white p-4 text-sm font-medium md:hidden">
                             {nav.map((item) => (
-                                <a
+                                <Link
                                     key={item.href}
                                     href={item.href}
                                     className="min-h-11 py-2"
                                     onClick={() => setMenuOpen(false)}
                                 >
                                     {item.label}
-                                </a>
+                                </Link>
                             ))}
+                            <Link
+                                href={login()}
+                                className="min-h-11 py-2 font-semibold"
+                            >
+                                ჩემი {name}
+                            </Link>
                             <Button
                                 className="mt-2 bg-[var(--brand-accent)] text-[var(--brand-primary)]"
                                 onClick={() => {
@@ -119,9 +120,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
 
                 <footer className="border-t border-slate-200 bg-[var(--brand-secondary)]">
                     <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-[var(--brand-muted)] sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-base font-semibold text-[var(--brand-primary)]">
-                            {name}
-                        </span>
+                        <Logo brand={brand} size="compact" />
                         <div className="flex flex-wrap gap-x-6 gap-y-2">
                             {brand?.contact.phone && (
                                 <a

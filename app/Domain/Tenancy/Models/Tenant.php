@@ -4,6 +4,8 @@ namespace App\Domain\Tenancy\Models;
 
 use App\Domain\Admissions\Models\AdmissionLead;
 use App\Domain\Content\Models\Page;
+use App\Domain\Content\Models\Post;
+use App\Domain\Library\Models\LibraryResource;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -73,6 +75,22 @@ class Tenant extends Model
     public function admissionLeads(): HasMany
     {
         return $this->hasMany(AdmissionLead::class);
+    }
+
+    /**
+     * @return HasMany<Post, $this>
+     */
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    /**
+     * @return HasMany<LibraryResource, $this>
+     */
+    public function libraryResources(): HasMany
+    {
+        return $this->hasMany(LibraryResource::class);
     }
 
     public function hasFeature(string $feature): bool

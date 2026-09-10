@@ -100,12 +100,12 @@ class TenantSeeder extends Seeder
             'slug' => 'home',
             'locale' => 'ka',
             'title' => 'მთავარი',
-            'excerpt' => 'დიდი აღმოჩენები იწყება აისით.',
+            'excerpt' => 'აქ იწყება შენი ხვალ.',
             'blocks' => [
                 [
                     'type' => 'hero',
-                    'eyebrow' => 'შენი მომავალი აქ იწყება',
-                    'heading' => 'დიდი აღმოჩენები იწყება აისით.',
+                    'eyebrow' => 'სკოლა ახალი შესაძლებლობებისთვის',
+                    'heading' => 'აქ იწყება შენი ხვალ.',
                     'body' => 'სივრცე, სადაც ცნობისმოყვარეობა ცოდნად იქცევა, ბავშვები კი საკუთარი გზის პოვნას სწავლობენ.',
                 ],
                 [
@@ -129,11 +129,154 @@ class TenantSeeder extends Seeder
             ],
             'status' => Page::STATUS_PUBLISHED,
             'published_at' => now(),
-            'seo_title' => 'სკოლა აისი — ყოველი დღე ახალი შესაძლებლობაა',
+            'seo_title' => 'სკოლა აისი — აქ იწყება შენი ხვალ',
             'seo_description' => 'გაიცანით სკოლა აისი, აღმოაჩინეთ სასწავლო გარემო და დაგეგმეთ თქვენი პირველი ვიზიტი.',
             'created_by' => $admin->id,
             'updated_by' => $admin->id,
         ]);
+
+        $aisi->pages()->create([
+            'slug' => 'about',
+            'locale' => 'ka',
+            'title' => 'სკოლის შესახებ',
+            'excerpt' => 'აისის მისია, ისტორია და გარემო.',
+            'blocks' => [
+                [
+                    'type' => 'hero',
+                    'eyebrow' => 'გაიცანი აისი',
+                    'heading' => 'სკოლა იწყება ბავშვის ინტერესით.',
+                    'body' => 'კარგი განათლება კითხვების დასმის გამბედაობას გვაძლევს. ახალი აისის ხედვა აერთიანებს სწავლას, აღმოჩენასა და თანამშრომლობას.',
+                ],
+                [
+                    'type' => 'text',
+                    'heading' => 'მისია და ისტორია',
+                    // Sourced from docs/01 audit (school history page); dated
+                    // 2000-founding claim not independently re-verified here.
+                    'body' => 'სკოლა აისი დაარსდა თბილისში, დიდ დიღომში. სკოლასა და ოჯახს შორის კავშირი ბავშვის ყოველდღიურობის ბუნებრივი ნაწილია. ეს ტექსტი დასაზუსტებელია სკოლის დამტკიცებული მასალით.',
+                ],
+            ],
+            'status' => Page::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'seo_title' => 'სკოლის შესახებ — აისი',
+            'seo_description' => 'აისის მისია, ისტორია და სასწავლო გარემო.',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $aisi->pages()->create([
+            'slug' => 'learning',
+            'locale' => 'ka',
+            'title' => 'სწავლა',
+            'excerpt' => 'საფეხურები და სასწავლო მიდგომა.',
+            'blocks' => [
+                [
+                    'type' => 'hero',
+                    'eyebrow' => 'სწავლა და განვითარება',
+                    'heading' => 'ყოველ ეტაპს — თავისი აღმოჩენა.',
+                    'body' => 'დაწყებითი, საბაზო და საშუალო საფეხურები — თითოეული მორგებული ასაკობრივ საჭიროებებზე.',
+                ],
+                [
+                    'type' => 'programs',
+                    'heading' => 'სასწავლო საფეხურები',
+                    'items' => [
+                        ['title' => 'პირველი ნაბიჯები', 'grade' => 'დაწყებითი საფეხური', 'body' => 'კითხვის სიხარული, პირველი აღმოჩენები და სწავლის სიყვარული.'],
+                        ['title' => 'ინტერესების აღმოჩენა', 'grade' => 'საბაზო საფეხური', 'body' => 'კითხვებიდან იდეებამდე — მეტი დამოუკიდებლობა და თანამშრომლობა.'],
+                        ['title' => 'საკუთარი გზა', 'grade' => 'საშუალო საფეხური', 'body' => 'გაცნობიერებული არჩევანი და მომავლისთვის მზადება.'],
+                    ],
+                ],
+            ],
+            'status' => Page::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'seo_title' => 'სწავლა და საფეხურები — აისი',
+            'seo_description' => 'აისის სასწავლო საფეხურები და მიდგომა.',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $aisi->pages()->create([
+            'slug' => 'school-life',
+            'locale' => 'ka',
+            'title' => 'სასკოლო ცხოვრება',
+            'excerpt' => 'დღეები, რომლებიც გვზრდის.',
+            'blocks' => [
+                [
+                    'type' => 'hero',
+                    'eyebrow' => 'სასკოლო ცხოვრება',
+                    'heading' => 'დღეები, რომლებიც გვზრდის.',
+                    'body' => 'პროექტები, კლუბები და ერთად შექმნილი ამბები.',
+                ],
+            ],
+            'status' => Page::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'seo_title' => 'სასკოლო ცხოვრება — აისი',
+            'seo_description' => 'აისის სასკოლო ცხოვრება, კლუბები და ღონისძიებები.',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $aisi->pages()->create([
+            'slug' => 'contact',
+            'locale' => 'ka',
+            'title' => 'კონტაქტი',
+            'excerpt' => 'დაგვიკავშირდით.',
+            'blocks' => [
+                [
+                    'type' => 'contact_cta',
+                    'heading' => 'გავიცნოთ ერთმანეთი.',
+                    'body' => 'აირჩიეთ დრო სკოლასთან სასაუბროდ, ან დაგვიკავშირდით პირდაპირ.',
+                ],
+            ],
+            'status' => Page::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'seo_title' => 'კონტაქტი — აისი',
+            'seo_description' => 'დაუკავშირდით სკოლა აისის გუნდს.',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        foreach ([
+            [
+                'slug' => 'aghmochenebis-dge',
+                'title' => 'ერთი კითხვა, ბევრი აღმოჩენა',
+                'excerpt' => 'პროექტების, ექსპერიმენტებისა და ახალი იდეების ამბები.',
+                'body' => 'ეს არის კონტენტის კონცეფცია — რეალური სასკოლო ამბავი გამოქვეყნდება რედაქტორის მიერ დამტკიცების შემდეგ.',
+            ],
+            [
+                'slug' => 'ertad-shekmnili-ambebi',
+                'title' => 'ერთად მეტს ვქმნით',
+                'excerpt' => 'მოსწავლეების ინიციატივები და სკოლის ყოველდღიურობა.',
+                'body' => 'ეს არის კონტენტის კონცეფცია — რეალური სასკოლო ამბავი გამოქვეყნდება რედაქტორის მიერ დამტკიცების შემდეგ.',
+            ],
+        ] as $i => $post) {
+            $aisi->posts()->create([
+                'slug' => $post['slug'],
+                'locale' => 'ka',
+                'title' => $post['title'],
+                'excerpt' => $post['excerpt'],
+                'body' => $post['body'],
+                'status' => Page::STATUS_PUBLISHED,
+                'published_at' => now()->subDays($i + 1),
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ]);
+        }
+
+        foreach ([
+            ['title' => 'ქართული ენა და ლიტერატურა', 'author' => 'სასწავლო კომპლექტი', 'grade' => 'VI კლასი', 'subject' => 'ქართული ენა'],
+            ['title' => 'მათემატიკა', 'author' => 'სასწავლო კომპლექტი', 'grade' => 'VI კლასი', 'subject' => 'მათემატიკა'],
+            ['title' => 'ინგლისური ენა', 'author' => 'სასწავლო კომპლექტი', 'grade' => 'VI კლასი', 'subject' => 'ინგლისური ენა'],
+        ] as $resource) {
+            $aisi->libraryResources()->create([
+                'title' => $resource['title'],
+                'author' => $resource['author'],
+                'grade' => $resource['grade'],
+                'subject' => $resource['subject'],
+                'is_required' => true,
+                'access_scope' => 'catalog_only',
+                'external_url' => null,
+                'file_path' => null,
+            ]);
+        }
 
         // --- Second, unrelated tenant: exists ONLY to prove isolation ---
         $second = Tenant::create([

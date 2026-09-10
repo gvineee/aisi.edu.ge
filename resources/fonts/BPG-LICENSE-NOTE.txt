@@ -1,0 +1,17 @@
+BPG Nino Mtavruli Bold — licensing status (unresolved)
+
+Source: https://fonts.ge/ka/font/145/BPG-Nino-Mtavruli-Bold (free download ZIP).
+
+Font name-table license record:
+  "BPG-InfoTech free gift by Bessarion Gugushvili by name of Nino Gugushvili-Mikaberidze"
+  Copyright (c) BPG InfoTech, 2008. All rights reserved.
+
+This does NOT confirm redistribution/embedding rights for a commercial
+SaaS product. A "free download" from a font-sharing site is not the same
+as a license permitting bundling this file into a paid, multi-tenant web
+application served to end users. This must be verified — and, if
+necessary, a proper commercial license obtained or an alternative
+typeface chosen — before any production launch. See docs/03 and
+docs/04 for the same caveat on the design-prototype side.
+
+The file itself has not been modified.

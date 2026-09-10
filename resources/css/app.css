@@ -26,11 +26,34 @@
     font-display: swap;
 }
 
+/*
+ * Heading wordmark/typography font — BPG Nino Mtavruli Bold.
+ * Commercial embedding license is UNCONFIRMED (see
+ * resources/fonts/BPG-LICENSE-NOTE.txt and docs/04 section on this font).
+ *
+ * CRITICAL: this file maps regular Mkhedruli (lowercase-shaped) Georgian
+ * codepoints to Mtavruli-look glyphs. NEVER apply `text-transform:
+ * uppercase`, `.toUpperCase()`, or `.toLocaleUpperCase('ka')` to Georgian
+ * text styled with this font — that rewrites the text into the real
+ * U+1C90 Mtavruli Unicode block, which this font does NOT cover, causing
+ * a silent fallback to a different typeface. Keep the text as ordinary
+ * Georgian letters; the font supplies the capital-style look on its own.
+ */
+@font-face {
+    font-family: 'BPG Nino Mtavruli';
+    src: url('../fonts/bpg-nino-mtavruli-bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
     --font-sans:
         'Noto Sans Georgian', 'Instrument Sans', ui-sans-serif, system-ui,
         sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+    --font-heading: 'BPG Nino Mtavruli', 'Noto Sans Georgian', sans-serif;
+    --font-body: 'Noto Sans Georgian', 'Instrument Sans', sans-serif;
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -158,5 +181,17 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+
+    /* See the BPG @font-face comment above: no text-transform here, ever. */
+    h1,
+    h2,
+    h3,
+    h4,
+    [data-slot='dialog-title'] {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        text-transform: none;
+        letter-spacing: 0.01em;
     }
 }

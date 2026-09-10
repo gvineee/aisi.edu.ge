@@ -62,3 +62,13 @@ h2{line-height:1.3}
  h2{line-height:1.35}
  .dashboard-heading h1{line-height:1.4}
 }
+
+/* AISI identity: Mtavruli wordmark with a quiet school descriptor. */
+.brand-lockup{gap:7px;align-items:center}
+.brand-lockup .brand{gap:0;align-items:flex-start;min-width:78px}
+.brand-lockup .brand strong{font-family:'BPG Nino Mtavruli','Noto Sans Georgian',sans-serif;font-size:2.75rem;font-weight:700;letter-spacing:.07em;line-height:1.03;padding-top:7px;text-transform:none;color:var(--navy)}
+.brand-lockup .brand small{font-family:'Noto Sans Georgian',sans-serif;font-size:10px;font-weight:600;letter-spacing:.33em;line-height:1.5;margin-top:4px;color:#657a8a}
+.brand-lockup>img{width:68px;height:68px}
+.portal-header .brand-lockup .brand strong,.mini-app .brand-lockup .brand strong{font-size:2.3rem}
+.portal-header .brand-lockup>img,.mini-app .brand-lockup>img{width:57px;height:57px}
+@media(max-width:700px){.brand-lockup{gap:4px}.brand-lockup>img{width:50px;height:50px}.brand-lockup .brand{min-width:63px}.brand-lockup .brand strong,.portal-header .brand-lockup .brand strong,.mini-app .brand-lockup .brand strong{font-size:2.2rem}.brand-lockup .brand small{font-size:8px;letter-spacing:.3em;margin-top:2px}.portal-header .brand-lockup>img,.mini-app .brand-lockup>img{width:50px;height:50px}}
