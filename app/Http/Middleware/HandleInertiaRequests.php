@@ -54,8 +54,8 @@ class HandleInertiaRequests extends Middleware
             $brandProp = [
                 'name' => $displayName,
                 'shortName' => $brand?->short_name,
-                'logoUrl' => $brand?->logo_path ? Storage::disk('public')->url($brand->logo_path) : null,
-                'heroImageUrl' => $brand?->hero_image_path ? Storage::disk('public')->url($brand->hero_image_path) : null,
+                'logoUrl' => $brand?->logo_path ? $this->versionedAssetUrl($brand->logo_path) : null,
+                'heroImageUrl' => $brand?->hero_image_path ? $this->versionedAssetUrl($brand->hero_image_path) : null,
                 'colors' => $brand === null ? [] : $brand->colors,
                 'locale' => $tenant->locale,
                 'contact' => [
@@ -83,5 +83,19 @@ class HandleInertiaRequests extends Middleware
             'portal' => $portalProp,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * Appends the file's last-modified timestamp as a query string so that
+     * replacing a brand asset (logo/hero) at the same storage path busts
+     * both browser caches and any origin-side static-asset cache the
+     * hosting environment applies in front of the public disk.
+     */
+    private function versionedAssetUrl(string $path): string
+    {
+        $url = Storage::disk('public')->url($path);
+        $version = Storage::disk('public')->exists($path) ? Storage::disk('public')->lastModified($path) : null;
+
+        return $version !== null ? "{$url}?v={$version}" : $url;
     }
 }
