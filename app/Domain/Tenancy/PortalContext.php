@@ -70,6 +70,19 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "წევრები" nav destination — kept in sync with
+     * MemberController::ADMIN_ROLES, duplicated as plain strings for the
+     * same reason as DOCUMENT_ACCESS_ROLES above (nav visibility is a UI
+     * concern; MemberController re-checks this itself on every action).
+     *
+     * @var array<int, string>
+     */
+    private const MEMBER_ACCESS_ROLES = [
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * @return array<int, string> active role strings, in ROLE_PRIORITY order
      */
     public function activeRoles(int $tenantId, int $userId): array
@@ -128,6 +141,10 @@ class PortalContext
 
         if (in_array($activeRole, self::DOCUMENT_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'documents', 'label' => 'დოკუმენტები', 'href' => route('documents.index'), 'icon' => 'documents'];
+        }
+
+        if (in_array($activeRole, self::MEMBER_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'members', 'label' => 'წევრები', 'href' => route('members.index'), 'icon' => 'members'];
         }
 
         return $items;

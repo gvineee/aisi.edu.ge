@@ -58,6 +58,14 @@ class Tenant extends Model
     }
 
     /**
+     * @return HasMany<TenantInvitation, $this>
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(TenantInvitation::class);
+    }
+
+    /**
      * @return HasOne<BrandSetting, $this>
      */
     public function brandSetting(): HasOne
