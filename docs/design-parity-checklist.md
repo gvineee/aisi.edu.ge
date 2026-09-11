@@ -80,7 +80,7 @@
 - 5 ტესტი (`tests/Feature/Portfolio/PortfolioWorkflowTest.php`): სრული draft→submit→publish გზა, submit-ს სჭირდება მინიმუმ 1 ფაილი, არასწორი მასწავლებელი ვერ წყვეტს, დაბრუნება მოითხოვს feedback-ს და ხელახლა რედაქტირებადს ხდის, tenant-იზოლაცია.
 - **რეალურ ბრაუზერში დამოწმებული** (Playwright, ლოკალურად): მოსწავლემ დაასრულა submit → მშობელმა 403 მიიღო publish-მდე → მასწავლებელმა review-queue-ში ნახა → გამოაქვეყნა feedback-ით → მშობელმა 200 მიიღო და დაინახა ტექსტი და feedback.
 - **ცნობილი გარემოს შეზღუდვა (არა კოდის ბაგი)**: `php artisan serve`-ის ჩაშენებული dev-server ამ Windows მანქანაზე ვერ ამუშავებს რეალურ multipart ფაილის ატვირთვას (PHP შეცდომა `UPLOAD_ERR_NO_TMP_DIR` — `upload_tmp_dir`-ის expicit override-იც ვერ შველის). ეს ბლოკავს მხოლოდ ბრაუზერიდან ცოცხალი ფაილის ატვირთვის ბოლომდე-ტესტს ამ კონკრეტულ dev-გარემოში — production-ზე (nginx+php-fpm CloudPanel-ზე) ეს შეზღუდვა არ ვრცელდება. აპლიკაციის ფაილის ატვირთვის ლოგიკა (`AddPortfolioAsset`/`PortfolioFileStorage`) სრულად დაფარულია ავტომატური ტესტებით (`UploadedFile::fake()`), ხოლო დანარჩენი მთელი workflow (submit/decide/ხილვადობა) რეალურ ბრაუზერში დამოწმდა ხელით ჩასმული ასეტით.
-- **production-ზე ჯერ არ დეპლოირებულა**.
+- **Production**: 3 migration-ი გაშვებულია production MySQL-ზე; საჯარო route-ები და admin dashboard რეალურ production ანგარიშზე Playwright-ით გადამოწმებულია დეპლოის შემდეგ — 0 შეცდომა.
 
 ## ცნობილი, განზრახ დარჩენილი გადახრები (docs/09 §7-ის მოთხოვნით ახსნილი)
 
