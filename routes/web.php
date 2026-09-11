@@ -9,6 +9,7 @@ use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
 use App\Http\Controllers\Portal\DocumentApprovalController;
 use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentVersionController;
+use App\Http\Controllers\Portal\EnrollmentVerificationController;
 use App\Http\Controllers\Portal\LessonController;
 use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
@@ -46,6 +47,12 @@ Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+    // --- Self-service enrollment identity verification (student/guardian
+    // claims a roster identity; admin/director approves via the members
+    // screen's decideEnrollment action below). ---
+    Route::get('portal/verify-enrollment', [EnrollmentVerificationController::class, 'show'])->name('enrollment-verification.show');
+    Route::post('portal/verify-enrollment', [EnrollmentVerificationController::class, 'store'])->name('enrollment-verification.store');
     Route::post('portal/active-role', [PortalRoleController::class, 'update'])->name('portal.active-role.update');
 
     Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
@@ -115,6 +122,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/members/invite', [MemberController::class, 'store'])->name('members.invite');
     Route::post('portal/members/{membership}/revoke', [MemberController::class, 'revoke'])->name('members.revoke');
     Route::delete('portal/members/invitations/{invitation}', [MemberController::class, 'cancelInvitation'])->name('members.invitations.cancel');
+    Route::post('portal/members/enrollment-requests/{enrollmentRequest}/decide', [MemberController::class, 'decideEnrollment'])->name('members.enrollment-requests.decide');
 });
 
 require __DIR__.'/settings.php';

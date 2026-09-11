@@ -15,6 +15,8 @@ type Block =
           type: 'hero';
           eyebrow?: string;
           heading: string;
+          headingLine2?: string;
+          headingEmphasis?: string;
           body?: string;
           note?: string;
           imageAlt?: string;
@@ -129,6 +131,24 @@ export default function CmsPage({ page, latestPosts = [], preview = false }: Pro
                                         )}
                                         <h1 className="text-4xl leading-tight tracking-tight text-balance sm:text-5xl">
                                             {block.heading}
+                                            {block.headingLine2 && (
+                                                <>
+                                                    <br />
+                                                    {block.headingLine2}{' '}
+                                                    {block.headingEmphasis && (
+                                                        <em
+                                                            className="not-italic"
+                                                            style={{
+                                                                color: accent,
+                                                            }}
+                                                        >
+                                                            {
+                                                                block.headingEmphasis
+                                                            }
+                                                        </em>
+                                                    )}
+                                                </>
+                                            )}
                                         </h1>
                                         {block.body && (
                                             <p className="mt-6 max-w-md text-lg text-slate-600">
@@ -192,6 +212,15 @@ export default function CmsPage({ page, latestPosts = [], preview = false }: Pro
                                                 />
                                             </div>
                                         )}
+                                        <div
+                                            className="absolute top-7 -right-2 hidden text-[10px] tracking-[0.3em] text-slate-400 sm:block"
+                                            style={{
+                                                writingMode: 'vertical-rl',
+                                            }}
+                                            aria-hidden="true"
+                                        >
+                                            LEARN. DISCOVER. BECOME.
+                                        </div>
                                         <div className="absolute -bottom-6 left-4 flex max-w-56 items-center gap-3 rounded-xl bg-white p-4 shadow-lg ring-1 ring-slate-200">
                                             <span
                                                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"

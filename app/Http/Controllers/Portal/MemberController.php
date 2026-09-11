@@ -7,11 +7,14 @@ use App\Domain\Academics\Models\SchoolClass;
 use App\Domain\Academics\Models\Student;
 use App\Domain\Academics\Models\TeacherAssignment;
 use App\Domain\Tenancy\Actions\CreateTenantInvitation;
+use App\Domain\Tenancy\Actions\DecideEnrollmentVerificationRequest as DecideEnrollmentVerificationRequestAction;
 use App\Domain\Tenancy\Actions\RevokeTenantMembership;
 use App\Domain\Tenancy\CurrentTenant;
+use App\Domain\Tenancy\Models\EnrollmentVerificationRequest;
 use App\Domain\Tenancy\Models\TenantInvitation;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Portal\DecideEnrollmentVerificationRequest;
 use App\Http\Requests\Portal\StoreTenantInvitationRequest;
 use App\Mail\TenantInvitationMail;
 use Illuminate\Http\RedirectResponse;
@@ -69,6 +72,13 @@ class MemberController extends Controller
             ->latest('created_at')
             ->get();
 
+        $enrollmentRequests = EnrollmentVerificationRequest::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', EnrollmentVerificationRequest::STATUS_PENDING)
+            ->with(['user', 'matchedStudent.schoolClass'])
+            ->latest('created_at')
+            ->get();
+
         return Inertia::render('portal/members/index', [
             'members' => $memberships->map(fn (TenantMembership $membership) => [
                 'id' => $membership->id,
@@ -98,6 +108,20 @@ class MemberController extends Controller
                 ->map(fn (Student $student) => ['id' => $student->id, 'name' => $student->fullName()])->values(),
             'schoolClasses' => SchoolClass::query()->where('tenant_id', $tenant->id)
                 ->orderBy('name')->get(['id', 'name']),
+            'enrollmentRequests' => $enrollmentRequests->map(fn (EnrollmentVerificationRequest $request) => [
+                'id' => $request->id,
+                'userName' => $request->user->name,
+                'userEmail' => $request->user->email,
+                'requestedRole' => $request->requested_role,
+                'submittedName' => $request->submittedFullName(),
+                'submittedNationalId' => $request->submitted_national_id,
+                'matchedStudent' => $request->matchedStudent === null ? null : [
+                    'id' => $request->matchedStudent->id,
+                    'name' => $request->matchedStudent->fullName(),
+                    'className' => $request->matchedStudent->schoolClass?->name,
+                ],
+                'createdAt' => $request->created_at?->toIso8601String(),
+            ])->values(),
         ]);
     }
 
@@ -177,6 +201,32 @@ class MemberController extends Controller
         $invitation->delete();
 
         return redirect()->route('members.index');
+    }
+
+    public function decideEnrollment(
+        DecideEnrollmentVerificationRequest $request,
+        CurrentTenant $currentTenant,
+        EnrollmentVerificationRequest $enrollmentRequest,
+        DecideEnrollmentVerificationRequestAction $action,
+    ): RedirectResponse {
+        $tenant = $currentTenant->get();
+        $actor = $request->user();
+
+        abort_unless(TenantMembership::userHasAnyActiveRole($tenant->id, $actor->id, self::ADMIN_ROLES), 403);
+        abort_unless($enrollmentRequest->tenant_id === $tenant->id, 404);
+
+        if ($request->string('decision')->toString() === 'approve') {
+            $action->approve($enrollmentRequest, $actor, $request->integer('student_id') ?: null);
+            $message = 'მოთხოვნა დამტკიცდა.';
+        } else {
+            $action->reject($enrollmentRequest, $actor, $request->string('reason')->toString());
+            $message = 'მოთხოვნა უარყოფილია.';
+        }
+
+        return redirect()->route('members.index')->with('toast', [
+            'type' => 'success',
+            'message' => $message,
+        ]);
     }
 
     private static function roleLabel(string $role): string

@@ -28,11 +28,23 @@ type PendingInvitation = {
 
 type Option = { id: number; name: string };
 
+type EnrollmentRequest = {
+    id: number;
+    userName: string;
+    userEmail: string;
+    requestedRole: string;
+    submittedName: string;
+    submittedNationalId: string | null;
+    matchedStudent: { id: number; name: string; className: string | null } | null;
+    createdAt: string | null;
+};
+
 type Props = {
     members: Member[];
     pendingInvitations: PendingInvitation[];
     students: Option[];
     schoolClasses: Option[];
+    enrollmentRequests: EnrollmentRequest[];
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -53,10 +65,14 @@ export default function MembersIndex({
     pendingInvitations,
     students,
     schoolClasses,
+    enrollmentRequests,
 }: Props) {
     const [showInvite, setShowInvite] = useState(false);
     const [role, setRole] = useState('teacher');
     const [sending, setSending] = useState(false);
+    const [manualStudent, setManualStudent] = useState<Record<number, string>>(
+        {},
+    );
 
     const submitInvite = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -92,6 +108,39 @@ export default function MembersIndex({
         router.delete(MemberController.cancelInvitation.url(invitationId), {
             preserveScroll: true,
         });
+    };
+
+    const approveEnrollment = (requestId: number, matched: boolean) => {
+        const studentId = manualStudent[requestId];
+
+        if (!matched && !studentId) {
+            toast.error('აირჩიეთ მოსწავლე ხელით.');
+
+            return;
+        }
+
+        router.post(
+            MemberController.decideEnrollment.url(requestId),
+            { decision: 'approve', student_id: studentId ?? '' },
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('მოთხოვნა დამტკიცდა.'),
+                onError: () => toast.error('ვერ დამტკიცდა — გადაამოწმეთ.'),
+            },
+        );
+    };
+
+    const rejectEnrollment = (requestId: number) => {
+        const reason = prompt('უარყოფის მიზეზი (არასავალდებულო):') ?? '';
+
+        router.post(
+            MemberController.decideEnrollment.url(requestId),
+            { decision: 'reject', reason },
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('მოთხოვნა უარყოფილია.'),
+            },
+        );
     };
 
     return (
@@ -272,6 +321,99 @@ export default function MembersIndex({
                                 >
                                     გაუქმება
                                 </Button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {enrollmentRequests.length > 0 && (
+                <div className="mb-8">
+                    <h2 className="mb-3 text-lg">
+                        ვინაობის დასადასტურებელი მოთხოვნები
+                    </h2>
+                    <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+                        {enrollmentRequests.map((request) => (
+                            <li
+                                key={request.id}
+                                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                                <div>
+                                    <p className="font-medium">
+                                        {request.userName}{' '}
+                                        <span className="text-sm text-slate-500">
+                                            {request.userEmail}
+                                        </span>
+                                    </p>
+                                    <p className="text-sm text-slate-500">
+                                        {ROLE_LABELS[request.requestedRole] ??
+                                            request.requestedRole}{' '}
+                                        · აცხადებს: {request.submittedName}
+                                        {request.submittedNationalId &&
+                                            ` (${request.submittedNationalId})`}
+                                    </p>
+                                    {request.matchedStudent ? (
+                                        <p className="mt-1 text-sm text-emerald-700">
+                                            დამთხვევა: {request.matchedStudent.name}
+                                            {request.matchedStudent.className &&
+                                                ` · ${request.matchedStudent.className}`}
+                                        </p>
+                                    ) : (
+                                        <p className="mt-1 text-sm text-amber-700">
+                                            ავტომატური დამთხვევა ვერ მოხერხდა
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {!request.matchedStudent && (
+                                        <select
+                                            className="h-9 rounded-md border border-slate-300 px-2 text-sm"
+                                            value={
+                                                manualStudent[request.id] ?? ''
+                                            }
+                                            onChange={(event) =>
+                                                setManualStudent((prev) => ({
+                                                    ...prev,
+                                                    [request.id]:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        >
+                                            <option value="">
+                                                აირჩიეთ მოსწავლე
+                                            </option>
+                                            {students.map((student) => (
+                                                <option
+                                                    key={student.id}
+                                                    value={student.id}
+                                                >
+                                                    {student.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    <Button
+                                        size="sm"
+                                        onClick={() =>
+                                            approveEnrollment(
+                                                request.id,
+                                                request.matchedStudent !==
+                                                    null,
+                                            )
+                                        }
+                                    >
+                                        დამტკიცება
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            rejectEnrollment(request.id)
+                                        }
+                                    >
+                                        უარყოფა
+                                    </Button>
+                                </div>
                             </li>
                         ))}
                     </ul>

@@ -21,9 +21,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $user_id
  * @property string $first_name
  * @property string $last_name
+ * @property string|null $national_id
  * @property bool $is_active
  */
-#[Fillable(['school_class_id', 'user_id', 'first_name', 'last_name', 'is_active'])]
+#[Fillable(['school_class_id', 'user_id', 'first_name', 'last_name', 'national_id', 'is_active'])]
 class Student extends Model
 {
     use BelongsToTenant;

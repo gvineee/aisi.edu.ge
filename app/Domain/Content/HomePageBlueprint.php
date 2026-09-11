@@ -30,7 +30,12 @@ class HomePageBlueprint
             [
                 'type' => 'hero',
                 'eyebrow' => 'სკოლა ახალი შესაძლებლობებისთვის',
-                'heading' => 'აქ იწყება შენი ხვალ.',
+                // Split into two lines with the last word emphasized in the
+                // brand accent color, matching design/app/AisiConcept.tsx's
+                // `აქ იწყება<br/>შენი <em>ხვალ.</em>` exactly.
+                'heading' => 'აქ იწყება',
+                'headingLine2' => 'შენი',
+                'headingEmphasis' => 'ხვალ.',
                 'body' => 'სივრცე, სადაც ცნობისმოყვარეობა ცოდნად იქცევა, ბავშვები კი საკუთარი გზის პოვნას სწავლობენ.',
                 'note' => 'ცოდნა. მეგობრობა. ახალი შესაძლებლობები. ერთად, ყოველი ახალი დღიდან.',
                 // design/public/school-life.jpg per docs/09-design-source-map.md:

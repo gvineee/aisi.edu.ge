@@ -47,3 +47,6 @@ yarn-error.log
 
 # Local git worktrees created for parallel agent work.
 /.claude/worktrees/
+
+# Redis RDB snapshot from a local redis-server run.
+/dump.rdb

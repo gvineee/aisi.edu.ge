@@ -67,6 +67,14 @@ class Tenant extends Model
     }
 
     /**
+     * @return HasMany<EnrollmentVerificationRequest, $this>
+     */
+    public function enrollmentVerificationRequests(): HasMany
+    {
+        return $this->hasMany(EnrollmentVerificationRequest::class);
+    }
+
+    /**
      * @return HasOne<BrandSetting, $this>
      */
     public function brandSetting(): HasOne
