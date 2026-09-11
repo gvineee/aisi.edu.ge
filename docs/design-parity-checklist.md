@@ -28,7 +28,7 @@
 | Teacher dashboard | `/dashboard` | `pages/portal/teacher-dashboard.tsx` | `DashboardController@renderTeacher` | teacher | — | 360/1440 დამოწმებული (mobile overlap ბაგი ნაპოვნი+გასწორებული) | `verified_local` |
 | Student dashboard | `/dashboard` | `pages/portal/student-dashboard.tsx` | `DashboardController@renderStudent` | student | "still not linked" honest state | 360/1440 დამოწმებული | `verified_local` |
 | Director dashboard | `/dashboard` | `pages/portal/director-dashboard.tsx` | `DashboardController@renderDirector`, `ListPendingApprovalRequests` | director | — | 360/1440 დამოწმებული | `verified_local` |
-| Admin dashboard | `/dashboard` | `pages/portal/admin-dashboard.tsx` | `DashboardController@renderAdmin` | admin | "მალე" placeholder members/CMS/brand-ისთვის (რეალურად არ არსებობს) | 360/1440 დამოწმებული | `verified_local` |
+| Admin dashboard | `/dashboard` | `pages/portal/admin-dashboard.tsx` | `DashboardController@renderAdmin` | admin | CMS-ისა და წევრების ბმულები ახლა რეალურია; brand-პარამეტრები კვლავ "მალე" | 360/1440 დამოწმებული | `verified_local` |
 | Attendance register | `/lessons/{lesson}/attendance` | `pages/portal/attendance-register.tsx` | `AttendanceController` | teacher | — | ადრინდელი ეტაპის ნაწილი | `verified_local` |
 | Documents (index/show/my-work/director-worklist) | `/documents*` | `pages/portal/documents/*` | `Document*Controller`, Documents domain | owner/director | quarantine/expired-URL/self-approval-აკრძალვა ტესტირებული | ადრინდელი ეტაპის ნაწილი | `verified_local` |
 
@@ -81,6 +81,16 @@
 - **რეალურ ბრაუზერში დამოწმებული** (Playwright, ლოკალურად): მოსწავლემ დაასრულა submit → მშობელმა 403 მიიღო publish-მდე → მასწავლებელმა review-queue-ში ნახა → გამოაქვეყნა feedback-ით → მშობელმა 200 მიიღო და დაინახა ტექსტი და feedback.
 - **ცნობილი გარემოს შეზღუდვა (არა კოდის ბაგი)**: `php artisan serve`-ის ჩაშენებული dev-server ამ Windows მანქანაზე ვერ ამუშავებს რეალურ multipart ფაილის ატვირთვას (PHP შეცდომა `UPLOAD_ERR_NO_TMP_DIR` — `upload_tmp_dir`-ის expicit override-იც ვერ შველის). ეს ბლოკავს მხოლოდ ბრაუზერიდან ცოცხალი ფაილის ატვირთვის ბოლომდე-ტესტს ამ კონკრეტულ dev-გარემოში — production-ზე (nginx+php-fpm CloudPanel-ზე) ეს შეზღუდვა არ ვრცელდება. აპლიკაციის ფაილის ატვირთვის ლოგიკა (`AddPortfolioAsset`/`PortfolioFileStorage`) სრულად დაფარულია ავტომატური ტესტებით (`UploadedFile::fake()`), ხოლო დანარჩენი მთელი workflow (submit/decide/ხილვადობა) რეალურ ბრაუზერში დამოწმდა ხელით ჩასმული ასეტით.
 - **Production**: 3 migration-ი გაშვებულია production MySQL-ზე; საჯარო route-ები და admin dashboard რეალურ production ანგარიშზე Playwright-ით გადამოწმებულია დეპლოის შემდეგ — 0 შეცდომა.
+
+## CMS admin UI, წევრების მართვა, `content:sync-media` — რას მოიცავს
+
+მომხმარებლის უშუალო შენიშვნიდან ("ადმინისტრატორის მხარეს არაფერი არ გაქვს გაკეთებული", "ფოტოები/კონტენტი სრულად არ არის გადატანილი") წარმოშობილი 3 პარალელური ნამუშევარი, თითოეული ცალკე Git worktree-ში აშენებული, merge-მდე ცალ-ცალკე და merge-ის შემდეგ ერთად გადამოწმებული (ტესტები/Pint/PHPStan/`types:check`/`build`).
+
+- **CMS** (`app/Http/Controllers/Portal/Cms{Page,Post,Media}Controller`, `app/Domain/Content/Actions/{SavePage,SavePost,ChangePageStatus,ChangePostStatus,RestorePageRevision,RestorePostRevision,StoreMedia}`): draft→preview→publish→revert სრული ციკლი `Page`/`Post`-ისთვის, `page_revisions`/`post_revisions` ყოველ შენახვაზე, `Media` ბიბლიოთეკა (იგივე MIME-sniffing/ზომის-ზღვრის პატერნი, რაც Documents/Portfolio domain-ს აქვს). წვდომა: editor/academic_manager/director/admin ავტორობს, მხოლოდ academic_manager/director/admin publish-ავს. Preview ზუსტად იმავე public Inertia კომპონენტს იყენებს, რასაც რეალური ვიზიტორი ხედავს. 14 ტესტი. **რეალურად ნაპოვნი და გასწორებული ბაგი**: `SavePageRequest` რეალურ HTTP-ზე მდუმარედ ყრიდა ბლოკის ყველა ველს გარდა `type`-ისა.
+- **წევრების მართვა** (`app/Domain/Tenancy/Actions/{CreateTenantInvitation,AcceptTenantInvitation,RevokeTenantMembership}`, `MemberController`, `Public\InvitationController`): admin/director ხედავს ყველა წევრს, იწვევს ახალს (email+როლი+კლასი/მოსწავლე), აუქმებს წევრობას. `AcceptTenantInvitation` row-locked, **არასდროს** არ არეზეტავს არსებული ანგარიშის პაროლს, ქმნის `GuardianLink`/`TeacherAssignment`-ს ერთსავე ტრანზაქციაში. 10 ტესტი, მათ შორის რეალური Playwright-გავლილი golden path (მოწვევა→accept→login→real dashboard).
+- **`content:sync-media`** (`app/Domain/Content/Actions/SyncContentMedia`): აკოპირებს რეალურ, checksum-გადამოწმებულ მედია-ფაილებს `storage/app/public`-ში უკვე იმპორტირებული პოსტებისთვის (`cover_image_path`); idempotent, ხელით დაყენებულ მნიშვნელობას არასდროს არ თელაცვლის. ასევე root-cause-ით ახსნილია 176-vs-141 media count discrepancy (WordPress REST API-ს ცნობილი quirk). 9 ტესტი.
+- **Production**: ამ 3-ვე ნამუშევრისთვის production deploy ჯერ არ შესრულებულა (იხ. ქვემოთ, გეგმაშია ამ დოკუმენტის განახლების უშუალოდ შემდეგ).
+- ცალკე, ამავე merge-ის ფარგლებში, გასწორდა/დასრულდა ადრე uncommitted დარჩენილი login-გვერდის ქართულ ენაზე თარგმნა და ბრენდირებული auth layout — ვიზუალურად `verified_local`, production deploy-ის მოლოდინში.
 
 ## ცნობილი, განზრახ დარჩენილი გადახრები (docs/09 §7-ის მოთხოვნით ახსნილი)
 
