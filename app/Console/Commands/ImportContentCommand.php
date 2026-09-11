@@ -110,7 +110,7 @@ class ImportContentCommand extends Command
         $withMedia = array_filter($report, fn (array $row) => isset($row['media_hint']));
         if ($withMedia !== []) {
             $this->newLine();
-            $this->info('Featured-image hints (reported only — nothing copied, no cover_image_path written; every asset is still rights_status=school_confirmation_required):');
+            $this->info('Featured-image hints (reported only — nothing copied here; run content:sync-media afterwards to actually copy bytes and write cover_image_path):');
             foreach ($withMedia as $row) {
                 $hint = $row['media_hint'];
                 $status = $hint['resolved']
