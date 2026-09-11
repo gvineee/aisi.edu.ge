@@ -5,6 +5,7 @@ namespace App\Domain\Content\Actions;
 use App\Domain\Content\Models\ContentImportRecord;
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
+use App\Domain\Content\Support\LegacyMediaManifest;
 use App\Domain\Tenancy\Models\Tenant;
 use Illuminate\Support\Str;
 
@@ -72,11 +73,12 @@ class ImportContentRecords
         'legacy-ca0b723d7c8b',
     ];
 
-    /** @var array<int, string>|null */
-    private ?array $mediaIdToUrlCache = null;
+    private readonly LegacyMediaManifest $mediaManifest;
 
-    /** @var array<string, array<string, mixed>>|null */
-    private ?array $assetManifestCache = null;
+    public function __construct(?LegacyMediaManifest $mediaManifest = null)
+    {
+        $this->mediaManifest = $mediaManifest ?? new LegacyMediaManifest;
+    }
 
     /**
      * @param  array<int, array<string, mixed>>  $records  Decoded cms-import.json "records" array.
@@ -222,13 +224,13 @@ class ImportContentRecords
             return null;
         }
 
-        $mediaUrl = $this->mediaIdToUrl()[$mediaId] ?? null;
+        $mediaUrl = $this->mediaManifest->mediaIdToUrl()[$mediaId] ?? null;
 
         if ($mediaUrl === null) {
             return ['featured_media_id' => $mediaId, 'resolved' => false, 'reason' => 'id not found in raw media API dump'];
         }
 
-        $asset = $this->assetManifestByUrl()[$mediaUrl] ?? null;
+        $asset = $this->mediaManifest->assetManifestByUrl()[$mediaUrl] ?? null;
 
         if ($asset === null) {
             return ['featured_media_id' => $mediaId, 'source_url' => $mediaUrl, 'resolved' => false, 'reason' => 'not present in asset-manifest.json'];
@@ -241,58 +243,6 @@ class ImportContentRecords
             'rights_status' => $asset['rights_status'] ?? null,
             'resolved' => true,
         ];
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function mediaIdToUrl(): array
-    {
-        if ($this->mediaIdToUrlCache !== null) {
-            return $this->mediaIdToUrlCache;
-        }
-
-        $map = [];
-
-        foreach (glob(base_path('content-migration/raw/api/media-*.json')) ?: [] as $file) {
-            $decoded = json_decode((string) file_get_contents($file), true);
-
-            if (! is_array($decoded)) {
-                continue;
-            }
-
-            foreach ($decoded as $entry) {
-                if (is_array($entry) && isset($entry['id'], $entry['source_url']) && is_string($entry['source_url'])) {
-                    $map[(int) $entry['id']] = $entry['source_url'];
-                }
-            }
-        }
-
-        return $this->mediaIdToUrlCache = $map;
-    }
-
-    /**
-     * @return array<string, array<string, mixed>>
-     */
-    private function assetManifestByUrl(): array
-    {
-        if ($this->assetManifestCache !== null) {
-            return $this->assetManifestCache;
-        }
-
-        $path = base_path('content-migration/asset-manifest.json');
-        $decoded = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
-        $map = [];
-
-        if (is_array($decoded)) {
-            foreach ($decoded as $entry) {
-                if (is_array($entry) && isset($entry['source_url']) && is_string($entry['source_url'])) {
-                    $map[$entry['source_url']] = $entry;
-                }
-            }
-        }
-
-        return $this->assetManifestCache = $map;
     }
 
     /**

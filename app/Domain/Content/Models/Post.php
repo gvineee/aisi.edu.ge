@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $title
  * @property string|null $excerpt
  * @property string $body
+ * @property string|null $cover_image_path
  * @property string $status
  * @property Carbon|null $published_at
  */
