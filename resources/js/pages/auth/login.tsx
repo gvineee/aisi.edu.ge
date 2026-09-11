@@ -20,9 +20,13 @@ type Props = {
 export default function Login({ status, canResetPassword }: Props) {
     return (
         <>
-            <Head title="Log in" />
+            <Head title="ჩემი აისი — შესვლა" />
 
-            <PasskeyVerify />
+            <PasskeyVerify
+                label="Passkey-ით შესვლა"
+                loadingLabel="მიმდინარეობს შემოწმება..."
+                separator="ან გამოიყენეთ ელფოსტა"
+            />
 
             <Form
                 {...store.form()}
@@ -33,7 +37,7 @@ export default function Login({ status, canResetPassword }: Props) {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">ელფოსტა</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -42,21 +46,22 @@ export default function Login({ status, canResetPassword }: Props) {
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="email"
-                                    placeholder="email@example.com"
+                                    placeholder="name@example.com"
+                                    className="h-12 border-slate-300 bg-white px-4 focus-visible:border-[#f5683c] focus-visible:ring-[#f5683c]/20"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
+                                    <Label htmlFor="password">პაროლი</Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
                                             className="ml-auto text-sm"
                                             tabIndex={5}
                                         >
-                                            Forgot your password?
+                                            დაგავიწყდათ პაროლი?
                                         </TextLink>
                                     )}
                                 </div>
@@ -66,7 +71,8 @@ export default function Login({ status, canResetPassword }: Props) {
                                     required
                                     tabIndex={2}
                                     autoComplete="current-password"
-                                    placeholder="Password"
+                                    placeholder="შეიყვანეთ პაროლი"
+                                    className="h-12 border-slate-300 bg-white px-4 focus-visible:border-[#f5683c] focus-visible:ring-[#f5683c]/20"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -77,25 +83,25 @@ export default function Login({ status, canResetPassword }: Props) {
                                     name="remember"
                                     tabIndex={3}
                                 />
-                                <Label htmlFor="remember">Remember me</Label>
+                                <Label htmlFor="remember">დამახსოვრება</Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                className="mt-3 h-12 w-full bg-[#f5683c] font-bold text-white hover:bg-[#db542e]"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
                             >
                                 {processing && <Spinner />}
-                                Log in
+                                შესვლა
                             </Button>
                         </div>
 
                         <div className="text-muted-foreground text-center text-sm">
-                            Don't have an account?{' '}
+                            არ გაქვთ ანგარიში?{' '}
                             <TextLink href={register()} tabIndex={5}>
-                                Sign up
+                                რეგისტრაცია
                             </TextLink>
                         </div>
                     </>
@@ -112,6 +118,7 @@ export default function Login({ status, canResetPassword }: Props) {
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
+    title: 'კეთილი იყოს თქვენი დაბრუნება',
+    description:
+        'შედით მშობლის, მოსწავლის, მასწავლებლის ან თანამშრომლის ანგარიშზე.',
 };

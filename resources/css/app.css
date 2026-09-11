@@ -195,3 +195,46 @@
         letter-spacing: 0.01em;
     }
 }
+
+@layer components {
+    /*
+     * Apply the chosen heading face directly to every public navigation
+     * link. Keeping this on the link avoids an inherited font being replaced
+     * by a component or utility rule later in the cascade.
+     */
+    .public-navigation-link {
+        color: var(--brand-accent, #f5683c);
+        font-family: var(--font-heading);
+        font-size: 1rem;
+        font-weight: 700;
+        font-style: normal;
+        font-synthesis: none;
+        font-feature-settings: normal;
+        letter-spacing: 0.01em;
+        line-height: 1.35;
+        text-transform: none;
+        transition:
+            color 150ms ease,
+            text-decoration-color 150ms ease;
+    }
+
+    .public-navigation-link:hover,
+    .public-navigation-link:focus-visible {
+        color: color-mix(in srgb, var(--brand-accent, #f5683c) 82%, #132b45);
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 0.35rem;
+    }
+
+    .public-navigation-link-mobile {
+        display: flex;
+        align-items: center;
+        font-size: 1.125rem;
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+        .public-navigation-link {
+            font-size: 0.9375rem;
+        }
+    }
+}

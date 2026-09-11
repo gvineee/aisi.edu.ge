@@ -52,15 +52,13 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             <Logo brand={brand} />
                         </Link>
 
-                        <nav
-                            className="hidden gap-8 font-bold md:flex md:text-[15px] lg:text-base"
-                            style={{
-                                fontFamily: 'var(--font-heading)',
-                                color: 'var(--brand-accent)',
-                            }}
-                        >
+                        <nav className="hidden gap-8 md:flex">
                             {nav.map((item) => (
-                                <Link key={item.href} href={item.href}>
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="public-navigation-link"
+                                >
                                     {item.label}
                                 </Link>
                             ))}
@@ -92,18 +90,12 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                     </div>
 
                     {menuOpen && (
-                        <nav
-                            className="flex flex-col gap-1 border-t border-slate-200 bg-white p-4 text-lg font-bold md:hidden"
-                            style={{
-                                fontFamily: 'var(--font-heading)',
-                                color: 'var(--brand-accent)',
-                            }}
-                        >
+                        <nav className="flex flex-col gap-1 border-t border-slate-200 bg-white p-4 md:hidden">
                             {nav.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="min-h-11 py-2"
+                                    className="public-navigation-link public-navigation-link-mobile min-h-11 py-2"
                                     onClick={() => setMenuOpen(false)}
                                 >
                                     {item.label}

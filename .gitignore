@@ -44,3 +44,6 @@ yarn-error.log
 /content-migration/raw
 /content-migration/assets
 /content-migration/rendered-pages.json
+
+# Local git worktrees created for parallel agent work.
+/.claude/worktrees/
