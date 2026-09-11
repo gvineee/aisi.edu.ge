@@ -70,6 +70,21 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "CMS" nav destination — kept in sync with
+     * CmsPageController::ACCESS_ROLES for the same reason as
+     * DOCUMENT_ACCESS_ROLES above (nav visibility isn't the authorization
+     * check; each CMS controller re-runs it).
+     *
+     * @var array<int, string>
+     */
+    private const CMS_ACCESS_ROLES = [
+        TenantMembership::ROLE_EDITOR,
+        TenantMembership::ROLE_ACADEMIC_MANAGER,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * @return array<int, string> active role strings, in ROLE_PRIORITY order
      */
     public function activeRoles(int $tenantId, int $userId): array
@@ -128,6 +143,10 @@ class PortalContext
 
         if (in_array($activeRole, self::DOCUMENT_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'documents', 'label' => 'დოკუმენტები', 'href' => route('documents.index'), 'icon' => 'documents'];
+        }
+
+        if (in_array($activeRole, self::CMS_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'cms', 'label' => 'CMS', 'href' => route('cms.pages.index'), 'icon' => 'cms'];
         }
 
         return $items;

@@ -73,6 +73,13 @@ type Props = {
         seoDescription: string | null;
     };
     latestPosts?: LatestPost[];
+    /**
+     * Set only by CmsPageController::preview — lets an editor see a
+     * draft/unpublished page through the exact same rendering path the
+     * public site uses, instead of a second implementation that could
+     * drift from it. Never set for a real public visitor.
+     */
+    preview?: boolean;
 };
 
 /**
@@ -80,7 +87,7 @@ type Props = {
  * One rendering path for every page keeps the block set (and this
  * component) the single thing to maintain, instead of one file per page.
  */
-export default function CmsPage({ page, latestPosts = [] }: Props) {
+export default function CmsPage({ page, latestPosts = [], preview = false }: Props) {
     const { brand } = usePage<{ brand: Brand | null }>().props;
     const accent = brand?.colors.accent ?? '#F5683C';
     const primary = brand?.colors.primary ?? '#132B45';
@@ -88,11 +95,22 @@ export default function CmsPage({ page, latestPosts = [] }: Props) {
 
     return (
         <PublicLayout>
-            <Head title={page.seoTitle ?? page.title}>
+            <Head title={preview ? `[წინასწარი ნახვა] ${page.seoTitle ?? page.title}` : (page.seoTitle ?? page.title)}>
                 {page.seoDescription && (
                     <meta name="description" content={page.seoDescription} />
                 )}
+                {preview && <meta name="robots" content="noindex" />}
             </Head>
+
+            {preview && (
+                <div
+                    role="status"
+                    className="sticky top-0 z-50 bg-amber-400 px-4 py-2 text-center text-sm font-semibold text-amber-950"
+                >
+                    წინასწარი ნახვა — ეს გვერდი ჯერ არ არის საჯაროდ
+                    გამოქვეყნებული.
+                </div>
+            )}
 
             {page.blocks.map((block, index) => {
                 switch (block.type) {

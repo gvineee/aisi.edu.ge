@@ -9,6 +9,7 @@ use App\Domain\Academics\Models\Student;
 use App\Domain\Academics\Models\TeacherAssignment;
 use App\Domain\Admissions\Models\AdmissionLead;
 use App\Domain\Content\Models\ContentImportRecord;
+use App\Domain\Content\Models\Media;
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
 use App\Domain\Documents\Models\DocumentWorkspace;
@@ -199,6 +200,14 @@ class Tenant extends Model
     public function contentImportRecords(): HasMany
     {
         return $this->hasMany(ContentImportRecord::class);
+    }
+
+    /**
+     * @return HasMany<Media, $this>
+     */
+    public function media(): HasMany
+    {
+        return $this->hasMany(Media::class);
     }
 
     public function hasFeature(string $feature): bool

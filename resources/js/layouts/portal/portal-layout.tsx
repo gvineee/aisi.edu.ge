@@ -1,6 +1,12 @@
 import { Form, Link, router, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren } from 'react';
-import { FileText, House, LogOut, MessageSquareText } from 'lucide-react';
+import {
+    FileText,
+    House,
+    LogOut,
+    MessageSquareText,
+    Newspaper,
+} from 'lucide-react';
 import { logout } from '@/routes';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +23,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     home: House,
     documents: FileText,
     messages: MessageSquareText,
+    cms: Newspaper,
 };
 
 /**

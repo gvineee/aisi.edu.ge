@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Portal\AttendanceController;
+use App\Http\Controllers\Portal\CmsMediaController;
+use App\Http\Controllers\Portal\CmsPageController;
+use App\Http\Controllers\Portal\CmsPostController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
 use App\Http\Controllers\Portal\DocumentApprovalController;
@@ -69,6 +72,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('documents.versions.download');
     Route::post('documents/{document}/submit', [DocumentApprovalController::class, 'submit'])->name('documents.submit');
     Route::post('approval-requests/{approvalRequest}/decide', [DocumentApprovalController::class, 'decide'])->name('documents.approvals.decide');
+
+    // --- CMS (Pages / Posts / Media) — admin/director/editor/academic-manager
+    // only; see CmsPageController's docblock for the exact role split.
+    // Publishes docs/02 §5.1 + CLAUDE.md Phase 1's "draft → preview →
+    // publish, and revert to a version" requirement, previously unbuilt.
+    Route::get('portal/cms/pages', [CmsPageController::class, 'index'])->name('cms.pages.index');
+    Route::get('portal/cms/pages/create', [CmsPageController::class, 'create'])->name('cms.pages.create');
+    Route::post('portal/cms/pages', [CmsPageController::class, 'store'])->name('cms.pages.store');
+    Route::get('portal/cms/pages/{page}/edit', [CmsPageController::class, 'edit'])->name('cms.pages.edit');
+    Route::get('portal/cms/pages/{page}/preview', [CmsPageController::class, 'preview'])->name('cms.pages.preview');
+    Route::put('portal/cms/pages/{page}', [CmsPageController::class, 'update'])->name('cms.pages.update');
+    Route::post('portal/cms/pages/{page}/publish', [CmsPageController::class, 'publish'])->name('cms.pages.publish');
+    Route::post('portal/cms/pages/{page}/unpublish', [CmsPageController::class, 'unpublish'])->name('cms.pages.unpublish');
+    Route::post('portal/cms/pages/{page}/revisions/{revision}/restore', [CmsPageController::class, 'restoreRevision'])->name('cms.pages.revisions.restore');
+
+    Route::get('portal/cms/posts', [CmsPostController::class, 'index'])->name('cms.posts.index');
+    Route::get('portal/cms/posts/create', [CmsPostController::class, 'create'])->name('cms.posts.create');
+    Route::post('portal/cms/posts', [CmsPostController::class, 'store'])->name('cms.posts.store');
+    Route::get('portal/cms/posts/{post}/edit', [CmsPostController::class, 'edit'])->name('cms.posts.edit');
+    Route::get('portal/cms/posts/{post}/preview', [CmsPostController::class, 'preview'])->name('cms.posts.preview');
+    Route::put('portal/cms/posts/{post}', [CmsPostController::class, 'update'])->name('cms.posts.update');
+    Route::post('portal/cms/posts/{post}/publish', [CmsPostController::class, 'publish'])->name('cms.posts.publish');
+    Route::post('portal/cms/posts/{post}/unpublish', [CmsPostController::class, 'unpublish'])->name('cms.posts.unpublish');
+    Route::post('portal/cms/posts/{post}/revisions/{revision}/restore', [CmsPostController::class, 'restoreRevision'])->name('cms.posts.revisions.restore');
+
+    Route::get('portal/cms/media', [CmsMediaController::class, 'index'])->name('cms.media.index');
+    Route::post('portal/cms/media', [CmsMediaController::class, 'store'])->name('cms.media.store');
+    // --- end CMS ---
 });
 
 require __DIR__.'/settings.php';

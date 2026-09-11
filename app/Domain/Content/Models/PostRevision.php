@@ -10,20 +10,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Immutable snapshot of a Page at the moment it was saved — the basis for
- * "revert to this version" (see docs/02 section 5.1).
+ * Immutable snapshot of a Post at the moment it was saved — the basis for
+ * "revert to this version" (mirrors PageRevision; see docs/02 section 5.1).
  *
  * @property int $id
  * @property int $tenant_id
- * @property int $page_id
+ * @property int $post_id
  * @property string $title
  * @property string|null $excerpt
- * @property array<int, array<string, mixed>> $blocks
+ * @property string $body
+ * @property string|null $cover_image_path
  * @property string $status
  * @property Carbon|null $created_at
  */
-#[Fillable(['page_id', 'title', 'excerpt', 'blocks', 'status', 'seo_title', 'seo_description', 'created_by'])]
-class PageRevision extends Model
+#[Fillable(['post_id', 'title', 'excerpt', 'body', 'cover_image_path', 'status', 'seo_title', 'seo_description', 'created_by'])]
+class PostRevision extends Model
 {
     use BelongsToTenant;
 
@@ -32,17 +33,16 @@ class PageRevision extends Model
     protected function casts(): array
     {
         return [
-            'blocks' => 'array',
             'created_at' => 'datetime',
         ];
     }
 
     /**
-     * @return BelongsTo<Page, $this>
+     * @return BelongsTo<Post, $this>
      */
-    public function page(): BelongsTo
+    public function post(): BelongsTo
     {
-        return $this->belongsTo(Page::class);
+        return $this->belongsTo(Post::class);
     }
 
     /**
