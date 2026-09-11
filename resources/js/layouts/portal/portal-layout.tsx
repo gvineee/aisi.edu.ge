@@ -6,6 +6,7 @@ import {
     LogOut,
     MessageSquareText,
     Newspaper,
+    Users,
 } from 'lucide-react';
 import { logout } from '@/routes';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     documents: FileText,
     messages: MessageSquareText,
     cms: Newspaper,
+    members: Users,
 };
 
 /**

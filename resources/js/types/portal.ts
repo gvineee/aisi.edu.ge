@@ -1,4 +1,9 @@
-export type PortalNavIconKey = 'home' | 'documents' | 'messages' | 'cms';
+export type PortalNavIconKey =
+    | 'home'
+    | 'documents'
+    | 'messages'
+    | 'cms'
+    | 'members';
 
 export interface PortalNavItem {
     key: string;

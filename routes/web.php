@@ -10,11 +10,13 @@ use App\Http\Controllers\Portal\DocumentApprovalController;
 use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\LessonController;
+use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
 use App\Http\Controllers\Public\AdmissionLeadController;
+use App\Http\Controllers\Public\InvitationController;
 use App\Http\Controllers\Public\LibraryCatalogController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PostController;
@@ -35,6 +37,12 @@ Route::get('/news', [PostController::class, 'index'])->name('news.index');
 Route::get('/news/{slug}', [PostController::class, 'show'])->name('news.show');
 
 Route::get('/library', [LibraryCatalogController::class, 'index'])->name('library.index');
+
+// --- Tenant invitation accept flow (public, unauthenticated) — members/invite
+// feature. Added at the end of the public route block so parallel agent
+// edits above are easy to merge around. ---
+Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
+Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
@@ -100,6 +108,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/cms/media', [CmsMediaController::class, 'index'])->name('cms.media.index');
     Route::post('portal/cms/media', [CmsMediaController::class, 'store'])->name('cms.media.store');
     // --- end CMS ---
+
+    // --- Member management (admin/director) — added at the end of this
+    // group so parallel agent edits above are easy to merge around. ---
+    Route::get('portal/members', [MemberController::class, 'index'])->name('members.index');
+    Route::post('portal/members/invite', [MemberController::class, 'store'])->name('members.invite');
+    Route::post('portal/members/{membership}/revoke', [MemberController::class, 'revoke'])->name('members.revoke');
+    Route::delete('portal/members/invitations/{invitation}', [MemberController::class, 'cancelInvitation'])->name('members.invitations.cancel');
 });
 
 require __DIR__.'/settings.php';
