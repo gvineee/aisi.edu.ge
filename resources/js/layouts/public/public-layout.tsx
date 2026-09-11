@@ -143,6 +143,20 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             )}
                         </div>
                     </div>
+                    <div className="mx-auto max-w-6xl px-6">
+                        <p className="border-t border-slate-200 py-4 text-xs text-[var(--brand-muted)]">
+                            დამზადებულია{' '}
+                            <a
+                                href="https://syslab.ge"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold underline-offset-2 hover:underline"
+                            >
+                                syslab.ge
+                            </a>
+                            -ში, 2026
+                        </p>
+                    </div>
                 </footer>
 
                 <VisitRequestDialog
