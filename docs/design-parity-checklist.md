@@ -17,7 +17,7 @@
 | About/school history სრული გვერდი | `/about` | `pages/public/page.tsx` | `TenantSeeder`/`ProductionSeeder` | public | — | ტექსტი დამოწმებული | `verified_local` |
 | News index/show | `/news`, `/news/{slug}` | `PostController` | `Post` მოდელი | public | ცარიელი/404 დაუდასტურებელი ამ სესიაში | არ შემოწმებულა ამ სესიაში (ადრინდელი ეტაპის ნაწილი) | `working` |
 | Library catalog | `/library` | `LibraryCatalogController` | `LibraryResource` (+ ახლახან შემოტანილი 70 გარე ბმული) | public | — | არ შემოწმებულა ამ სესიაში | `working` |
-| Logo (`aisi-drawn-logo.png`, ერთი lockup) | ყველა | `components/public/logo.tsx` | `BrandSetting.logo_path` + `brand:sync-logo` | ყველა | — | დამტკიცებულია აგენტის მიერ (ეს სესია) | `verified_local` |
+| Logo (`aisi-drawn-logo.png`, ერთი lockup) | ყველა | `components/public/logo.tsx` | `BrandSetting.logo_path` + `brand:sync-logo` | ყველა | — | დამტკიცებულია აგენტის მიერ (ეს სესია); production-ზეც რეალურ ბრაუზერში დამოწმებული | `verified_production` |
 
 ## პორტალი — dashboard-ები და layout
 
@@ -88,3 +88,9 @@
 - Hero photo (`school-life.jpg`) გამოყენებულია ვიზუალურად, მაგრამ დოკუმენტირებულია, რომ მისი აქტუალობა/გამოყენების უფლება სკოლას ჯერ არ დაუდასტურებია (`docs/09 §3`-ის ცხადი გაფრთხილება) — კოდში ეს კომენტარადაა დაფიქსირებული.
 - `/school?item=...` მარშრუტი (reference-ში ისტორია/სიახლეების ბმულის სამიზნე) განზრახ **არ არის** აშენებული როგორც საჯარო route — draft, გაუმოწმებელი იმპორტირებული კონტენტი საჯაროდ არ უნდა ჩანდეს (`docs/09 §3`, `content:import`-ის `status=draft` წესი). ამის ნაცვლად history/news ბმულები რეალურ, უკვე გამოქვეყნებულ `/about`/`/news`-ზე მიდის.
 - production evidence ცალკე ჯერ არ არის დაფიქსირებული ამ ცხრილში ახალი (hero/values/history/programs) ცვლილებებისთვის — production-ზე deploy-ის შემდეგ დაემატება ცალკე row/სვეტი.
+
+## ნაპოვნი და გასწორებული ბაგი: ძველი ლოგო production-ზე (2026-09-11)
+
+მომხმარებელმა შენიშნა, რომ განახლებული ლოგო production-ზე კვლავ არ ჩანდა, მიუხედავად იმისა, რომ `resources/branding/aisi/logo.png`, `public/storage/tenants/aisi/logo.png` და `brand_settings.logo_path` production სერვერზე უკვე სწორად ჰქონდა ახალი, დამტკიცებული ლოგო. მიზეზი: production-ის nginx ფენას აქვს სტატიკური სურათების ოპტიმიზაცია/ქეშირება ჩართული (`ETag: W/"PSA-..."`, `Cache-Control: max-age=~10 წელი`) — ეს ფენა ჯერ კიდევ ძველი ლოგოს (`logo-concept.png`) ოპტიმიზირებულ ასლს აბრუნებდა იმავე URL-ზე (`/storage/tenants/aisi/logo.png`), მიუხედავად origin-ზე ფაილის შეცვლისა (root/sudo წვდომა ამ ქეშის გასაწმენდად არ გვაქვს, `clpctl`-ითაც არ არსებობს ასეთი ბრძანება). დადასტურდა `?v=` query string-ის დამატებით — ეს origin-იდან სწორ, ახალ ფაილს აბრუნებდა.
+
+**გამოსწორება**: `HandleInertiaRequests::versionedAssetUrl()` ახლა `logoUrl`/`heroImageUrl`-ს ურთავს ფაილის `lastModified()` timestamp-ს query string-ად (`?v=<timestamp>`), რაც ამ ქეშის ფენას აიძულებს ახალ URL-ად აღიქვას ნებისმიერი მომავალი ლოგო/hero-ს ცვლილება. Production-ზე deploy-ის და real browser-ით გადამოწმების შემდეგ ლოგო სწორად ჩანს (`LOGO_NATURAL_WIDTH: 2172`, `Content-Length: 511691` production origin-ზეც ემთხვევა ლოკალურ ფაილს).
