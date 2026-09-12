@@ -3,6 +3,12 @@ import { useState } from 'react';
 import { BookMarked, CalendarClock, Users } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
+import DashboardHeading from '@/components/portal/dashboard-heading';
+import DayCard from '@/components/portal/day-card';
+import StatGrid, { type Stat } from '@/components/portal/stat-grid';
+import Panel from '@/components/portal/panel';
+import LessonRow from '@/components/portal/lesson-row';
+import NoticeCard from '@/components/portal/notice-card';
 
 type ScheduleEntry = {
     subject: string;
@@ -26,9 +32,17 @@ type Child = {
     todaySchedule: ScheduleEntry[];
 };
 
+type NewsItem = {
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    publishedAt: string | null;
+};
+
 type Props = {
     children: Child[];
     actionItems: ActionItem[];
+    recentNews: NewsItem[];
 };
 
 /**
@@ -37,40 +51,62 @@ type Props = {
  * and never demo data. An empty list is a real, honest state, not
  * something papered over with placeholders.
  */
-export default function ParentDashboard({ children, actionItems }: Props) {
+export default function ParentDashboard({
+    children,
+    actionItems,
+    recentNews,
+}: Props) {
     const [selectedId, setSelectedId] = useState(children[0]?.id ?? null);
     const selected = children.find((c) => c.id === selectedId) ?? null;
+
+    const dateLabel = new Date().toLocaleDateString('ka-GE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+
+    const stats: Stat[] =
+        selected && selected.permissions.academic
+            ? [
+                  {
+                      key: 'lessons',
+                      icon: CalendarClock,
+                      value: String(selected.todaySchedule.length),
+                      label: 'გაკვეთილი დღეს',
+                      tone: 'blue',
+                  },
+              ]
+            : [];
 
     return (
         <PortalLayout>
             <Head title="ჩემი აისი" />
 
-            <h1 className="mb-2 text-2xl">დღეს</h1>
-            <p className="mb-8 text-sm text-slate-500">
-                {new Date().toLocaleDateString('ka-GE', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                })}
-            </p>
-
-            <div className="mb-6">
-                <ActionFeed items={actionItems} />
-            </div>
+            <DashboardHeading
+                eyebrow="ჩემი აისი / მშობელი"
+                heading="ახალი დღე, ახალი შესაძლებლობები."
+                date={dateLabel}
+                showSun
+            />
 
             {children.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">
-                    <Users className="mx-auto mb-4 h-10 w-10 text-slate-400" />
-                    <p className="font-medium">
-                        თქვენს ანგარიშზე ჯერ არცერთი ბავშვი არ არის
-                        დაკავშირებული.
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">
-                        დაუკავშირდით სკოლის ადმინისტრაციას, თუ ეს მოსალოდნელი არ
-                        იყო.
-                    </p>
-                </div>
+                <>
+                    <div className="mb-6">
+                        <ActionFeed items={actionItems} />
+                    </div>
+                    <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">
+                        <Users className="mx-auto mb-4 h-10 w-10 text-slate-400" />
+                        <p className="font-medium">
+                            თქვენს ანგარიშზე ჯერ არცერთი ბავშვი არ არის
+                            დაკავშირებული.
+                        </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                            დაუკავშირდით სკოლის ადმინისტრაციას, თუ ეს
+                            მოსალოდნელი არ იყო.
+                        </p>
+                    </div>
+                </>
             ) : (
                 <>
                     {children.length > 1 && (
@@ -100,98 +136,111 @@ export default function ParentDashboard({ children, actionItems }: Props) {
 
                     {selected && (
                         <>
-                            <section className="rounded-xl bg-[var(--brand-primary)] p-8 text-white">
-                                <p className="text-xs tracking-wide text-white/70">
-                                    {selected.className ??
-                                        'კლასი მინიჭებული არ არის'}
-                                </p>
-                                <h2 className="mt-2 text-xl">
-                                    {selected.name}-ის დღე
-                                </h2>
-                                <ul className="mt-6 flex flex-wrap gap-3 text-xs">
-                                    {selected.permissions.academic && (
-                                        <li className="rounded-full bg-white/15 px-3 py-1">
-                                            აკადემიური ინფორმაცია
-                                        </li>
-                                    )}
-                                    {selected.permissions.financial && (
-                                        <li className="rounded-full bg-white/15 px-3 py-1">
-                                            ფინანსები
-                                        </li>
-                                    )}
-                                    {selected.permissions.pickup && (
-                                        <li className="rounded-full bg-white/15 px-3 py-1">
-                                            წაყვანის უფლება
-                                        </li>
-                                    )}
-                                </ul>
-                            </section>
-
-                            {selected.permissions.academic && (
-                                <div className="mt-4">
+                            <div className="mb-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+                                <DayCard
+                                    eyebrow={`${selected.name}-ის დღე`}
+                                    heading="ახალი დღე, ახალი შესაძლებლობები."
+                                    body="გაკვეთილები იწყება 09:00-ზე. მოემზადე პირველი აღმოჩენისთვის."
+                                    ctaLabel="დღის განრიგი"
+                                    ctaHref="#todays-lessons"
+                                />
+                                {selected.permissions.academic && (
                                     <Link
                                         href={`/portal/students/${selected.id}/portfolio`}
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:border-slate-300"
+                                        className="flex flex-col justify-center gap-2 rounded-2xl border border-slate-200 bg-white p-6 hover:border-slate-300"
                                     >
-                                        <BookMarked size={16} /> {selected.name}
-                                        -ის პორტფოლიო
+                                        <BookMarked
+                                            size={22}
+                                            className="text-[#c84925]"
+                                        />
+                                        <span className="font-semibold">
+                                            {selected.name}-ის პორტფოლიო
+                                        </span>
+                                        <span className="text-sm text-slate-500">
+                                            ნამუშევრები და უკუკავშირი
+                                        </span>
                                     </Link>
-                                </div>
-                            )}
-
-                            <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
-                                <div className="mb-4 flex items-center gap-2">
-                                    <CalendarClock
-                                        size={18}
-                                        className="text-slate-500"
-                                    />
-                                    <h3 className="text-base font-semibold">
-                                        დღევანდელი განრიგი
-                                    </h3>
-                                </div>
-
-                                {!selected.permissions.academic ? (
-                                    <p className="text-sm text-slate-500">
-                                        აკადემიური ინფორმაციის ნახვის უფლება არ
-                                        გაქვთ ამ ბავშვისთვის.
-                                    </p>
-                                ) : selected.todaySchedule.length === 0 ? (
-                                    <p className="text-sm text-slate-500">
-                                        დღეს გამოქვეყნებული გაკვეთილი არ არის.
-                                    </p>
-                                ) : (
-                                    <ul className="divide-y divide-slate-100">
-                                        {selected.todaySchedule.map(
-                                            (lesson, index) => (
-                                                <li
-                                                    key={index}
-                                                    className={`flex items-center justify-between py-3 text-sm ${lesson.cancelled ? 'opacity-50' : ''}`}
-                                                >
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            {lesson.subject}
-                                                            {lesson.cancelled && (
-                                                                <span className="ml-2 text-xs text-red-600">
-                                                                    გაუქმებულია
-                                                                </span>
-                                                            )}
-                                                        </p>
-                                                        <p className="text-slate-500">
-                                                            {lesson.teacherName}
-                                                            {lesson.roomName &&
-                                                                ` · ${lesson.roomName}`}
-                                                        </p>
-                                                    </div>
-                                                    <span className="text-slate-500 tabular-nums">
-                                                        {lesson.startsAt}–
-                                                        {lesson.endsAt}
-                                                    </span>
-                                                </li>
-                                            ),
-                                        )}
-                                    </ul>
                                 )}
-                            </section>
+                            </div>
+
+                            <StatGrid stats={stats} />
+
+                            <div className="mb-6">
+                                <ActionFeed items={actionItems} />
+                            </div>
+
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                <Panel title="დღევანდელი განრიგი">
+                                    <div id="todays-lessons">
+                                        {!selected.permissions.academic ? (
+                                            <p className="py-6 text-center text-sm text-slate-500">
+                                                აკადემიური ინფორმაციის ნახვის
+                                                უფლება არ გაქვთ ამ
+                                                ბავშვისთვის.
+                                            </p>
+                                        ) : selected.todaySchedule.length ===
+                                          0 ? (
+                                            <p className="py-6 text-center text-sm text-slate-500">
+                                                დღეს გამოქვეყნებული
+                                                გაკვეთილი არ არის.
+                                            </p>
+                                        ) : (
+                                            selected.todaySchedule.map(
+                                                (lesson, index) => (
+                                                    <LessonRow
+                                                        key={index}
+                                                        index={index}
+                                                        startsAt={
+                                                            lesson.startsAt
+                                                        }
+                                                        endsAt={lesson.endsAt}
+                                                        title={lesson.subject}
+                                                        subtitle={
+                                                            lesson.roomName
+                                                                ? `${lesson.teacherName} · ${lesson.roomName}`
+                                                                : lesson.teacherName
+                                                        }
+                                                        cancelled={
+                                                            lesson.cancelled
+                                                        }
+                                                    />
+                                                ),
+                                            )
+                                        )}
+                                    </div>
+                                </Panel>
+
+                                <Panel title="სკოლის ამბები">
+                                    {recentNews.length === 0 ? (
+                                        <p className="py-6 text-center text-sm text-slate-500">
+                                            სიახლეები მალე გამოქვეყნდება.
+                                        </p>
+                                    ) : (
+                                        recentNews.map((post) => (
+                                            <NoticeCard
+                                                key={post.slug}
+                                                tag="სიახლე"
+                                                title={post.title}
+                                                excerpt={post.excerpt}
+                                                dateLabel={
+                                                    post.publishedAt
+                                                        ? new Date(
+                                                              post.publishedAt,
+                                                          ).toLocaleDateString(
+                                                              'ka-GE',
+                                                              {
+                                                                  day: 'numeric',
+                                                                  month: 'long',
+                                                              },
+                                                          )
+                                                        : ''
+                                                }
+                                                href={`/news/${post.slug}`}
+                                            />
+                                        ))
+                                    )}
+                                </Panel>
+                            </div>
                         </>
                     )}
                 </>

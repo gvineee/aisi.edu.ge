@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Portal;
 
 use App\Domain\Academics\Models\GuardianLink;
 use App\Domain\Academics\Models\Student;
+use App\Domain\Academics\Models\TeacherAssignment;
+use App\Domain\Content\Models\Post;
 use App\Domain\Documents\Actions\ListPendingApprovalRequests;
 use App\Domain\Documents\Models\ApprovalRequest;
 use App\Domain\Portal\Actions\BuildDailyActionFeed;
+use App\Domain\Portfolio\Models\PortfolioItem;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantMembership;
@@ -47,21 +50,49 @@ class DashboardController extends Controller
         }
 
         $actionItems = $buildDailyActionFeed->forUser($tenant->id, $user, $activeRole);
+        $recentNews = $this->recentNews($tenant->id);
 
         return match ($activeRole) {
-            TenantMembership::ROLE_GUARDIAN => $this->renderGuardian($tenant, $user, $today, $resolveDailyLessons, $actionItems),
-            TenantMembership::ROLE_TEACHER => $this->renderTeacher($tenant, $user, $today, $resolveDailyLessons, $actionItems),
-            TenantMembership::ROLE_STUDENT => $this->renderStudent($tenant, $user, $today, $resolveDailyLessons, $actionItems),
-            TenantMembership::ROLE_DIRECTOR => $this->renderDirector($tenant, $actionItems),
-            TenantMembership::ROLE_ADMIN => $this->renderAdmin($tenant, $actionItems),
+            TenantMembership::ROLE_GUARDIAN => $this->renderGuardian($tenant, $user, $today, $resolveDailyLessons, $actionItems, $recentNews),
+            TenantMembership::ROLE_TEACHER => $this->renderTeacher($tenant, $user, $today, $resolveDailyLessons, $actionItems, $recentNews),
+            TenantMembership::ROLE_STUDENT => $this->renderStudent($tenant, $user, $today, $resolveDailyLessons, $actionItems, $recentNews),
+            TenantMembership::ROLE_DIRECTOR => $this->renderDirector($tenant, $actionItems, $recentNews),
+            TenantMembership::ROLE_ADMIN => $this->renderAdmin($tenant, $actionItems, $recentNews),
             default => Inertia::render('portal/no-role', ['name' => $user->name]),
         };
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $actionItems
+     * Real published-post teasers for the "today" screen's school-news
+     * panel (design/app/AisiConcept.tsx's "სკოლის ამბები") — never invented
+     * announcements; an empty array renders an honest empty state.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function renderGuardian(Tenant $tenant, User $user, Carbon $today, ResolveDailyLessons $resolveDailyLessons, array $actionItems): Response
+    private function recentNews(int $tenantId): array
+    {
+        return Post::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', Post::STATUS_PUBLISHED)
+            ->whereNotNull('published_at')
+            ->latest('published_at')
+            ->take(2)
+            ->get()
+            ->map(fn (Post $post) => [
+                'slug' => $post->slug,
+                'title' => $post->title,
+                'excerpt' => $post->excerpt,
+                'publishedAt' => $post->published_at?->toIso8601String(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $actionItems
+     * @param  array<int, array<string, mixed>>  $recentNews
+     */
+    private function renderGuardian(Tenant $tenant, User $user, Carbon $today, ResolveDailyLessons $resolveDailyLessons, array $actionItems, array $recentNews): Response
     {
         $links = GuardianLink::query()
             ->where('tenant_id', $tenant->id)
@@ -98,15 +129,28 @@ class DashboardController extends Controller
         return Inertia::render('portal/parent-dashboard', [
             'children' => $children,
             'actionItems' => $actionItems,
+            'recentNews' => $recentNews,
         ]);
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $actionItems
+     * @param  array<int, array<string, mixed>>  $recentNews
      */
-    private function renderTeacher(Tenant $tenant, User $user, Carbon $today, ResolveDailyLessons $resolveDailyLessons, array $actionItems): Response
+    private function renderTeacher(Tenant $tenant, User $user, Carbon $today, ResolveDailyLessons $resolveDailyLessons, array $actionItems, array $recentNews): Response
     {
         $lessons = $resolveDailyLessons->forTeacher($tenant->id, $user->id, $today);
+
+        $classIds = TeacherAssignment::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->pluck('school_class_id');
+
+        $portfolioReviewCount = PortfolioItem::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', PortfolioItem::STATUS_SUBMITTED)
+            ->whereHas('student', fn ($query) => $query->whereIn('school_class_id', $classIds))
+            ->count();
 
         return Inertia::render('portal/teacher-dashboard', [
             'date' => $today->toDateString(),
@@ -115,7 +159,9 @@ class DashboardController extends Controller
                 'lessonId' => $entry['lesson']->id,
                 'className' => $entry['lesson']->schoolClass->name,
             ])->values()->all(),
+            'portfolioReviewCount' => $portfolioReviewCount,
             'actionItems' => $actionItems,
+            'recentNews' => $recentNews,
         ]);
     }
 
@@ -126,8 +172,9 @@ class DashboardController extends Controller
      * honest gap, not something to paper over with invented content.
      *
      * @param  array<int, array<string, mixed>>  $actionItems
+     * @param  array<int, array<string, mixed>>  $recentNews
      */
-    private function renderStudent(Tenant $tenant, User $user, Carbon $today, ResolveDailyLessons $resolveDailyLessons, array $actionItems): Response
+    private function renderStudent(Tenant $tenant, User $user, Carbon $today, ResolveDailyLessons $resolveDailyLessons, array $actionItems, array $recentNews): Response
     {
         $student = Student::query()
             ->where('tenant_id', $tenant->id)
@@ -139,9 +186,11 @@ class DashboardController extends Controller
         if ($student === null) {
             return Inertia::render('portal/student-dashboard', [
                 'linked' => false,
+                'userName' => $user->name,
                 'className' => null,
                 'todaySchedule' => [],
                 'actionItems' => $actionItems,
+                'recentNews' => $recentNews,
             ]);
         }
 
@@ -155,16 +204,19 @@ class DashboardController extends Controller
         return Inertia::render('portal/student-dashboard', [
             'linked' => true,
             'studentId' => $student->id,
+            'userName' => $user->name,
             'className' => $student->schoolClass?->name,
             'todaySchedule' => $todaySchedule,
             'actionItems' => $actionItems,
+            'recentNews' => $recentNews,
         ]);
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $actionItems
+     * @param  array<int, array<string, mixed>>  $recentNews
      */
-    private function renderDirector(Tenant $tenant, array $actionItems): Response
+    private function renderDirector(Tenant $tenant, array $actionItems, array $recentNews): Response
     {
         $pending = app(ListPendingApprovalRequests::class)->handle($tenant->id);
 
@@ -178,13 +230,15 @@ class DashboardController extends Controller
                 'submittedAt' => $approvalRequest->created_at?->toIso8601String(),
             ])->values(),
             'actionItems' => $actionItems,
+            'recentNews' => $recentNews,
         ]);
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $actionItems
+     * @param  array<int, array<string, mixed>>  $recentNews
      */
-    private function renderAdmin(Tenant $tenant, array $actionItems): Response
+    private function renderAdmin(Tenant $tenant, array $actionItems, array $recentNews): Response
     {
         $memberCount = $tenant->memberships()->where('is_active', true)->count();
         $pendingApprovals = app(ListPendingApprovalRequests::class)->handle($tenant->id)->count();
@@ -192,6 +246,7 @@ class DashboardController extends Controller
         return Inertia::render('portal/admin-dashboard', [
             'memberCount' => $memberCount,
             'pendingApprovals' => $pendingApprovals,
+            'recentNews' => $recentNews,
             'actionItems' => $actionItems,
         ]);
     }

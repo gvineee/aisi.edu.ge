@@ -1,93 +1,130 @@
 import { Head, Link } from '@inertiajs/react';
-import { FileText, Newspaper, Palette, Users } from 'lucide-react';
+import { FileText, Newspaper, Users } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
+import DashboardHeading from '@/components/portal/dashboard-heading';
+import DayCard from '@/components/portal/day-card';
+import StatGrid, { type Stat } from '@/components/portal/stat-grid';
+import Panel from '@/components/portal/panel';
+import NoticeCard from '@/components/portal/notice-card';
+
+type NewsItem = {
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    publishedAt: string | null;
+};
 
 type Props = {
     memberCount: number;
     pendingApprovals: number;
     actionItems: ActionItem[];
+    recentNews: NewsItem[];
 };
 
 /**
- * Real numbers where real numbers exist (member count, pending approvals);
- * an honest "მალე" card for members/brand management screens that don't
- * exist yet, rather than a broken link (CLAUDE.md: never fill an empty
- * dashboard with fabricated data). CMS (pages/posts/media) is real now —
- * see App\Http\Controllers\Portal\CmsPageController.
+ * Real numbers only (member count, pending approvals) — no fabricated
+ * "მალე" placeholder for members/CMS anymore, since both are real, built
+ * screens now (App\Http\Controllers\Portal\MemberController,
+ * CmsPageController). Brand/white-label settings remain genuinely
+ * unbuilt (CLAUDE-PLATFORM-MODULES.md's later phases).
  */
 export default function AdminDashboard({
     memberCount,
     pendingApprovals,
     actionItems,
+    recentNews,
 }: Props) {
+    const dateLabel = new Date().toLocaleDateString('ka-GE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+
+    const stats: Stat[] = [
+        {
+            key: 'members',
+            icon: Users,
+            value: String(memberCount),
+            label: 'აქტიური წევრი ამ სკოლაში',
+            tone: 'blue',
+        },
+        {
+            key: 'approvals',
+            icon: FileText,
+            value: String(pendingApprovals),
+            label: 'დასამტკიცებელი დოკუმენტი',
+            tone: 'peach',
+        },
+    ];
+
     return (
         <PortalLayout>
             <Head title="ჩემი აისი" />
 
-            <h1 className="mb-2 text-2xl">დღეს</h1>
-            <p className="mb-8 text-sm text-slate-500">
-                {new Date().toLocaleDateString('ka-GE', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                })}
-            </p>
+            <DashboardHeading
+                eyebrow="ჩემი აისი / ადმინისტრატორი"
+                heading="ყველაფერი იწყება კარგი დღით."
+                date={dateLabel}
+                showSun
+            />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-                <section className="rounded-xl border border-slate-200 bg-white p-6">
-                    <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-                        <Users size={20} className="text-slate-600" />
-                    </span>
-                    <p className="text-2xl font-semibold">{memberCount}</p>
-                    <p className="text-sm text-slate-500">
-                        აქტიური წევრი ამ სკოლაში
-                    </p>
-                </section>
-
-                <Link
-                    href="/documents/director-worklist"
-                    className="rounded-xl border border-slate-200 bg-white p-6 hover:border-slate-300"
-                >
-                    <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-                        <FileText size={20} className="text-slate-600" />
-                    </span>
-                    <p className="text-2xl font-semibold">{pendingApprovals}</p>
-                    <p className="text-sm text-slate-500">
-                        დასამტკიცებელი დოკუმენტი
-                    </p>
-                </Link>
-
+            <div className="mb-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+                <DayCard
+                    eyebrow="დღის შეჯამება"
+                    heading="ყველაფერი იწყება კარგი დღით."
+                    body="წევრები, დოკუმენტები და მიმდინარე მოთხოვნები ერთ სივრცეში."
+                    ctaLabel="წევრების მართვა"
+                    ctaHref="/portal/members"
+                />
                 <Link
                     href="/portal/cms/pages"
-                    className="rounded-xl border border-slate-200 bg-white p-6 hover:border-slate-300"
+                    className="flex flex-col justify-center gap-2 rounded-2xl border border-slate-200 bg-white p-6 hover:border-slate-300"
                 >
-                    <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-                        <Newspaper size={20} className="text-slate-600" />
+                    <Newspaper size={22} className="text-[#c84925]" />
+                    <span className="font-semibold">
+                        CMS — გვერდები და ამბები
                     </span>
-                    <p className="font-semibold">CMS — გვერდები და ამბები</p>
-                    <p className="text-sm text-slate-500">
+                    <span className="text-sm text-slate-500">
                         მონახაზი, გადახედვა, გამოქვეყნება, მედია
-                    </p>
+                    </span>
                 </Link>
             </div>
 
-            <div className="mt-6">
+            <StatGrid stats={stats} />
+
+            <div className="mb-6">
                 <ActionFeed items={actionItems} />
             </div>
 
-            <section className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 text-center">
-                <Palette className="mx-auto mb-3 h-8 w-8 text-slate-400" />
-                <p className="font-medium">
-                    წევრების მართვა, მოწვევები და ბრენდის პარამეტრები მალე
-                    იქნება ხელმისაწვდომი.
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                    ეს ეკრანები ჯერ არ არის აშენებული — არაფერი აქ არ არის
-                    გამოგონილი მონაცემი.
-                </p>
-            </section>
+            <Panel title="სკოლის ამბები">
+                {recentNews.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-slate-500">
+                        სიახლეები მალე გამოქვეყნდება.
+                    </p>
+                ) : (
+                    recentNews.map((post) => (
+                        <NoticeCard
+                            key={post.slug}
+                            tag="სიახლე"
+                            title={post.title}
+                            excerpt={post.excerpt}
+                            dateLabel={
+                                post.publishedAt
+                                    ? new Date(
+                                          post.publishedAt,
+                                      ).toLocaleDateString('ka-GE', {
+                                          day: 'numeric',
+                                          month: 'long',
+                                      })
+                                    : ''
+                            }
+                            href={`/news/${post.slug}`}
+                        />
+                    ))
+                )}
+            </Panel>
         </PortalLayout>
     );
 }
