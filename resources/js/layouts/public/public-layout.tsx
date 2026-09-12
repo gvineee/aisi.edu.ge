@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren, useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { login } from '@/routes';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/public/logo';
@@ -67,9 +67,9 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                         <div className="flex items-center gap-3">
                             <Link
                                 href={login()}
-                                className="hidden text-sm font-semibold whitespace-nowrap lg:inline-flex lg:items-center lg:gap-1"
+                                className="hidden min-h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold whitespace-nowrap lg:inline-flex"
                             >
-                                ჩემი {name}
+                                ჩემი {name} <ArrowUpRight size={16} />
                             </Link>
                             <Button
                                 className="hidden bg-[var(--brand-accent)] text-[var(--brand-primary)] hover:brightness-95 lg:inline-flex"
