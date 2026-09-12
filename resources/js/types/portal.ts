@@ -3,7 +3,8 @@ export type PortalNavIconKey =
     | 'documents'
     | 'messages'
     | 'cms'
-    | 'members';
+    | 'members'
+    | 'teachers';
 
 export interface PortalNavItem {
     key: string;

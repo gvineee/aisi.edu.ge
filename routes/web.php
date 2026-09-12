@@ -16,6 +16,7 @@ use App\Http\Controllers\Portal\MessageController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
+use App\Http\Controllers\Portal\TeacherController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\InvitationController;
 use App\Http\Controllers\Public\LibraryCatalogController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PostController;
 use App\Http\Controllers\Public\RobotsController;
 use App\Http\Controllers\Public\SitemapController;
+use App\Http\Controllers\Public\TeacherController as PublicTeacherController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PageController::class, 'home'])->name('home');
@@ -38,6 +40,9 @@ Route::get('/news', [PostController::class, 'index'])->name('news.index');
 Route::get('/news/{slug}', [PostController::class, 'show'])->name('news.show');
 
 Route::get('/library', [LibraryCatalogController::class, 'index'])->name('library.index');
+
+Route::get('/teachers', [PublicTeacherController::class, 'index'])->name('teachers.public-index');
+Route::get('/teachers/{slug}', [PublicTeacherController::class, 'show'])->name('teachers.public-show');
 
 // --- Tenant invitation accept flow (public, unauthenticated) — members/invite
 // feature. Added at the end of the public route block so parallel agent
@@ -115,6 +120,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/cms/media', [CmsMediaController::class, 'index'])->name('cms.media.index');
     Route::post('portal/cms/media', [CmsMediaController::class, 'store'])->name('cms.media.store');
     // --- end CMS ---
+
+    // --- Teachers (admin/director/editor/academic-manager) — a dedicated
+    // block separate from generic CMS pages, per explicit request: each
+    // teacher gets a real public page plus a homepage carousel. ---
+    Route::get('portal/teachers', [TeacherController::class, 'index'])->name('teachers.index');
+    Route::get('portal/teachers/create', [TeacherController::class, 'create'])->name('teachers.create');
+    Route::post('portal/teachers', [TeacherController::class, 'store'])->name('teachers.store');
+    Route::get('portal/teachers/{teacher}/edit', [TeacherController::class, 'edit'])->name('teachers.edit');
+    Route::put('portal/teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
+    Route::post('portal/teachers/{teacher}/publish', [TeacherController::class, 'publish'])->name('teachers.publish');
+    Route::post('portal/teachers/{teacher}/unpublish', [TeacherController::class, 'unpublish'])->name('teachers.unpublish');
+    // --- end Teachers ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

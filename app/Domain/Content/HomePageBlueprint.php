@@ -71,6 +71,13 @@ class HomePageBlueprint
                 ],
             ],
             [
+                'type' => 'teachers',
+                'eyebrow' => 'ჩვენი გუნდი',
+                'heading' => 'გაიცანი ჩვენი მასწავლებლები.',
+                'ctaLabel' => 'ყველა მასწავლებელი',
+                'ctaHref' => '/teachers',
+            ],
+            [
                 'type' => 'portal_promo',
                 'eyebrow' => 'პორტალი',
                 'heading' => 'სკოლის დღე. ერთი შეხედვით.',

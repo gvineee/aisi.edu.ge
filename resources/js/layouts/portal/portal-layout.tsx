@@ -2,6 +2,7 @@ import { Form, Link, router, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren } from 'react';
 import {
     FileText,
+    GraduationCap,
     House,
     LogOut,
     MessageSquareText,
@@ -26,6 +27,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     messages: MessageSquareText,
     cms: Newspaper,
     members: Users,
+    teachers: GraduationCap,
 };
 
 /**

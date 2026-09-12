@@ -55,6 +55,13 @@ type Block =
           ctaLabel?: string;
           ctaHref?: string;
       }
+    | {
+          type: 'teachers';
+          eyebrow?: string;
+          heading: string;
+          ctaLabel?: string;
+          ctaHref?: string;
+      }
     | { type: 'text'; heading: string; body: string }
     | { type: 'contact_cta'; eyebrow?: string; heading: string; body?: string };
 
@@ -63,6 +70,13 @@ type LatestPost = {
     title: string;
     excerpt: string | null;
     publishedAt: string | null;
+};
+
+type FeaturedTeacher = {
+    slug: string;
+    name: string;
+    subject: string;
+    photoUrl: string | null;
 };
 
 type Props = {
@@ -75,6 +89,7 @@ type Props = {
         seoDescription: string | null;
     };
     latestPosts?: LatestPost[];
+    featuredTeachers?: FeaturedTeacher[];
     /**
      * Set only by CmsPageController::preview — lets an editor see a
      * draft/unpublished page through the exact same rendering path the
@@ -89,7 +104,12 @@ type Props = {
  * One rendering path for every page keeps the block set (and this
  * component) the single thing to maintain, instead of one file per page.
  */
-export default function CmsPage({ page, latestPosts = [], preview = false }: Props) {
+export default function CmsPage({
+    page,
+    latestPosts = [],
+    featuredTeachers = [],
+    preview = false,
+}: Props) {
     const { brand } = usePage<{ brand: Brand | null }>().props;
     const accent = brand?.colors.accent ?? '#F5683C';
     const primary = brand?.colors.primary ?? '#132B45';
@@ -527,6 +547,93 @@ export default function CmsPage({ page, latestPosts = [], preview = false }: Pro
                                         ))}
                                     </div>
                                 )}
+                            </section>
+                        );
+
+                    case 'teachers':
+                        return (
+                            <section
+                                key={index}
+                                id="teachers"
+                                className="border-t border-slate-100 bg-slate-50 py-16"
+                            >
+                                <div className="mx-auto max-w-6xl px-6">
+                                    <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+                                        <div>
+                                            {block.eyebrow && (
+                                                <p className="mb-2 text-xs font-bold tracking-widest text-slate-500">
+                                                    {block.eyebrow}
+                                                </p>
+                                            )}
+                                            <h2 className="text-2xl sm:text-3xl">
+                                                {block.heading}
+                                            </h2>
+                                        </div>
+                                        {featuredTeachers.length > 0 && (
+                                            <Link
+                                                href={
+                                                    block.ctaHref ??
+                                                    '/teachers'
+                                                }
+                                                className="inline-flex items-center gap-1 font-semibold"
+                                                style={{ color: primary }}
+                                            >
+                                                {block.ctaLabel ??
+                                                    'ყველა მასწავლებელი'}{' '}
+                                                <ArrowUpRight size={16} />
+                                            </Link>
+                                        )}
+                                    </div>
+
+                                    {featuredTeachers.length === 0 ? (
+                                        <p className="rounded-xl bg-white p-8 text-center text-slate-500">
+                                            მასწავლებლების სია მალე
+                                            გამოქვეყნდება.
+                                        </p>
+                                    ) : (
+                                        <div className="-mx-6 flex snap-x gap-6 overflow-x-auto px-6 pb-2">
+                                            {featuredTeachers.map(
+                                                (teacher) => (
+                                                    <Link
+                                                        key={teacher.slug}
+                                                        href={`/teachers/${teacher.slug}`}
+                                                        className="w-40 shrink-0 snap-start text-center"
+                                                    >
+                                                        {teacher.photoUrl ? (
+                                                            <img
+                                                                src={
+                                                                    teacher.photoUrl
+                                                                }
+                                                                alt={
+                                                                    teacher.name
+                                                                }
+                                                                className="mx-auto mb-3 h-24 w-24 rounded-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span
+                                                                className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full text-xl font-semibold"
+                                                                style={{
+                                                                    backgroundColor: `${accent}1a`,
+                                                                    color: accent,
+                                                                }}
+                                                            >
+                                                                {teacher.name.charAt(
+                                                                    0,
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                        <p className="text-sm font-semibold">
+                                                            {teacher.name}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500">
+                                                            {teacher.subject}
+                                                        </p>
+                                                    </Link>
+                                                ),
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </section>
                         );
 

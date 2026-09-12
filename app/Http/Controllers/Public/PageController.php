@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
+use App\Domain\Content\Models\Teacher;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -60,6 +61,7 @@ class PageController extends Controller
                 'seoDescription' => $page->seo_description,
             ],
             'latestPosts' => $this->latestPostsIfNeeded($tenant->id, $page->blocks),
+            'featuredTeachers' => $this->featuredTeachersIfNeeded($tenant->id, $page->blocks),
         ]);
     }
 
@@ -90,6 +92,34 @@ class PageController extends Controller
                 'title' => $post->title,
                 'excerpt' => $post->excerpt,
                 'publishedAt' => $post->published_at?->toIso8601String(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $blocks
+     * @return array<int, array<string, mixed>>
+     */
+    private function featuredTeachersIfNeeded(int $tenantId, array $blocks): array
+    {
+        $hasTeachersBlock = collect($blocks)->contains(fn (array $block) => ($block['type'] ?? null) === 'teachers');
+
+        if (! $hasTeachersBlock) {
+            return [];
+        }
+
+        return Teacher::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', Teacher::STATUS_PUBLISHED)
+            ->orderBy('display_order')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Teacher $teacher) => [
+                'slug' => $teacher->slug,
+                'name' => $teacher->name,
+                'subject' => $teacher->subject,
+                'photoUrl' => $teacher->photoUrl(),
             ])
             ->values()
             ->all();

@@ -12,6 +12,7 @@ use App\Domain\Content\Models\ContentImportRecord;
 use App\Domain\Content\Models\Media;
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
+use App\Domain\Content\Models\Teacher;
 use App\Domain\Documents\Models\DocumentWorkspace;
 use App\Domain\Governance\Models\AuditEvent;
 use App\Domain\Learning\Models\AttendanceRecord;
@@ -216,6 +217,14 @@ class Tenant extends Model
     public function contentImportRecords(): HasMany
     {
         return $this->hasMany(ContentImportRecord::class);
+    }
+
+    /**
+     * @return HasMany<Teacher, $this>
+     */
+    public function teachers(): HasMany
+    {
+        return $this->hasMany(Teacher::class);
     }
 
     /**

@@ -98,6 +98,20 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "მასწავლებლები" nav destination — kept in sync
+     * with TeacherController::ACCESS_ROLES for the same reason as
+     * DOCUMENT_ACCESS_ROLES above.
+     *
+     * @var array<int, string>
+     */
+    private const TEACHER_MANAGEMENT_ACCESS_ROLES = [
+        TenantMembership::ROLE_EDITOR,
+        TenantMembership::ROLE_ACADEMIC_MANAGER,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * @return array<int, string> active role strings, in ROLE_PRIORITY order
      */
     public function activeRoles(int $tenantId, int $userId): array
@@ -164,6 +178,10 @@ class PortalContext
 
         if (in_array($activeRole, self::MEMBER_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'members', 'label' => 'წევრები', 'href' => route('members.index'), 'icon' => 'members'];
+        }
+
+        if (in_array($activeRole, self::TEACHER_MANAGEMENT_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'teachers', 'label' => 'მასწავლებლები', 'href' => route('teachers.index'), 'icon' => 'teachers'];
         }
 
         return $items;
