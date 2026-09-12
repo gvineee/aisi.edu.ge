@@ -159,9 +159,10 @@ export default function CmsPage({ page, latestPosts = [], preview = false }: Pro
                                             <button
                                                 type="button"
                                                 onClick={openVisitDialog}
-                                                className="inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold text-white"
+                                                className="inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
                                                 style={{
-                                                    backgroundColor: primary,
+                                                    backgroundColor: accent,
+                                                    color: primary,
                                                 }}
                                             >
                                                 მოდი, გაიცანი{' '}
@@ -171,7 +172,7 @@ export default function CmsPage({ page, latestPosts = [], preview = false }: Pro
                                             <a
                                                 href="#about"
                                                 className="inline-flex items-center gap-1 font-semibold"
-                                                style={{ color: accent }}
+                                                style={{ color: primary }}
                                             >
                                                 ჩვენი ხედვა{' '}
                                                 <ArrowRight size={16} />
@@ -310,7 +311,7 @@ export default function CmsPage({ page, latestPosts = [], preview = false }: Pro
                                             <Link
                                                 href={block.ctaHref}
                                                 className="mt-6 inline-flex items-center gap-1 font-semibold"
-                                                style={{ color: accent }}
+                                                style={{ color: primary }}
                                             >
                                                 {block.ctaLabel ?? 'გაიგე მეტი'}{' '}
                                                 <ArrowUpRight size={16} />
@@ -485,7 +486,7 @@ export default function CmsPage({ page, latestPosts = [], preview = false }: Pro
                                         <Link
                                             href={block.ctaHref ?? '/news'}
                                             className="inline-flex items-center gap-1 font-semibold"
-                                            style={{ color: accent }}
+                                            style={{ color: primary }}
                                         >
                                             {block.ctaLabel ?? 'ყველა ამბავი'}{' '}
                                             <ArrowUpRight size={16} />
@@ -567,9 +568,10 @@ export default function CmsPage({ page, latestPosts = [], preview = false }: Pro
                                     <button
                                         type="button"
                                         onClick={openVisitDialog}
-                                        className="inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold text-white"
+                                        className="inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
                                         style={{
-                                            backgroundColor: primary,
+                                            backgroundColor: accent,
+                                            color: primary,
                                         }}
                                     >
                                         დაგეგმე ვიზიტი{' '}
