@@ -24,7 +24,15 @@ class ChangePageStatus
             $locked = Page::query()->whereKey($page->id)->lockForUpdate()->firstOrFail();
 
             $locked->status = $publish ? Page::STATUS_PUBLISHED : Page::STATUS_DRAFT;
-            $locked->published_at = $publish ? Carbon::now() : null;
+
+            // Never overwrite a real historical publish date a migration
+            // importer already set (see ImportContentRecords) -- only fall
+            // back to "now" when this page genuinely has no known date yet.
+            // Unpublishing intentionally leaves published_at untouched.
+            if ($publish) {
+                $locked->published_at ??= Carbon::now();
+            }
+
             $locked->fill(['updated_by' => $actor->id]);
             $locked->save();
 

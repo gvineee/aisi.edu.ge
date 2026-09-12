@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\ContentImport;
 
+use App\Domain\Content\Actions\ChangePostStatus;
 use App\Domain\Content\Actions\ImportContentRecords;
 use App\Domain\Content\Models\ContentImportRecord;
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
 use App\Domain\Tenancy\Models\Tenant;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -52,7 +54,7 @@ class ImportContentRecordsTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function postRecord(string $key, int $sourceId, string $title = 'სიახლე', string $body = 'ორიგინალი სიახლის ტექსტი.', int $featuredMedia = 0): array
+    private function postRecord(string $key, int $sourceId, string $title = 'სიახლე', string $body = 'ორიგინალი სიახლის ტექსტი.', int $featuredMedia = 0, ?string $publishedAt = null): array
     {
         return [
             'key' => $key,
@@ -65,6 +67,7 @@ class ImportContentRecordsTest extends TestCase
             'body' => $body,
             'target_path' => "/posts/{$sourceId}",
             'featured_media' => $featuredMedia,
+            'published_at' => $publishedAt,
         ];
     }
 
@@ -383,5 +386,62 @@ class ImportContentRecordsTest extends TestCase
 
         $this->assertSame(['created', 'skipped_out_of_scope'], array_column($report, 'action'));
         $this->assertSame(0, ContentImportRecord::query()->where('tenant_id', $tenant->id)->where('source_type', 'documents')->count());
+    }
+
+    public function test_import_preserves_the_real_historical_published_at_even_while_draft(): void
+    {
+        $tenant = $this->makeTenant('history-date-tenant');
+        $records = [$this->postRecord('wp-posts-1', 201, publishedAt: '2021-03-15T10:00:00')];
+
+        (new ImportContentRecords)->run($tenant, $records, ['posts'], [], (string) Str::uuid(), commit: true);
+
+        $post = Post::query()->where('tenant_id', $tenant->id)->sole();
+        $this->assertSame(Post::STATUS_DRAFT, $post->status);
+        $this->assertSame('2021-03-15', $post->published_at?->toDateString());
+    }
+
+    public function test_publishing_an_imported_post_uses_the_real_date_not_today(): void
+    {
+        $tenant = $this->makeTenant('publish-date-tenant');
+        $records = [$this->postRecord('wp-posts-1', 201, publishedAt: '2020-06-01T09:00:00')];
+        (new ImportContentRecords)->run($tenant, $records, ['posts'], [], (string) Str::uuid(), commit: true);
+        $post = Post::query()->where('tenant_id', $tenant->id)->sole();
+
+        app(ChangePostStatus::class)->handle($post, true, User::factory()->create());
+
+        $this->assertSame('2020-06-01', $post->fresh()->published_at?->toDateString());
+    }
+
+    public function test_rerunning_import_backfills_a_previously_null_published_at(): void
+    {
+        $tenant = $this->makeTenant('backfill-date-tenant');
+        $records = [$this->postRecord('wp-posts-1', 201)];
+        (new ImportContentRecords)->run($tenant, $records, ['posts'], [], (string) Str::uuid(), commit: true);
+        $post = Post::query()->where('tenant_id', $tenant->id)->sole();
+        $this->assertNull($post->published_at);
+
+        $recordsWithDate = [$this->postRecord('wp-posts-1', 201, publishedAt: '2019-09-01T12:00:00')];
+        (new ImportContentRecords)->run($tenant, $recordsWithDate, ['posts'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertSame('2019-09-01', $post->fresh()->published_at?->toDateString());
+    }
+
+    public function test_rerunning_import_corrects_a_post_wrongly_dated_by_a_bulk_publish(): void
+    {
+        $tenant = $this->makeTenant('correct-date-tenant');
+        $records = [$this->postRecord('wp-posts-1', 201)];
+        (new ImportContentRecords)->run($tenant, $records, ['posts'], [], (string) Str::uuid(), commit: true);
+        $post = Post::query()->where('tenant_id', $tenant->id)->sole();
+
+        // Simulates the real incident: publishing before the real date was
+        // known stamps today's date as the best available fallback.
+        app(ChangePostStatus::class)->handle($post, true, User::factory()->create());
+        $this->assertTrue($post->fresh()->published_at->isToday());
+
+        $recordsWithDate = [$this->postRecord('wp-posts-1', 201, publishedAt: '2018-01-10T08:00:00')];
+        (new ImportContentRecords)->run($tenant, $recordsWithDate, ['posts'], [], (string) Str::uuid(), commit: true);
+
+        $this->assertSame('2018-01-10', $post->fresh()->published_at?->toDateString());
+        $this->assertSame(Post::STATUS_PUBLISHED, $post->fresh()->status);
     }
 }

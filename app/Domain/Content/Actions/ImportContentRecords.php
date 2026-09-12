@@ -7,6 +7,7 @@ use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
 use App\Domain\Content\Support\LegacyMediaManifest;
 use App\Domain\Tenancy\Models\Tenant;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -307,6 +308,8 @@ class ImportContentRecords
             'status' => Page::STATUS_DRAFT,
             'seo_title' => null,
             'seo_description' => null,
+            // Same reasoning as createPost() -- preserved even while draft.
+            'published_at' => $this->originalPublishedAt($record),
         ]);
 
         return $page;
@@ -325,10 +328,34 @@ class ImportContentRecords
             'excerpt' => is_string($record['excerpt'] ?? null) && $record['excerpt'] !== '' ? mb_substr((string) $record['excerpt'], 0, 250) : null,
             'body' => $sourceText,
             'status' => Post::STATUS_DRAFT,
-            'published_at' => null,
+            // The real historical publish date, preserved from the source
+            // even while this stays a draft (Post::isPublished() still
+            // requires status=published too) -- so that later actually
+            // publishing it (ChangePostStatus) shows when the school
+            // genuinely first published it, not the day an admin got
+            // around to clicking publish in the new system.
+            'published_at' => $this->originalPublishedAt($record),
         ]);
 
         return $post;
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function originalPublishedAt(array $record): ?Carbon
+    {
+        $value = $record['published_at'] ?? null;
+
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -354,6 +381,22 @@ class ImportContentRecords
 
         if ($currentLocalChecksum !== $existing->local_checksum) {
             return ['action' => 'conflict', 'reason' => 'local content changed since last import — left untouched, not overwritten'];
+        }
+
+        // Always sync published_at from the source's real historical date
+        // when one exists — safe unconditionally, since nothing in this
+        // product ever lets a human set this field (the CMS edit form has
+        // no published_at input at all; it's only ever written here or by
+        // ChangePostStatus's publish action, which sets today's date only
+        // when the source had none). This is what corrects rows created
+        // before this importer captured the real date at all (previously
+        // always null), and rows a bulk-publish stamped with today's date
+        // for lack of a better value at the time.
+        $original = $this->originalPublishedAt($record);
+
+        if ($original !== null && $commit && ($importable->published_at === null || ! $original->equalTo($importable->published_at))) {
+            $importable->published_at = $original;
+            $importable->save();
         }
 
         if ($sourceChecksum === $existing->source_checksum) {

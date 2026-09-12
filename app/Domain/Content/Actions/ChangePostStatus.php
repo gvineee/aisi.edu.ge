@@ -22,7 +22,17 @@ class ChangePostStatus
             $locked = Post::query()->whereKey($post->id)->lockForUpdate()->firstOrFail();
 
             $locked->status = $publish ? Post::STATUS_PUBLISHED : Post::STATUS_DRAFT;
-            $locked->published_at = $publish ? Carbon::now() : null;
+
+            // Never overwrite a real historical publish date a migration
+            // importer already set (see ImportContentRecords) -- only fall
+            // back to "now" when this post genuinely has no known date yet.
+            // Unpublishing intentionally leaves published_at untouched: the
+            // historical (or original-publish) fact doesn't change just
+            // because the content is temporarily hidden.
+            if ($publish) {
+                $locked->published_at ??= Carbon::now();
+            }
+
             $locked->fill(['updated_by' => $actor->id]);
             $locked->save();
 
