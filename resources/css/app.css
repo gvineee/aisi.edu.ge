@@ -232,9 +232,16 @@
         font-size: 1.125rem;
     }
 
-    @media (min-width: 768px) and (max-width: 1023px) {
+    /*
+     * The nav switches from the mobile hamburger to this row at `lg`
+     * (1024px) — design/app/AisiConcept.tsx keeps its own equivalent row
+     * visible only down to ~950px and shrinks its font/gap as the row
+     * narrows, so this does the same for the 1024–1279px range rather than
+     * cramming full-size links into the tightest width the row ever shows.
+     */
+    @media (min-width: 1024px) and (max-width: 1279px) {
         .public-navigation-link {
-            font-size: 0.9375rem;
+            font-size: 0.8125rem;
         }
     }
 }

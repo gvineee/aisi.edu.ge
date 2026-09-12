@@ -52,12 +52,12 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             <Logo brand={brand} />
                         </Link>
 
-                        <nav className="hidden gap-8 md:flex">
+                        <nav className="hidden gap-4 xl:gap-8 lg:flex">
                             {nav.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="public-navigation-link"
+                                    className="public-navigation-link whitespace-nowrap"
                                 >
                                     {item.label}
                                 </Link>
@@ -67,12 +67,12 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                         <div className="flex items-center gap-3">
                             <Link
                                 href={login()}
-                                className="hidden text-sm font-semibold sm:inline-flex sm:items-center sm:gap-1"
+                                className="hidden text-sm font-semibold whitespace-nowrap lg:inline-flex lg:items-center lg:gap-1"
                             >
                                 ჩემი {name}
                             </Link>
                             <Button
-                                className="hidden bg-[var(--brand-accent)] text-[var(--brand-primary)] hover:brightness-95 sm:inline-flex"
+                                className="hidden bg-[var(--brand-accent)] text-[var(--brand-primary)] hover:brightness-95 lg:inline-flex"
                                 onClick={() => setVisitOpen(true)}
                             >
                                 დაგეგმე ვიზიტი
@@ -81,7 +81,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                                 type="button"
                                 aria-label="მენიუ"
                                 aria-expanded={menuOpen}
-                                className="flex h-11 w-11 items-center justify-center rounded-lg md:hidden"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg lg:hidden"
                                 onClick={() => setMenuOpen((open) => !open)}
                             >
                                 {menuOpen ? <X /> : <Menu />}
@@ -90,7 +90,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                     </div>
 
                     {menuOpen && (
-                        <nav className="flex flex-col gap-1 border-t border-slate-200 bg-white p-4 md:hidden">
+                        <nav className="flex flex-col gap-1 border-t border-slate-200 bg-white p-4 lg:hidden">
                             {nav.map((item) => (
                                 <Link
                                     key={item.href}
