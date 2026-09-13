@@ -7,6 +7,7 @@ import {
     Users,
 } from 'lucide-react';
 import PublicLayout from '@/layouts/public/public-layout';
+import Logo from '@/components/public/logo';
 import { useOpenVisitDialog } from '@/components/public/visit-dialog-context';
 import type { Brand } from '@/types';
 
@@ -62,7 +63,7 @@ type Block =
           ctaLabel?: string;
           ctaHref?: string;
       }
-    | { type: 'text'; heading: string; body: string }
+    | { type: 'text'; heading: string; body: string | string[] }
     | { type: 'contact_cta'; eyebrow?: string; heading: string; body?: string };
 
 type LatestPost = {
@@ -446,21 +447,55 @@ export default function CmsPage({
                                         </Link>
                                     </div>
                                     <div
-                                        className="rounded-2xl bg-white/10 p-6 ring-1 ring-white/20"
+                                        className="rounded-2xl bg-white/95 p-6 text-[var(--brand-primary,#132B45)] shadow-2xl"
                                         aria-hidden="true"
                                     >
-                                        <div className="flex items-center gap-2 rounded-lg bg-white/10 p-4">
-                                            <Sparkles
-                                                size={20}
-                                                style={{ color: accent }}
-                                            />
-                                            <div>
-                                                <p className="font-semibold text-white">
-                                                    ჩემი {brand?.name ?? ''}
+                                        <div className="mb-5 flex items-center justify-between">
+                                            <Logo brand={brand} size="compact" />
+                                            <span
+                                                className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
+                                                style={{
+                                                    backgroundColor: `${accent}1a`,
+                                                    color: accent,
+                                                }}
+                                            >
+                                                მ
+                                            </span>
+                                        </div>
+                                        <h3 className="text-lg font-semibold">
+                                            დილა მშვიდობისა 👋
+                                        </h3>
+                                        <p className="mt-1 text-sm text-slate-500">
+                                            ილუსტრაციული მაგალითი · დემო
+                                        </p>
+                                        <div className="mt-4 flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+                                            <span
+                                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                                                style={{
+                                                    backgroundColor: `${accent}1a`,
+                                                    color: accent,
+                                                }}
+                                            >
+                                                <BookOpen size={18} />
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-semibold">
+                                                    შემდეგი გაკვეთილი
                                                 </p>
-                                                <p className="text-sm text-white/70">
-                                                    განრიგი, დასწრება და
-                                                    სიახლეები ერთ სივრცეში
+                                                <p className="truncate text-xs text-slate-500">
+                                                    დღის განრიგიდან
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 grid grid-cols-2 gap-3">
+                                            <div className="rounded-lg bg-slate-50 p-3">
+                                                <p className="text-xs text-slate-500">
+                                                    შეტყობინებები
+                                                </p>
+                                            </div>
+                                            <div className="rounded-lg bg-slate-50 p-3">
+                                                <p className="text-xs text-slate-500">
+                                                    დოკუმენტები
                                                 </p>
                                             </div>
                                         </div>
@@ -478,9 +513,16 @@ export default function CmsPage({
                                 <h2 className="mb-6 text-2xl sm:text-3xl">
                                     {block.heading}
                                 </h2>
-                                <p className="text-lg leading-relaxed text-slate-600">
-                                    {block.body}
-                                </p>
+                                <div className="space-y-4 text-lg leading-relaxed text-slate-600">
+                                    {(Array.isArray(block.body)
+                                        ? block.body
+                                        : [block.body]
+                                    ).map((paragraph, paragraphIndex) => (
+                                        <p key={paragraphIndex}>
+                                            {paragraph}
+                                        </p>
+                                    ))}
+                                </div>
                             </section>
                         );
 
