@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Portal\AssignmentController;
 use App\Http\Controllers\Portal\AttendanceController;
 use App\Http\Controllers\Portal\CmsMediaController;
 use App\Http\Controllers\Portal\CmsPageController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Portal\EnrollmentVerificationController;
 use App\Http\Controllers\Portal\LessonController;
 use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
+use App\Http\Controllers\Portal\MyAssignmentsController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
@@ -72,6 +74,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('portfolio.assets.download');
     Route::post('portal/portfolio/{portfolioItem}/submit', [PortfolioController::class, 'submit'])->name('portfolio.submit');
     Route::post('portal/portfolio/{portfolioItem}/decide', [PortfolioController::class, 'decide'])->name('portfolio.decide');
+
+    // --- Assignments & submissions (homework workflow) — teacher side under
+    // portal/assignments, student side under portal/my-assignments. Mirrors
+    // Portfolio's draft/published + ownership-check pattern. ---
+    Route::get('portal/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+    Route::post('portal/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+    Route::post('portal/assignments/{assignment}/publish', [AssignmentController::class, 'publish'])->name('assignments.publish');
+    Route::post('portal/assignments/{assignment}/unpublish', [AssignmentController::class, 'unpublish'])->name('assignments.unpublish');
+    Route::get('portal/assignments/{assignment}/submissions', [AssignmentController::class, 'submissions'])->name('assignments.submissions');
+    Route::post('portal/assignments/{assignment}/submissions/{submission}/grade', [AssignmentController::class, 'grade'])->name('assignments.submissions.grade');
+    Route::get('portal/assignments/{assignment}/submissions/{submission}/download', [AssignmentController::class, 'downloadSubmission'])
+        ->middleware('signed')
+        ->name('assignments.submissions.download');
+
+    Route::get('portal/my-assignments', [MyAssignmentsController::class, 'index'])->name('my-assignments.index');
+    Route::post('portal/my-assignments/{assignment}/submit', [MyAssignmentsController::class, 'submit'])->name('my-assignments.submit');
+    // --- end Assignments ---
 
     Route::get('portal/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::post('portal/messages', [MessageController::class, 'store'])->name('messages.store');

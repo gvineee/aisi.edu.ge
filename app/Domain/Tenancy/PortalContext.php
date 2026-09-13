@@ -112,6 +112,20 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "დავალებები" nav destination (Assignments &
+     * Submissions) — the teacher-authoring view and the student
+     * submission view respectively; the href picked in navItemsFor()
+     * differs per role, but both re-check ownership/enrollment themselves
+     * in AssignmentController/MyAssignmentsController.
+     *
+     * @var array<int, string>
+     */
+    private const ASSIGNMENT_ACCESS_ROLES = [
+        TenantMembership::ROLE_TEACHER,
+        TenantMembership::ROLE_STUDENT,
+    ];
+
+    /**
      * @return array<int, string> active role strings, in ROLE_PRIORITY order
      */
     public function activeRoles(int $tenantId, int $userId): array
@@ -182,6 +196,17 @@ class PortalContext
 
         if (in_array($activeRole, self::TEACHER_MANAGEMENT_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'teachers', 'label' => 'მასწავლებლები', 'href' => route('teachers.index'), 'icon' => 'teachers'];
+        }
+
+        if (in_array($activeRole, self::ASSIGNMENT_ACCESS_ROLES, true)) {
+            $items[] = [
+                'key' => 'assignments',
+                'label' => 'დავალებები',
+                'href' => $activeRole === TenantMembership::ROLE_TEACHER
+                    ? route('assignments.index')
+                    : route('my-assignments.index'),
+                'icon' => 'assignments',
+            ];
         }
 
         return $items;
