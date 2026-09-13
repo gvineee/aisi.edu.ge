@@ -48,11 +48,15 @@ export default function PublicLayout({ children }: PropsWithChildren) {
             >
                 <header className="relative border-b border-slate-200 bg-white">
                     <div className="mx-auto flex h-[76px] max-w-6xl items-center justify-between gap-6 px-6">
-                        <Link href="/" aria-label={`${name} — მთავარი`}>
+                        <Link
+                            href="/"
+                            className="shrink-0"
+                            aria-label={`${name} — მთავარი`}
+                        >
                             <Logo brand={brand} />
                         </Link>
 
-                        <nav className="hidden gap-4 xl:gap-8 lg:flex">
+                        <nav className="hidden min-w-0 gap-3 xl:gap-8 lg:flex">
                             {nav.map((item) => (
                                 <Link
                                     key={item.href}
@@ -64,7 +68,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             ))}
                         </nav>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex shrink-0 items-center gap-3">
                             <Link
                                 href={login()}
                                 className="hidden min-h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold whitespace-nowrap lg:inline-flex"
