@@ -148,6 +148,27 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                         </div>
                     </div>
                     <div className="mx-auto max-w-6xl px-6">
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-200 py-4 text-xs text-[var(--brand-muted)]">
+                            <Link href="/admissions" className="hover:underline">
+                                მიღება
+                            </Link>
+                            <Link
+                                href="/official-documents"
+                                className="hover:underline"
+                            >
+                                დოკუმენტები
+                            </Link>
+                            <a
+                                href="https://aisi.edupage.org"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                            >
+                                ელექტრონული ჟურნალი
+                            </a>
+                        </div>
+                    </div>
+                    <div className="mx-auto max-w-6xl px-6">
                         <p className="border-t border-slate-200 py-4 text-xs text-[var(--brand-muted)]">
                             დამზადებულია{' '}
                             <a

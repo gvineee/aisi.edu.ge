@@ -3,6 +3,7 @@ import {
     ArrowRight,
     ArrowUpRight,
     BookOpen,
+    FileText,
     Sparkles,
     Users,
 } from 'lucide-react';
@@ -64,7 +65,15 @@ type Block =
           ctaHref?: string;
       }
     | { type: 'text'; heading: string; body: string | string[] }
-    | { type: 'contact_cta'; eyebrow?: string; heading: string; body?: string };
+    | { type: 'contact_cta'; eyebrow?: string; heading: string; body?: string }
+    | {
+          type: 'documents';
+          heading?: string;
+          groups: Array<{
+              heading: string;
+              items: Array<{ title: string; url: string }>;
+          }>;
+      };
 
 type LatestPost = {
     slug: string;
@@ -726,6 +735,49 @@ export default function CmsPage({
                                         დაგეგმე ვიზიტი{' '}
                                         <ArrowUpRight size={18} />
                                     </button>
+                                </div>
+                            </section>
+                        );
+
+                    case 'documents':
+                        return (
+                            <section
+                                key={index}
+                                className="mx-auto max-w-6xl px-6 py-16"
+                            >
+                                {block.heading && (
+                                    <h2 className="mb-10 text-2xl sm:text-3xl">
+                                        {block.heading}
+                                    </h2>
+                                )}
+                                <div className="grid gap-10 sm:grid-cols-2">
+                                    {block.groups.map((group) => (
+                                        <div key={group.heading}>
+                                            <h3 className="mb-4 text-lg font-semibold">
+                                                {group.heading}
+                                            </h3>
+                                            <ul className="flex flex-col gap-2">
+                                                {group.items.map((item) => (
+                                                    <li key={item.url}>
+                                                        <a
+                                                            href={item.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 hover:bg-slate-50"
+                                                        >
+                                                            <FileText
+                                                                size={18}
+                                                                className="shrink-0 text-slate-400"
+                                                            />
+                                                            <span>
+                                                                {item.title}
+                                                            </span>
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
                                 </div>
                             </section>
                         );

@@ -85,7 +85,7 @@ class PageController extends Controller
             ->where('status', Post::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
             ->orderByDesc('published_at')
-            ->limit(3)
+            ->limit(6)
             ->get(['slug', 'title', 'excerpt', 'published_at'])
             ->map(fn (Post $post) => [
                 'slug' => $post->slug,

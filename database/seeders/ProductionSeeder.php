@@ -3,8 +3,11 @@
 namespace Database\Seeders;
 
 use App\Domain\Content\AboutPageBlueprint;
+use App\Domain\Content\AdmissionsPageBlueprint;
+use App\Domain\Content\DocumentsPageBlueprint;
 use App\Domain\Content\HomePageBlueprint;
 use App\Domain\Content\Models\Page;
+use App\Domain\Content\SchoolLifePageBlueprint;
 use App\Domain\Tenancy\Models\BrandSetting;
 use App\Domain\Tenancy\Models\FeatureEntitlement;
 use App\Domain\Tenancy\Models\Tenant;
@@ -173,14 +176,7 @@ class ProductionSeeder extends Seeder
                 'excerpt' => 'დღეები, რომლებიც გვზრდის.',
                 'seo_title' => 'სასკოლო ცხოვრება — აისი',
                 'seo_description' => 'აისის სასკოლო ცხოვრება, კლუბები და ღონისძიებები.',
-                'blocks' => [
-                    [
-                        'type' => 'hero',
-                        'eyebrow' => 'სასკოლო ცხოვრება',
-                        'heading' => 'დღეები, რომლებიც გვზრდის.',
-                        'body' => 'პროექტები, კლუბები და ერთად შექმნილი ამბები.',
-                    ],
-                ],
+                'blocks' => SchoolLifePageBlueprint::blocks(),
             ],
             [
                 'slug' => 'contact',
@@ -191,6 +187,22 @@ class ProductionSeeder extends Seeder
                 'blocks' => [
                     ['type' => 'contact_cta', 'heading' => 'გავიცნოთ ერთმანეთი.', 'body' => 'აირჩიეთ დრო სკოლასთან სასაუბროდ, ან დაგვიკავშირდით პირდაპირ.'],
                 ],
+            ],
+            [
+                'slug' => 'official-documents',
+                'title' => 'დოკუმენტები',
+                'excerpt' => 'ფინანსური ანგარიშები, სამოქმედო გეგმები და შიდა რეგულაციები.',
+                'seo_title' => 'ოფიციალური დოკუმენტები — აისი',
+                'seo_description' => 'სკოლა აისის ფინანსური ანგარიშები, სამოქმედო გეგმები და შიდა რეგულაციები.',
+                'blocks' => DocumentsPageBlueprint::blocks(),
+            ],
+            [
+                'slug' => 'admissions',
+                'title' => 'მიღება',
+                'excerpt' => 'ჩარიცხვის წესი და ვიზიტის დაგეგმვა.',
+                'seo_title' => 'მიღება — აისი',
+                'seo_description' => 'გაეცანით სკოლა აისის ჩარიცხვის წესს და დაგეგმეთ ვიზიტი.',
+                'blocks' => AdmissionsPageBlueprint::blocks(),
             ],
         ] as $page) {
             $aisi->pages()->updateOrCreate(

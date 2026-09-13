@@ -3,8 +3,11 @@
 namespace Database\Seeders;
 
 use App\Domain\Content\AboutPageBlueprint;
+use App\Domain\Content\AdmissionsPageBlueprint;
+use App\Domain\Content\DocumentsPageBlueprint;
 use App\Domain\Content\HomePageBlueprint;
 use App\Domain\Content\Models\Page;
+use App\Domain\Content\SchoolLifePageBlueprint;
 use App\Domain\Documents\Models\DocumentWorkspace;
 use App\Domain\Tenancy\Models\BrandSetting;
 use App\Domain\Tenancy\Models\FeatureEntitlement;
@@ -276,14 +279,7 @@ class TenantSeeder extends Seeder
             'locale' => 'ka',
             'title' => 'სასკოლო ცხოვრება',
             'excerpt' => 'დღეები, რომლებიც გვზრდის.',
-            'blocks' => [
-                [
-                    'type' => 'hero',
-                    'eyebrow' => 'სასკოლო ცხოვრება',
-                    'heading' => 'დღეები, რომლებიც გვზრდის.',
-                    'body' => 'პროექტები, კლუბები და ერთად შექმნილი ამბები.',
-                ],
-            ],
+            'blocks' => SchoolLifePageBlueprint::blocks(),
             'status' => Page::STATUS_PUBLISHED,
             'published_at' => now(),
             'seo_title' => 'სასკოლო ცხოვრება — აისი',
@@ -308,6 +304,34 @@ class TenantSeeder extends Seeder
             'published_at' => now(),
             'seo_title' => 'კონტაქტი — აისი',
             'seo_description' => 'დაუკავშირდით სკოლა აისის გუნდს.',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $aisi->pages()->create([
+            'slug' => 'official-documents',
+            'locale' => 'ka',
+            'title' => 'დოკუმენტები',
+            'excerpt' => 'ფინანსური ანგარიშები, სამოქმედო გეგმები და შიდა რეგულაციები.',
+            'blocks' => DocumentsPageBlueprint::blocks(),
+            'status' => Page::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'seo_title' => 'ოფიციალური დოკუმენტები — აისი',
+            'seo_description' => 'სკოლა აისის ფინანსური ანგარიშები, სამოქმედო გეგმები და შიდა რეგულაციები.',
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $aisi->pages()->create([
+            'slug' => 'admissions',
+            'locale' => 'ka',
+            'title' => 'მიღება',
+            'excerpt' => 'ჩარიცხვის წესი და ვიზიტის დაგეგმვა.',
+            'blocks' => AdmissionsPageBlueprint::blocks(),
+            'status' => Page::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'seo_title' => 'მიღება — აისი',
+            'seo_description' => 'გაეცანით სკოლა აისის ჩარიცხვის წესს და დაგეგმეთ ვიზიტი.',
             'created_by' => $admin->id,
             'updated_by' => $admin->id,
         ]);
