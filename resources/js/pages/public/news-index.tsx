@@ -6,6 +6,7 @@ type PostSummary = {
     title: string;
     excerpt: string | null;
     publishedAt: string | null;
+    coverImageUrl: string | null;
 };
 
 type Paginated<T> = {
@@ -43,6 +44,13 @@ export default function NewsIndex({ posts }: Props) {
                             key={post.slug}
                             className="border-b border-slate-200 pb-8"
                         >
+                            {post.coverImageUrl && (
+                                <img
+                                    src={post.coverImageUrl}
+                                    alt=""
+                                    className="mb-4 h-48 w-full rounded-lg object-cover"
+                                />
+                            )}
                             {post.publishedAt && (
                                 <time className="text-xs text-slate-500">
                                     {new Date(

@@ -10,6 +10,7 @@ type Props = {
         publishedAt: string | null;
         seoTitle: string | null;
         seoDescription: string | null;
+        coverImageUrl: string | null;
     };
     /** Set only by CmsPostController::preview — see public/page.tsx's Props. */
     preview?: boolean;
@@ -49,6 +50,13 @@ export default function NewsShow({ post, preview = false }: Props) {
                     </time>
                 )}
                 <h1 className="mt-3 mb-6 text-3xl sm:text-4xl">{post.title}</h1>
+                {post.coverImageUrl && (
+                    <img
+                        src={post.coverImageUrl}
+                        alt=""
+                        className="mb-8 w-full rounded-xl object-cover"
+                    />
+                )}
                 <p className="text-lg leading-relaxed whitespace-pre-line text-slate-700">
                     {post.body}
                 </p>

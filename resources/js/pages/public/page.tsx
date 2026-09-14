@@ -80,6 +80,7 @@ type LatestPost = {
     title: string;
     excerpt: string | null;
     publishedAt: string | null;
+    coverImageUrl: string | null;
 };
 
 type FeaturedTeacher = {
@@ -575,25 +576,34 @@ export default function CmsPage({
                                             <Link
                                                 key={post.slug}
                                                 href={`/news/${post.slug}`}
-                                                className="block rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+                                                className="block overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200"
                                             >
-                                                {post.publishedAt && (
-                                                    <p className="mb-2 text-xs font-semibold text-slate-500">
-                                                        {new Date(
-                                                            post.publishedAt,
-                                                        ).toLocaleDateString(
-                                                            'ka-GE',
-                                                        )}
-                                                    </p>
+                                                {post.coverImageUrl && (
+                                                    <img
+                                                        src={post.coverImageUrl}
+                                                        alt=""
+                                                        className="h-40 w-full object-cover"
+                                                    />
                                                 )}
-                                                <h3 className="mb-2 text-lg">
-                                                    {post.title}
-                                                </h3>
-                                                {post.excerpt && (
-                                                    <p className="text-sm text-slate-600">
-                                                        {post.excerpt}
-                                                    </p>
-                                                )}
+                                                <div className="p-6">
+                                                    {post.publishedAt && (
+                                                        <p className="mb-2 text-xs font-semibold text-slate-500">
+                                                            {new Date(
+                                                                post.publishedAt,
+                                                            ).toLocaleDateString(
+                                                                'ka-GE',
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                    <h3 className="mb-2 text-lg">
+                                                        {post.title}
+                                                    </h3>
+                                                    {post.excerpt && (
+                                                        <p className="text-sm text-slate-600">
+                                                            {post.excerpt}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </Link>
                                         ))}
                                     </div>

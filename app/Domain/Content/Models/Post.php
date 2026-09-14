@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * A news/story article ("აისის ამბები") — separate from Page, which is
@@ -44,6 +45,11 @@ class Post extends Model
     public function isPublished(): bool
     {
         return $this->status === self::STATUS_PUBLISHED && $this->published_at !== null;
+    }
+
+    public function coverImageUrl(): ?string
+    {
+        return $this->cover_image_path !== null ? Storage::disk('public')->url($this->cover_image_path) : null;
     }
 
     /**

@@ -163,6 +163,7 @@ class CmsPostController extends Controller
                 'publishedAt' => $post->published_at?->toIso8601String(),
                 'seoTitle' => $post->seo_title,
                 'seoDescription' => $post->seo_description,
+                'coverImageUrl' => $post->coverImageUrl(),
             ],
             'preview' => true,
         ]);

@@ -26,6 +26,7 @@ class PostController extends Controller
                 'title' => $post->title,
                 'excerpt' => $post->excerpt,
                 'publishedAt' => $post->published_at?->toIso8601String(),
+                'coverImageUrl' => $post->coverImageUrl(),
             ]);
 
         return Inertia::render('public/news-index', [
@@ -56,6 +57,7 @@ class PostController extends Controller
                 'publishedAt' => $post->published_at?->toIso8601String(),
                 'seoTitle' => $post->seo_title,
                 'seoDescription' => $post->seo_description,
+                'coverImageUrl' => $post->coverImageUrl(),
             ],
         ]);
     }

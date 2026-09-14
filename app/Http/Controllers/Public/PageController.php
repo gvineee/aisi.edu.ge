@@ -86,12 +86,13 @@ class PageController extends Controller
             ->whereNotNull('published_at')
             ->orderByDesc('published_at')
             ->limit(6)
-            ->get(['slug', 'title', 'excerpt', 'published_at'])
+            ->get(['slug', 'title', 'excerpt', 'published_at', 'cover_image_path'])
             ->map(fn (Post $post) => [
                 'slug' => $post->slug,
                 'title' => $post->title,
                 'excerpt' => $post->excerpt,
                 'publishedAt' => $post->published_at?->toIso8601String(),
+                'coverImageUrl' => $post->coverImageUrl(),
             ])
             ->values()
             ->all();
