@@ -64,7 +64,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/verify-enrollment', [EnrollmentVerificationController::class, 'store'])->name('enrollment-verification.store');
     Route::post('portal/active-role', [PortalRoleController::class, 'update'])->name('portal.active-role.update');
 
+    // --- Timetable (admin/academic_manager) — creates the subjects/lessons
+    // rows the Substitution module's absence/coverage worklist depends on.
+    // Before `index`/`storeSubject` existed, LessonController::store was
+    // unreachable dead code from any real UI (no page posted to it, and
+    // nothing anywhere could create a Subject) — confirmed as the
+    // production root blocker in Substitution module verification. ---
+    Route::get('portal/timetable', [LessonController::class, 'index'])->name('timetable.index');
+    Route::post('portal/timetable/subjects', [LessonController::class, 'storeSubject'])->name('timetable.subjects.store');
     Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
+    // --- end Timetable ---
 
     Route::get('portal/students/{student}/portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
     Route::post('portal/students/{student}/portfolio', [PortfolioController::class, 'store'])->name('portfolio.store');

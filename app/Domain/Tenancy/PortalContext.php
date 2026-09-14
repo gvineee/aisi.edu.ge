@@ -153,6 +153,20 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "განრიგი" nav destination — kept in sync with
+     * LessonController::ACCESS_ROLES for the same reason as
+     * DOCUMENT_ACCESS_ROLES above (director is deliberately excluded here,
+     * matching LessonController's own docblock: schedule authoring is the
+     * academic manager's job, not the director's).
+     *
+     * @var array<int, string>
+     */
+    private const TIMETABLE_ACCESS_ROLES = [
+        TenantMembership::ROLE_ACADEMIC_MANAGER,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * @return array<int, string> active role strings, in ROLE_PRIORITY order
      */
     public function activeRoles(int $tenantId, int $userId): array
@@ -238,6 +252,10 @@ class PortalContext
                     : route('my-assignments.index'),
                 'icon' => 'assignments',
             ];
+        }
+
+        if (in_array($activeRole, self::TIMETABLE_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'timetable', 'label' => 'განრიგი', 'href' => route('timetable.index'), 'icon' => 'timetable'];
         }
 
         if (in_array($activeRole, self::SUBSTITUTION_ACCESS_ROLES, true)) {

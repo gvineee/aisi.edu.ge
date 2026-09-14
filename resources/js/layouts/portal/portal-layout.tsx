@@ -1,6 +1,7 @@
 import { Form, Link, router, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren } from 'react';
 import {
+    CalendarClock,
     CalendarRange,
     ClipboardList,
     FileText,
@@ -34,6 +35,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     assignments: ClipboardList,
     'academic-structure': CalendarRange,
     substitutions: Repeat,
+    timetable: CalendarClock,
 };
 
 /**

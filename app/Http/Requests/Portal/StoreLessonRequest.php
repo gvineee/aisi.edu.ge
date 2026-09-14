@@ -2,8 +2,12 @@
 
 namespace App\Http\Requests\Portal;
 
+use App\Domain\Academics\Models\AcademicYear;
+use App\Domain\Academics\Models\SchoolClass;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Timetable\Actions\CheckLessonConflicts;
+use App\Domain\Timetable\Models\Room;
+use App\Domain\Timetable\Models\Subject;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -43,6 +47,36 @@ class StoreLessonRequest extends FormRequest
 
             $tenant = app(CurrentTenant::class)->get();
             $data = $validator->getData();
+
+            // Every one of these ids is client-supplied and must not be
+            // trusted as belonging to the current tenant (CLAUDE.md
+            // invariant #2: relations/route binding must re-check tenant
+            // scope) — without this, an academic_manager could reference
+            // another school's class/subject/year/room by guessing its id,
+            // creating a lesson row that leaks cross-tenant data through
+            // its own relations. Each model already carries BelongsToTenant,
+            // but that global scope is a convenience, never the sole
+            // isolation guarantee for a client-supplied id (see that
+            // trait's own docblock) — hence the explicit tenant_id here too.
+            if (! AcademicYear::query()->where('tenant_id', $tenant->id)->whereKey($data['academic_year_id'])->exists()) {
+                $validator->errors()->add('academic_year_id', 'არასწორი მონაცემი — სცადეთ თავიდან.');
+            }
+
+            if (! SchoolClass::query()->where('tenant_id', $tenant->id)->whereKey($data['school_class_id'])->exists()) {
+                $validator->errors()->add('school_class_id', 'არასწორი მონაცემი — სცადეთ თავიდან.');
+            }
+
+            if (! Subject::query()->where('tenant_id', $tenant->id)->whereKey($data['subject_id'])->exists()) {
+                $validator->errors()->add('subject_id', 'არასწორი მონაცემი — სცადეთ თავიდან.');
+            }
+
+            if (! empty($data['room_id']) && ! Room::query()->where('tenant_id', $tenant->id)->whereKey($data['room_id'])->exists()) {
+                $validator->errors()->add('room_id', 'არასწორი მონაცემი — სცადეთ თავიდან.');
+            }
+
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
 
             $conflicts = app(CheckLessonConflicts::class)->find(
                 tenantId: $tenant->id,
