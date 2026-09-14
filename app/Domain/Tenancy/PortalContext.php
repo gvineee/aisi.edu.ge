@@ -139,6 +139,20 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "ჩანაცვლებები" nav destination — kept in sync with
+     * SubstitutionController::ACCESS_ROLES for the same reason as
+     * DOCUMENT_ACCESS_ROLES above. A substitute teacher sees their assigned
+     * coverage on the ordinary teacher dashboard instead, no nav item.
+     *
+     * @var array<int, string>
+     */
+    private const SUBSTITUTION_ACCESS_ROLES = [
+        TenantMembership::ROLE_ACADEMIC_MANAGER,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * @return array<int, string> active role strings, in ROLE_PRIORITY order
      */
     public function activeRoles(int $tenantId, int $userId): array
@@ -224,6 +238,10 @@ class PortalContext
                     : route('my-assignments.index'),
                 'icon' => 'assignments',
             ];
+        }
+
+        if (in_array($activeRole, self::SUBSTITUTION_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'substitutions', 'label' => 'ჩანაცვლებები', 'href' => route('substitutions.index'), 'icon' => 'substitutions'];
         }
 
         return $items;

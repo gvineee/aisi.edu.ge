@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { BookMarked, CalendarClock, ClipboardList } from 'lucide-react';
+import { BookMarked, CalendarClock, ClipboardList, Repeat } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 import DashboardHeading from '@/components/portal/dashboard-heading';
@@ -26,10 +26,21 @@ type NewsItem = {
     publishedAt: string | null;
 };
 
+type SubstitutionEntry = {
+    lessonId: number;
+    subject: string;
+    className: string;
+    startsAt: string;
+    endsAt: string;
+    roomName: string | null;
+    absentTeacherName: string;
+};
+
 type Props = {
     date: string;
     lessons: LessonEntry[];
     portfolioReviewCount: number;
+    substitutions: SubstitutionEntry[];
     actionItems: ActionItem[];
     recentNews: NewsItem[];
 };
@@ -38,6 +49,7 @@ export default function TeacherDashboard({
     date,
     lessons,
     portfolioReviewCount,
+    substitutions,
     actionItems,
     recentNews,
 }: Props) {
@@ -107,6 +119,36 @@ export default function TeacherDashboard({
             <div className="mb-6">
                 <ActionFeed items={actionItems} />
             </div>
+
+            {substitutions.length > 0 && (
+                <div className="mb-6 space-y-3">
+                    {substitutions.map((substitution) => (
+                        <div
+                            key={substitution.lessonId}
+                            className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
+                        >
+                            <Repeat
+                                size={20}
+                                className="mt-0.5 shrink-0 text-amber-700"
+                            />
+                            <p className="text-sm text-amber-900">
+                                დღეს ჩაანაცვლებთ{' '}
+                                <strong>
+                                    {substitution.absentTeacherName}
+                                </strong>
+                                -ს — {substitution.subject} ·{' '}
+                                {substitution.className} (
+                                {substitution.startsAt}–
+                                {substitution.endsAt}
+                                {substitution.roomName
+                                    ? `, ${substitution.roomName}`
+                                    : ''}
+                                )
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className="grid gap-6 lg:grid-cols-2">
                 <Panel title="დღევანდელი გაკვეთილები" className="lg:col-span-1">

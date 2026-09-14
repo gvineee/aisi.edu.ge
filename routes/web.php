@@ -19,6 +19,7 @@ use App\Http\Controllers\Portal\MyAssignmentsController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
+use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\TeacherController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\InvitationController;
@@ -163,6 +164,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/academic-structure/school-classes', [AcademicStructureController::class, 'storeSchoolClass'])->name('academic-structure.school-classes.store');
     Route::post('portal/academic-structure/students', [AcademicStructureController::class, 'storeStudent'])->name('academic-structure.students.store');
     // --- end Academic structure ---
+
+    // --- Substitutions (admin/academic_manager/director) — the "teacher
+    // workspace" piece the last audit found missing; lessons/attendance/
+    // teacher_assignments were already real. Substitute teachers see their
+    // assigned coverage on their own dashboard (DashboardController), no
+    // separate route needed for that side. ---
+    Route::get('portal/substitutions', [SubstitutionController::class, 'index'])->name('substitutions.index');
+    Route::post('portal/substitutions/absences', [SubstitutionController::class, 'storeAbsence'])->name('substitutions.absences.store');
+    Route::post('portal/substitutions/assign', [SubstitutionController::class, 'assign'])->name('substitutions.assign');
+    Route::post('portal/substitutions/{substitutionAssignment}/cancel', [SubstitutionController::class, 'cancel'])->name('substitutions.cancel');
+    // --- end Substitutions ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

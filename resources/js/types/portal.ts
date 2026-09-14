@@ -6,7 +6,8 @@ export type PortalNavIconKey =
     | 'members'
     | 'teachers'
     | 'assignments'
-    | 'academic-structure';
+    | 'academic-structure'
+    | 'substitutions';
 
 export interface PortalNavItem {
     key: string;

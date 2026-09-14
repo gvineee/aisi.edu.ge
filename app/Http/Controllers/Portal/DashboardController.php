@@ -16,6 +16,7 @@ use App\Domain\Tenancy\Models\TenantMembership;
 use App\Domain\Tenancy\PortalContext;
 use App\Domain\Timetable\Actions\ResolveDailyLessons;
 use App\Domain\Timetable\Models\Lesson;
+use App\Domain\Timetable\Models\SubstitutionAssignment;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -152,6 +153,16 @@ class DashboardController extends Controller
             ->whereHas('student', fn ($query) => $query->whereIn('school_class_id', $classIds))
             ->count();
 
+        // Substitution coverage (docs/02 "teacher workspace" — this teacher
+        // stepping in for someone else today, not their own schedule above).
+        $substitutions = SubstitutionAssignment::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('substitute_teacher_id', $user->id)
+            ->where('status', SubstitutionAssignment::STATUS_ASSIGNED)
+            ->whereDate('date', $today->toDateString())
+            ->with(['lesson.subject', 'lesson.schoolClass', 'lesson.room', 'absentTeacher'])
+            ->get();
+
         return Inertia::render('portal/teacher-dashboard', [
             'date' => $today->toDateString(),
             'lessons' => $lessons->map(fn (array $entry) => [
@@ -160,6 +171,15 @@ class DashboardController extends Controller
                 'className' => $entry['lesson']->schoolClass->name,
             ])->values()->all(),
             'portfolioReviewCount' => $portfolioReviewCount,
+            'substitutions' => $substitutions->map(fn (SubstitutionAssignment $assignment) => [
+                'lessonId' => $assignment->lesson_id,
+                'subject' => $assignment->lesson->subject->name,
+                'className' => $assignment->lesson->schoolClass->name,
+                'startsAt' => substr($assignment->lesson->starts_at, 0, 5),
+                'endsAt' => substr($assignment->lesson->ends_at, 0, 5),
+                'roomName' => $assignment->lesson->room?->name,
+                'absentTeacherName' => $assignment->absentTeacher->name,
+            ])->values()->all(),
             'actionItems' => $actionItems,
             'recentNews' => $recentNews,
         ]);

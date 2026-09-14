@@ -9,6 +9,7 @@ import {
     LogOut,
     MessageSquareText,
     Newspaper,
+    Repeat,
     Users,
 } from 'lucide-react';
 import { logout } from '@/routes';
@@ -32,6 +33,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     teachers: GraduationCap,
     assignments: ClipboardList,
     'academic-structure': CalendarRange,
+    substitutions: Repeat,
 };
 
 /**
