@@ -7,6 +7,7 @@ use App\Http\Controllers\Portal\AttendanceController;
 use App\Http\Controllers\Portal\CmsMediaController;
 use App\Http\Controllers\Portal\CmsPageController;
 use App\Http\Controllers\Portal\CmsPostController;
+use App\Http\Controllers\Portal\ConsentController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
 use App\Http\Controllers\Portal\DocumentApprovalController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
 use App\Http\Controllers\Portal\MyAssignmentsController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
+use App\Http\Controllers\Portal\PickupController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
 use App\Http\Controllers\Portal\SubstitutionController;
@@ -198,6 +200,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/admissions-pipeline/{admissionLead}/appointments', [AdmissionsPipelineController::class, 'storeAppointment'])->name('admissions-pipeline.appointments.store');
     Route::post('portal/admissions-pipeline/{admissionLead}/decision', [AdmissionsPipelineController::class, 'storeDecision'])->name('admissions-pipeline.decision.store');
     // --- end Admissions pipeline ---
+
+    // --- Pickup & Consent (CLAUDE-PLATFORM-MODULES.md §7) — guardian-facing
+    // authorized-pickup management under portal/pickup, and consent
+    // forms/responses under portal/consents (published by admin/director,
+    // responded to by guardians, roster viewed by admin/director). Added at
+    // the end of this group so parallel agent edits above are easy to merge
+    // around. ---
+    Route::get('portal/pickup', [PickupController::class, 'index'])->name('pickup.index');
+    Route::post('portal/pickup', [PickupController::class, 'store'])->name('pickup.store');
+    Route::post('portal/pickup/{authorizedPickup}/remove', [PickupController::class, 'destroy'])->name('pickup.remove');
+
+    Route::get('portal/consents', [ConsentController::class, 'index'])->name('consents.index');
+    Route::post('portal/consents', [ConsentController::class, 'store'])->name('consents.store');
+    Route::get('portal/consents/{consentForm}/roster', [ConsentController::class, 'roster'])->name('consents.roster');
+    Route::post('portal/consents/{consentForm}/respond', [ConsentController::class, 'respond'])->name('consents.respond');
+    // --- end Pickup & Consent ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

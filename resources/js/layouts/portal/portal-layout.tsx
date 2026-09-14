@@ -4,6 +4,7 @@ import {
     CalendarClock,
     CalendarRange,
     ClipboardList,
+    FileCheck2,
     FileText,
     GraduationCap,
     House,
@@ -11,6 +12,7 @@ import {
     MessageSquareText,
     Newspaper,
     Repeat,
+    UserCheck,
     UserPlus,
     Users,
 } from 'lucide-react';
@@ -38,6 +40,8 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     substitutions: Repeat,
     timetable: CalendarClock,
     'admissions-pipeline': UserPlus,
+    pickup: UserCheck,
+    consents: FileCheck2,
 };
 
 /**

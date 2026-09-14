@@ -9,7 +9,9 @@ export type PortalNavIconKey =
     | 'academic-structure'
     | 'substitutions'
     | 'timetable'
-    | 'admissions-pipeline';
+    | 'admissions-pipeline'
+    | 'pickup'
+    | 'consents';
 
 export interface PortalNavItem {
     key: string;

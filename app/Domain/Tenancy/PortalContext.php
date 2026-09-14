@@ -180,6 +180,32 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "უფლებამოსილი პირები" (authorized pickup) nav
+     * destination — kept in sync with PickupController, which re-checks
+     * every action against the caller's own active GuardianLink rows
+     * regardless of nav visibility.
+     *
+     * @var array<int, string>
+     */
+    private const PICKUP_ACCESS_ROLES = [
+        TenantMembership::ROLE_GUARDIAN,
+    ];
+
+    /**
+     * Roles that get the "თანხმობები" nav destination — kept in sync with
+     * ConsentController::STAFF_ROLES plus the guardian role it also serves
+     * (the same route renders a different screen per role); nav visibility
+     * is not the authorization check, ConsentController re-runs it itself.
+     *
+     * @var array<int, string>
+     */
+    private const CONSENT_ACCESS_ROLES = [
+        TenantMembership::ROLE_GUARDIAN,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * @return array<int, string> active role strings, in ROLE_PRIORITY order
      */
     public function activeRoles(int $tenantId, int $userId): array
@@ -277,6 +303,14 @@ class PortalContext
 
         if (in_array($activeRole, self::ADMISSIONS_PIPELINE_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'admissions-pipeline', 'label' => 'მიღების პროცესი', 'href' => route('admissions-pipeline.index'), 'icon' => 'admissions-pipeline'];
+        }
+
+        if (in_array($activeRole, self::PICKUP_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'pickup', 'label' => 'უფლებამოსილი პირები', 'href' => route('pickup.index'), 'icon' => 'pickup'];
+        }
+
+        if (in_array($activeRole, self::CONSENT_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'consents', 'label' => 'თანხმობები', 'href' => route('consents.index'), 'icon' => 'consents'];
         }
 
         return $items;
