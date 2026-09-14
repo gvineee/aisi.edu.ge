@@ -17,8 +17,12 @@ use Inertia\Response;
 /**
  * "უფლებამოსილი პირები" — guardian-facing management of who else may pick up
  * their child (CLAUDE-PLATFORM-MODULES.md §7). Every action here is scoped
- * to the caller's own active {@see GuardianLink} rows; a client-supplied
- * student id is never trusted on its own — see isGuardianOf().
+ * to the caller's own active {@see GuardianLink} rows that additionally carry
+ * the dedicated `can_pickup` permission bit — an active link alone grants
+ * academic/notification visibility, not authority over physical pickup
+ * (CLAUDE.md invariant #3: guardian access needs an active link AND the
+ * specific permission). A client-supplied student id is never trusted on its
+ * own — see activeGuardianLink().
  */
 class PickupController extends Controller
 {
@@ -31,6 +35,7 @@ class PickupController extends Controller
             ->where('tenant_id', $tenant->id)
             ->where('user_id', $user->id)
             ->where('is_active', true)
+            ->where('can_pickup', true)
             ->with(['student' => fn ($query) => $query->where('is_active', true)])
             ->get()
             ->filter(fn (GuardianLink $link) => $link->student !== null);
@@ -83,6 +88,7 @@ class PickupController extends Controller
             ->where('student_id', $studentId)
             ->where('user_id', $userId)
             ->where('is_active', true)
+            ->where('can_pickup', true)
             ->with('student')
             ->first();
     }

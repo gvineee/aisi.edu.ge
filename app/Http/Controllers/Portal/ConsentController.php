@@ -187,6 +187,7 @@ class ConsentController extends Controller
     private function formatChild(GuardianLink $link, Collection $forms): array
     {
         $responses = ConsentResponse::query()
+            ->where('tenant_id', $link->tenant_id)
             ->where('student_id', $link->student_id)
             ->get()
             ->keyBy('consent_form_id');

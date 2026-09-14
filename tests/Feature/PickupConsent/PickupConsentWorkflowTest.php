@@ -133,6 +133,48 @@ class PickupConsentWorkflowTest extends TestCase
         ])->assertForbidden();
     }
 
+    /**
+     * can_pickup is a separate, independently revocable permission bit on
+     * guardian_links (default false) — an active link alone must not grant
+     * pickup authority (CLAUDE.md invariant #3).
+     */
+    public function test_guardian_with_active_link_but_can_pickup_disabled_is_forbidden(): void
+    {
+        ['tenant' => $tenant, 'guardian' => $guardian, 'student' => $student] = $this->baseFixtures();
+
+        $tenant->guardianLinks()->where('user_id', $guardian->id)->where('student_id', $student->id)->update(['can_pickup' => false]);
+
+        $this->actingAs($guardian)->get('/portal/pickup')->assertOk();
+
+        $this->actingAs($guardian)->post('/portal/pickup', [
+            'student_id' => $student->id,
+            'full_name' => 'ვინმე',
+            'relationship' => 'ნათესავი',
+        ])->assertForbidden();
+
+        $this->assertSame(0, AuthorizedPickup::query()->count());
+
+        // Give another, pickup-enabled guardian a pickup entry, then confirm
+        // the can_pickup=false guardian still cannot remove it either.
+        $otherGuardian = User::factory()->create();
+        TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $otherGuardian->id, 'role' => TenantMembership::ROLE_GUARDIAN, 'is_active' => true]);
+        $tenant->guardianLinks()->create([
+            'user_id' => $otherGuardian->id, 'student_id' => $student->id,
+            'can_view_academic' => true, 'can_view_financial' => false,
+            'can_pickup' => true, 'can_receive_notifications' => true, 'is_active' => true,
+        ]);
+
+        $this->actingAs($otherGuardian)->post('/portal/pickup', [
+            'student_id' => $student->id,
+            'full_name' => 'თამარ მაისურაძე',
+            'relationship' => 'ბებია',
+        ])->assertRedirect(route('pickup.index'));
+        $pickup = AuthorizedPickup::query()->firstOrFail();
+
+        $this->actingAs($guardian)->post("/portal/pickup/{$pickup->id}/remove")->assertForbidden();
+        $this->assertTrue($pickup->fresh()->is_active);
+    }
+
     public function test_admin_can_publish_consent_form_and_guardian_can_respond(): void
     {
         ['admin' => $admin, 'guardian' => $guardian, 'student' => $student] = $this->baseFixtures();
