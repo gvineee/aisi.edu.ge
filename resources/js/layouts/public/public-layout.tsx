@@ -44,10 +44,10 @@ export default function PublicLayout({ children }: PropsWithChildren) {
         <VisitDialogContext.Provider value={openVisitDialog}>
             <div
                 style={brandVars}
-                className="min-h-screen bg-white text-[var(--brand-primary)]"
+                className="min-h-screen overflow-x-hidden bg-white text-[var(--brand-primary)]"
             >
-                <header className="relative border-b border-slate-200 bg-white">
-                    <div className="mx-auto flex h-[76px] max-w-6xl items-center justify-between gap-6 px-6">
+                <header className="relative overflow-x-hidden border-b border-slate-200 bg-white">
+                    <div className="mx-auto flex h-[76px] max-w-6xl items-center gap-6 px-6">
                         <Link
                             href="/"
                             className="shrink-0"
@@ -56,12 +56,14 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             <Logo brand={brand} />
                         </Link>
 
-                        <nav className="hidden min-w-0 gap-3 xl:gap-8 lg:flex">
+                        <nav
+                            className="hidden min-w-0 flex-1 gap-3 overflow-x-auto [scrollbar-width:none] xl:gap-8 lg:flex [&::-webkit-scrollbar]:hidden"
+                        >
                             {nav.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="public-navigation-link whitespace-nowrap"
+                                    className="public-navigation-link shrink-0 whitespace-nowrap"
                                 >
                                     {item.label}
                                 </Link>
