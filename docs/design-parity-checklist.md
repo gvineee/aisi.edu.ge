@@ -45,7 +45,7 @@
 | Safety (pickup/consent) | `/portal/pickup`, `/portal/consents` | `not_started` |
 | Health | `/portal/students/{student}/health` | `not_started` |
 | Teacher workspace detail | `/portal/teacher` | `not_started` (დღევანდელი teacher-dashboard ნაწილობრივ ფარავს "today" ასპექტს) |
-| Substitute | `/portal/staffing/substitutions` | `not_started` |
+| Substitute | `/portal/substitutions` | `verified_local` + **production** — absence report → assign substitute (conflict-checked via `CheckSubstituteAvailability`) → teacher dashboard visibility, admin/academic_manager/director only, tenant-isolated. 5 tests. Deployed to production 2026-09-15 (see `docs/implementation-status.md`); real MySQL identifier-length migration bug found and fixed during that deploy. |
 | Admissions CRM | `/portal/admissions` | `not_started` (მხოლოდ lead-ფორმა არსებობს, არა CRM) |
 | Operations (transport/meals/clubs) | `/portal/transport`, `/portal/meals`, `/portal/clubs` | `not_started` |
 | Director "სკოლის პულსი" | `/portal/director` | `foundation` (director-dashboard-ს აქვს მხოლოდ pending-count ჩანასახი, არა attendance/billing pulse) |
