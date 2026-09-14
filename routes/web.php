@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Portal\AcademicStructureController;
+use App\Http\Controllers\Portal\AdmissionsPipelineController;
 use App\Http\Controllers\Portal\AssignmentController;
 use App\Http\Controllers\Portal\AttendanceController;
 use App\Http\Controllers\Portal\CmsMediaController;
@@ -184,6 +185,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/substitutions/assign', [SubstitutionController::class, 'assign'])->name('substitutions.assign');
     Route::post('portal/substitutions/{substitutionAssignment}/cancel', [SubstitutionController::class, 'cancel'])->name('substitutions.cancel');
     // --- end Substitutions ---
+
+    // --- Admissions pipeline (admin/academic_manager/director) — extends
+    // the Phase 1 public lead form (AdmissionLeadController, /admissions/leads
+    // POST above) into a real pipeline; the last audit found Admissions was
+    // 0% built beyond that bare contact form. Deliberately under
+    // portal/admissions-pipeline, not /admissions, so it never collides with
+    // the public marketing page or the public lead POST endpoint. ---
+    Route::get('portal/admissions-pipeline', [AdmissionsPipelineController::class, 'index'])->name('admissions-pipeline.index');
+    Route::get('portal/admissions-pipeline/{admissionLead}', [AdmissionsPipelineController::class, 'show'])->name('admissions-pipeline.show');
+    Route::post('portal/admissions-pipeline/{admissionLead}/advance-stage', [AdmissionsPipelineController::class, 'advanceStage'])->name('admissions-pipeline.advance-stage');
+    Route::post('portal/admissions-pipeline/{admissionLead}/appointments', [AdmissionsPipelineController::class, 'storeAppointment'])->name('admissions-pipeline.appointments.store');
+    Route::post('portal/admissions-pipeline/{admissionLead}/decision', [AdmissionsPipelineController::class, 'storeDecision'])->name('admissions-pipeline.decision.store');
+    // --- end Admissions pipeline ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

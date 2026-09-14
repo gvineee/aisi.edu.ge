@@ -153,6 +153,19 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "მიღების პროცესი" nav destination — kept in sync
+     * with AdmissionsPipelineController::ACCESS_ROLES for the same reason as
+     * DOCUMENT_ACCESS_ROLES above.
+     *
+     * @var array<int, string>
+     */
+    private const ADMISSIONS_PIPELINE_ACCESS_ROLES = [
+        TenantMembership::ROLE_ACADEMIC_MANAGER,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * Roles that get the "განრიგი" nav destination — kept in sync with
      * LessonController::ACCESS_ROLES for the same reason as
      * DOCUMENT_ACCESS_ROLES above (director is deliberately excluded here,
@@ -260,6 +273,10 @@ class PortalContext
 
         if (in_array($activeRole, self::SUBSTITUTION_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'substitutions', 'label' => 'ჩანაცვლებები', 'href' => route('substitutions.index'), 'icon' => 'substitutions'];
+        }
+
+        if (in_array($activeRole, self::ADMISSIONS_PIPELINE_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'admissions-pipeline', 'label' => 'მიღების პროცესი', 'href' => route('admissions-pipeline.index'), 'icon' => 'admissions-pipeline'];
         }
 
         return $items;

@@ -11,6 +11,7 @@ import {
     MessageSquareText,
     Newspaper,
     Repeat,
+    UserPlus,
     Users,
 } from 'lucide-react';
 import { logout } from '@/routes';
@@ -36,6 +37,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     'academic-structure': CalendarRange,
     substitutions: Repeat,
     timetable: CalendarClock,
+    'admissions-pipeline': UserPlus,
 };
 
 /**

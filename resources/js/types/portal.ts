@@ -8,7 +8,8 @@ export type PortalNavIconKey =
     | 'assignments'
     | 'academic-structure'
     | 'substitutions'
-    | 'timetable';
+    | 'timetable'
+    | 'admissions-pipeline';
 
 export interface PortalNavItem {
     key: string;
