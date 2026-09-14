@@ -98,6 +98,19 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "სასწავლო წლები" nav destination — kept in sync
+     * with AcademicStructureController::ACCESS_ROLES for the same reason as
+     * DOCUMENT_ACCESS_ROLES above.
+     *
+     * @var array<int, string>
+     */
+    private const ACADEMIC_STRUCTURE_ACCESS_ROLES = [
+        TenantMembership::ROLE_ACADEMIC_MANAGER,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * Roles that get the "მასწავლებლები" nav destination — kept in sync
      * with TeacherController::ACCESS_ROLES for the same reason as
      * DOCUMENT_ACCESS_ROLES above.
@@ -192,6 +205,10 @@ class PortalContext
 
         if (in_array($activeRole, self::MEMBER_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'members', 'label' => 'წევრები', 'href' => route('members.index'), 'icon' => 'members'];
+        }
+
+        if (in_array($activeRole, self::ACADEMIC_STRUCTURE_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'academic-structure', 'label' => 'სასწავლო წლები', 'href' => route('academic-structure.index'), 'icon' => 'academic-structure'];
         }
 
         if (in_array($activeRole, self::TEACHER_MANAGEMENT_ACCESS_ROLES, true)) {

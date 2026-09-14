@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Portal\AcademicStructureController;
 use App\Http\Controllers\Portal\AssignmentController;
 use App\Http\Controllers\Portal\AttendanceController;
 use App\Http\Controllers\Portal\CmsMediaController;
@@ -151,6 +152,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/teachers/{teacher}/publish', [TeacherController::class, 'publish'])->name('teachers.publish');
     Route::post('portal/teachers/{teacher}/unpublish', [TeacherController::class, 'unpublish'])->name('teachers.unpublish');
     // --- end Teachers ---
+
+    // --- Academic structure (admin/director/academic-manager) — creates the
+    // academic_years/school_classes/students rows that member invitations,
+    // timetable and Assignments all depend on. Previously nothing could
+    // create these outside a seeder; see AcademicStructureController's
+    // docblock for the production incident this closes. ---
+    Route::get('portal/academic-structure', [AcademicStructureController::class, 'index'])->name('academic-structure.index');
+    Route::post('portal/academic-structure/academic-years', [AcademicStructureController::class, 'storeAcademicYear'])->name('academic-structure.academic-years.store');
+    Route::post('portal/academic-structure/school-classes', [AcademicStructureController::class, 'storeSchoolClass'])->name('academic-structure.school-classes.store');
+    Route::post('portal/academic-structure/students', [AcademicStructureController::class, 'storeStudent'])->name('academic-structure.students.store');
+    // --- end Academic structure ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

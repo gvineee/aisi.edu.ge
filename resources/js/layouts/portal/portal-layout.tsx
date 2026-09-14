@@ -1,6 +1,7 @@
 import { Form, Link, router, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren } from 'react';
 import {
+    CalendarRange,
     ClipboardList,
     FileText,
     GraduationCap,
@@ -30,6 +31,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     members: Users,
     teachers: GraduationCap,
     assignments: ClipboardList,
+    'academic-structure': CalendarRange,
 };
 
 /**
