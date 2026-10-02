@@ -12,6 +12,7 @@ use App\Http\Controllers\Portal\ClubController;
 use App\Http\Controllers\Portal\CmsMediaController;
 use App\Http\Controllers\Portal\CmsPageController;
 use App\Http\Controllers\Portal\CmsPostController;
+use App\Http\Controllers\Portal\CompetencyController;
 use App\Http\Controllers\Portal\ConsentController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
@@ -273,6 +274,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/gradebook/assessments/{assessment}', [GradebookController::class, 'show'])->name('gradebook.show');
     Route::post('portal/gradebook/assessments/{assessment}/results', [GradebookController::class, 'recordResults'])->name('gradebook.results.store');
     Route::post('portal/gradebook/assessments/{assessment}/publish', [GradebookController::class, 'publish'])->name('gradebook.publish');
+
+    Route::get('portal/competencies', [CompetencyController::class, 'index'])->name('competencies.index');
+    Route::post('portal/competencies', [CompetencyController::class, 'store'])->name('competencies.store');
+    Route::post('portal/competencies/observations', [CompetencyController::class, 'observe'])->name('competencies.observe');
 
     Route::get('portal/my-progress', [StudentProgressController::class, 'mine'])->name('progress.mine');
     Route::get('portal/students/{student}/progress', [StudentProgressController::class, 'show'])->name('progress.show');

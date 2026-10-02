@@ -8,6 +8,7 @@ use App\Domain\Academics\Models\TeacherAssignment;
 use App\Domain\Assessment\Models\Assessment;
 use App\Domain\Assessment\Models\AssessmentPeriod;
 use App\Domain\Assessment\Models\AssessmentResult;
+use App\Domain\Assessment\Models\StudentCompetencyObservation;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Http\Controllers\Controller;
@@ -113,6 +114,27 @@ class StudentProgressController extends Controller
                 'isClosed' => $period->isClosed(),
             ])->values(),
             'subjects' => $this->groupBySubject($assessments, $results),
+            // Latest observation per competency. Families see only those the
+            // teacher shared; a teacher sees only their own subjects'.
+            'competencies' => StudentCompetencyObservation::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('student_id', $student->id)
+                ->when(! $isManagement && ! $isOwner && ! $isGuardian, fn ($query) => $query->whereIn('teacher_assignment_id', $teacherAssignmentIds))
+                ->when(! $seesDrafts, fn ($query) => $query->where('shared_with_family', true))
+                ->with('competency', 'level')
+                ->orderByDesc('observed_on')
+                ->orderByDesc('id')
+                ->get()
+                ->unique('competency_id')
+                ->map(fn (StudentCompetencyObservation $o) => [
+                    'competency' => $o->competency->name,
+                    'level' => $o->level->level,
+                    'label' => $o->level->label,
+                    'descriptor' => $o->level->descriptor,
+                    'observedOn' => $o->observed_on->toDateString(),
+                    'note' => $o->note,
+                    'shared' => $o->shared_with_family,
+                ])->values()->all(),
         ]);
     }
 

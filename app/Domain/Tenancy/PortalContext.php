@@ -329,6 +329,7 @@ class PortalContext
 
         if ($activeRole === TenantMembership::ROLE_TEACHER) {
             $items[] = ['key' => 'teacher-workspace', 'label' => 'ჩემი სივრცე', 'href' => route('teacher-workspace.index'), 'icon' => 'teacher-workspace'];
+            $items[] = ['key' => 'competencies', 'label' => 'კომპეტენციები', 'href' => route('competencies.index'), 'icon' => 'progress'];
             $items[] = ['key' => 'gradebook', 'label' => 'შეფასებები', 'href' => route('gradebook.index'), 'icon' => 'gradebook'];
         }
 
@@ -357,6 +358,7 @@ class PortalContext
 
         if (in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'assessment-settings', 'label' => 'შეფასების წესები', 'href' => route('assessment-settings.index'), 'icon' => 'assessment-settings'];
+            $items[] = ['key' => 'competencies', 'label' => 'კომპეტენციები', 'href' => route('competencies.index'), 'icon' => 'progress'];
         }
 
         if (in_array($activeRole, self::TIMETABLE_ACCESS_ROLES, true)) {

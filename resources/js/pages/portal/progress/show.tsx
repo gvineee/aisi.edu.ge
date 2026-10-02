@@ -35,6 +35,15 @@ type Props = {
         isClosed: boolean;
     }[];
     subjects: SubjectGroup[];
+    competencies: {
+        competency: string;
+        level: number;
+        label: string;
+        descriptor: string | null;
+        observedOn: string;
+        note: string | null;
+        shared: boolean;
+    }[];
 };
 
 /**
@@ -47,6 +56,7 @@ export default function ProgressShow({
     viewerSeesDrafts,
     periods,
     subjects,
+    competencies,
 }: Props) {
     const [periodId, setPeriodId] = useState<number | 'all'>('all');
     const activePeriod = periods.find((p) => p.id === periodId);
@@ -212,6 +222,45 @@ export default function ProgressShow({
                         დამტკიცებული წონის წესი ჯერ არ არის გამოყენებული.
                     </p>
                 </div>
+            )}
+            {competencies.length > 0 && (
+                <section
+                    className="mt-8"
+                    aria-labelledby="competencies-heading"
+                >
+                    <h2 id="competencies-heading" className="mb-3 text-lg">
+                        კომპეტენციები
+                    </h2>
+                    <ul className="grid gap-3 md:grid-cols-2">
+                        {competencies.map((c) => (
+                            <li
+                                key={c.competency}
+                                className="rounded-xl bg-white p-4 ring-1 ring-slate-200"
+                            >
+                                <p className="font-medium">{c.competency}</p>
+                                <p className="text-sm">
+                                    დონე {c.level}: <strong>{c.label}</strong>
+                                    {!c.shared && (
+                                        <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs">
+                                            ოჯახს არ უჩანს
+                                        </span>
+                                    )}
+                                </p>
+                                {c.descriptor && (
+                                    <p className="mt-1 text-sm text-slate-600">
+                                        {c.descriptor}
+                                    </p>
+                                )}
+                                {c.note && (
+                                    <p className="mt-1 text-sm">{c.note}</p>
+                                )}
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {formatDay(c.observedOn)}
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
             )}
         </PortalLayout>
     );
