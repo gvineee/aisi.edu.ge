@@ -3,21 +3,31 @@ import { type CSSProperties, type PropsWithChildren } from 'react';
 import {
     CalendarClock,
     CalendarRange,
+    ChartLine,
     ClipboardList,
     FileCheck2,
     FileText,
     GraduationCap,
     House,
     LogOut,
+    Menu,
     MessageSquareText,
     Newspaper,
+    PenLine,
     Repeat,
+    Scale,
     UserCheck,
     UserPlus,
     Users,
 } from 'lucide-react';
 import { logout } from '@/routes';
 import { Button } from '@/components/ui/button';
+import {
+    Sheet,
+    SheetContent,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet';
 import {
     Sidebar,
     SidebarContent,
@@ -42,6 +52,9 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     'admissions-pipeline': UserPlus,
     pickup: UserCheck,
     consents: FileCheck2,
+    gradebook: PenLine,
+    'assessment-settings': Scale,
+    progress: ChartLine,
 };
 
 /**
@@ -68,6 +81,17 @@ export default function PortalLayout({ children }: PropsWithChildren) {
     } as CSSProperties;
 
     const navItems = portal?.navItems ?? [];
+    // docs/04 §5: the mobile bottom bar holds at most 5 entries. Past that,
+    // the first 4 stay pinned and the rest move into a "მეტი" sheet so
+    // nothing overflows at 360px.
+    const MOBILE_NAV_LIMIT = 5;
+    const overflowsMobileNav = navItems.length > MOBILE_NAV_LIMIT;
+    const mobilePinned = overflowsMobileNav
+        ? navItems.slice(0, MOBILE_NAV_LIMIT - 1)
+        : navItems;
+    const mobileOverflow = overflowsMobileNav
+        ? navItems.slice(MOBILE_NAV_LIMIT - 1)
+        : [];
     const availableRoles = portal?.availableRoles ?? [];
     const showRoleSwitcher = availableRoles.length > 1;
 
@@ -186,20 +210,64 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                     className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white md:hidden"
                     style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                 >
-                    {navItems.map((item) => {
+                    {mobilePinned.map((item) => {
                         const Icon = NAV_ICONS[item.icon];
 
                         return (
                             <Link
                                 key={item.key}
                                 href={item.href}
-                                className="flex min-h-11 flex-1 flex-col items-center justify-center gap-1 py-2 text-xs font-medium text-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none"
+                                className="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-center text-xs font-medium text-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none"
                             >
                                 <Icon size={21} />
-                                <span>{item.label}</span>
+                                <span className="w-full truncate">
+                                    {item.label}
+                                </span>
                             </Link>
                         );
                     })}
+                    {mobileOverflow.length > 0 && (
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <button
+                                    type="button"
+                                    className="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-medium text-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none"
+                                >
+                                    <Menu size={21} />
+                                    <span>მეტი</span>
+                                </button>
+                            </SheetTrigger>
+                            <SheetContent
+                                side="bottom"
+                                className="max-h-[80vh] overflow-y-auto"
+                                style={{
+                                    paddingBottom:
+                                        'env(safe-area-inset-bottom)',
+                                }}
+                            >
+                                <SheetTitle className="px-4 pt-4">
+                                    სხვა განყოფილებები
+                                </SheetTitle>
+                                <ul className="grid gap-1 p-2">
+                                    {mobileOverflow.map((item) => {
+                                        const Icon = NAV_ICONS[item.icon];
+
+                                        return (
+                                            <li key={item.key}>
+                                                <Link
+                                                    href={item.href}
+                                                    className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none"
+                                                >
+                                                    <Icon size={20} />
+                                                    {item.label}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </SheetContent>
+                        </Sheet>
+                    )}
                 </nav>
             )}
         </div>

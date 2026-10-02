@@ -1,0 +1,25 @@
+# პლატფორმის მოდულების სტატუსი
+
+განახლებულია: 2026-10-02. მოთხოვნილია `CLAUDE-PLATFORM-MODULES.md` §17-ით. სტატუსები: `not_started`, `foundation`, `working`, `verified_local`, `verified_production`.
+
+`verified_production` ნიშნავს, რომ ფუნქციონალი production-ზე **რეალური მომხმარებლის გზით** დადასტურდა. მხოლოდ deploy და route/migration-ის შემოწმება ამ სტატუსისთვის საკმარისი არ არის. 2026-10-02-ის მდგომარეობით production-ში მხოლოდ ერთი admin არსებობს (მოსწავლე, მშობელი და მასწავლებელი არ არის). ამიტომ პორტალის არცერთი როლზე დამოკიდებული მოდული `verified_production` არ არის.
+
+დეტალური მტკიცებულება: `docs/implementation-status.md` (ქრონოლოგიურად) და `docs/design-parity-checklist.md`.
+
+| მოდული | routes | schema | policy | UI states | tests | local evidence | production evidence | status | blocker |
+|---|---|---|---|---|---|---|---|---|---|
+| Portal shell / role context / დღის ცენტრი | `/dashboard`, `/portal/active-role` | memberships | `PortalContext` server-side | loading/empty ✓; mobile nav ≤5 + „მეტი“ (2026-10-02) | `DashboardRolesTest` | ✓ | deploy + დირექტორის ცარიელი state | `verified_local` | რეალური მომხმარებლები production-ში |
+| Messaging | `/portal/messages` | conversations, messages, participants, deliveries | ურთიერთობაზე დაფუძნებული | ✓ | `MessagingTest` | ✓ | deploy | `verified_local` | იგივე |
+| Portfolio | `/portal/students/{s}/portfolio` | portfolio_items/assets/feedback | owner/guardian/teacher | ✓ | `PortfolioWorkflowTest` | ✓ | deploy | `verified_local` | achievements/tags/PDF export არ არის |
+| Assignments | `/portal/assignments`, `/portal/my-assignments` | assignments, submissions | საკუთარი TA / საკუთარი ჩარიცხვა | ✓ | `AssignmentWorkflowTest` | ✓ | deploy + academic structure | `verified_local` | — |
+| **Gradebook + Progress** | `/portal/gradebook`, `/portal/assessment-settings`, `/portal/students/{s}/progress` | grade_scales(+bands), assessment_periods, categories, assessments, results, result_revisions | საკუთარი TA; published-only ოჯახისთვის; management settings | empty/closed/error-summary ✓ | `GradebookWorkflowTest` (12) | ✓ + HTTP smoke ლოკალურ PostgreSQL-ზე | — (deploy არ შესრულებულა) | `verified_local` | ვიზუალური QA; სკოლის სკალა/წონები |
+| Report cards | `/portal/report-cards` | — | — | — | — | — | — | `not_started` | Gradebook-ზე დაშენება; PDF + verification |
+| Competencies | — | — | — | — | — | — | — | `not_started` | სკოლის კომპეტენციების ჩარჩო |
+| Pickup & Consent | `/portal/pickup`, `/portal/consents` | authorized_pickups, consent_forms/responses | `can_pickup`, staff publish | ✓ | `PickupConsentWorkflowTest` (10) | ✓ | deploy + routes/migrations | `verified_local` | რეალური მშობლები |
+| Health | — | — | — | — | — | — | — | `not_started` | სამართლებრივი/შენახვის წესები |
+| Substitution | `/portal/substitutions` | staff_absences, substitution_assignments | management | ✓ | 5 ტესტი | ✓ | deploy | `verified_local` | — |
+| Admissions CRM | `/portal/admissions-pipeline` | leads stage, appointments, decisions | management | ✓ | `AdmissionsPipelineTest` | ✓ | deploy | `verified_local` | — |
+| Transport / Meals / Clubs | — | — | — | — | — | — | — | `not_started` | — |
+| Finance | — | — | — | — | — | — | — | `not_started` | ბანკის API, ბუღალტრის UAT, security review |
+| Director „სკოლის პულსი“ | `/dashboard` (director) | — | — | pending-count | — | — | — | `foundation` | attendance/billing aggregates |
+| Platform admin (white-label) | — | — | — | — | — | — | — | `not_started` | კომერციული წესები |

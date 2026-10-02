@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Portal\AcademicStructureController;
 use App\Http\Controllers\Portal\AdmissionsPipelineController;
+use App\Http\Controllers\Portal\AssessmentSettingsController;
 use App\Http\Controllers\Portal\AssignmentController;
 use App\Http\Controllers\Portal\AttendanceController;
 use App\Http\Controllers\Portal\CmsMediaController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Portal\DocumentApprovalController;
 use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\EnrollmentVerificationController;
+use App\Http\Controllers\Portal\GradebookController;
 use App\Http\Controllers\Portal\LessonController;
 use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
@@ -22,6 +24,7 @@ use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PickupController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
+use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\TeacherController;
 use App\Http\Controllers\Public\AdmissionLeadController;
@@ -216,6 +219,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/consents/{consentForm}/roster', [ConsentController::class, 'roster'])->name('consents.roster');
     Route::post('portal/consents/{consentForm}/respond', [ConsentController::class, 'respond'])->name('consents.respond');
     // --- end Pickup & Consent ---
+
+    // --- Assessment & Gradebook (CLAUDE-PLATFORM-MODULES.md §6) — school
+    // grading setup (periods/scales/categories) for management roles, the
+    // teacher gradebook, and the per-student progress view. ---
+    Route::get('portal/assessment-settings', [AssessmentSettingsController::class, 'index'])->name('assessment-settings.index');
+    Route::post('portal/assessment-settings/periods', [AssessmentSettingsController::class, 'storePeriod'])->name('assessment-settings.periods.store');
+    Route::post('portal/assessment-settings/periods/{assessmentPeriod}/close', [AssessmentSettingsController::class, 'closePeriod'])->name('assessment-settings.periods.close');
+    Route::post('portal/assessment-settings/periods/{assessmentPeriod}/reopen', [AssessmentSettingsController::class, 'reopenPeriod'])->name('assessment-settings.periods.reopen');
+    Route::post('portal/assessment-settings/scales', [AssessmentSettingsController::class, 'storeScale'])->name('assessment-settings.scales.store');
+    Route::post('portal/assessment-settings/categories', [AssessmentSettingsController::class, 'storeCategory'])->name('assessment-settings.categories.store');
+
+    Route::get('portal/gradebook', [GradebookController::class, 'index'])->name('gradebook.index');
+    Route::post('portal/gradebook/assessments', [GradebookController::class, 'store'])->name('gradebook.store');
+    Route::get('portal/gradebook/assessments/{assessment}', [GradebookController::class, 'show'])->name('gradebook.show');
+    Route::post('portal/gradebook/assessments/{assessment}/results', [GradebookController::class, 'recordResults'])->name('gradebook.results.store');
+    Route::post('portal/gradebook/assessments/{assessment}/publish', [GradebookController::class, 'publish'])->name('gradebook.publish');
+
+    Route::get('portal/my-progress', [StudentProgressController::class, 'mine'])->name('progress.mine');
+    Route::get('portal/students/{student}/progress', [StudentProgressController::class, 'show'])->name('progress.show');
+    // --- end Assessment & Gradebook ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

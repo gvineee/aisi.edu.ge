@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { BookMarked, CalendarClock, Users } from 'lucide-react';
+import { BookMarked, CalendarClock, ChartLine, Users } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 import DashboardHeading from '@/components/portal/dashboard-heading';
@@ -136,7 +136,7 @@ export default function ParentDashboard({
 
                     {selected && (
                         <>
-                            <div className="mb-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+                            <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr]">
                                 <DayCard
                                     eyebrow={`${selected.name}-ის დღე`}
                                     heading="ახალი დღე, ახალი შესაძლებლობები."
@@ -161,6 +161,23 @@ export default function ParentDashboard({
                                         </span>
                                     </Link>
                                 )}
+                                {selected.permissions.academic && (
+                                    <Link
+                                        href={`/portal/students/${selected.id}/progress`}
+                                        className="flex flex-col justify-center gap-2 rounded-2xl border border-slate-200 bg-white p-6 hover:border-slate-300"
+                                    >
+                                        <ChartLine
+                                            size={22}
+                                            className="text-[#c84925]"
+                                        />
+                                        <span className="font-semibold">
+                                            {selected.name}-ის პროგრესი
+                                        </span>
+                                        <span className="text-sm text-slate-500">
+                                            გამოქვეყნებული შეფასებები
+                                        </span>
+                                    </Link>
+                                )}
                             </div>
 
                             <StatGrid stats={stats} />
@@ -175,14 +192,13 @@ export default function ParentDashboard({
                                         {!selected.permissions.academic ? (
                                             <p className="py-6 text-center text-sm text-slate-500">
                                                 აკადემიური ინფორმაციის ნახვის
-                                                უფლება არ გაქვთ ამ
-                                                ბავშვისთვის.
+                                                უფლება არ გაქვთ ამ ბავშვისთვის.
                                             </p>
                                         ) : selected.todaySchedule.length ===
                                           0 ? (
                                             <p className="py-6 text-center text-sm text-slate-500">
-                                                დღეს გამოქვეყნებული
-                                                გაკვეთილი არ არის.
+                                                დღეს გამოქვეყნებული გაკვეთილი არ
+                                                არის.
                                             </p>
                                         ) : (
                                             selected.todaySchedule.map(

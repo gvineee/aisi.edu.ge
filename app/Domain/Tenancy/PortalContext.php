@@ -206,6 +206,19 @@ class PortalContext
     ];
 
     /**
+     * Roles that get the "შეფასების წესები" nav destination — kept in sync
+     * with AssessmentSettingsController::ACCESS_ROLES for the same reason
+     * as DOCUMENT_ACCESS_ROLES above.
+     *
+     * @var array<int, string>
+     */
+    private const ASSESSMENT_SETTINGS_ACCESS_ROLES = [
+        TenantMembership::ROLE_ACADEMIC_MANAGER,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ADMIN,
+    ];
+
+    /**
      * @return array<int, string> active role strings, in ROLE_PRIORITY order
      */
     public function activeRoles(int $tenantId, int $userId): array
@@ -291,6 +304,18 @@ class PortalContext
                     : route('my-assignments.index'),
                 'icon' => 'assignments',
             ];
+        }
+
+        if ($activeRole === TenantMembership::ROLE_TEACHER) {
+            $items[] = ['key' => 'gradebook', 'label' => 'შეფასებები', 'href' => route('gradebook.index'), 'icon' => 'gradebook'];
+        }
+
+        if ($activeRole === TenantMembership::ROLE_STUDENT) {
+            $items[] = ['key' => 'progress', 'label' => 'ჩემი პროგრესი', 'href' => route('progress.mine'), 'icon' => 'progress'];
+        }
+
+        if (in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'assessment-settings', 'label' => 'შეფასების წესები', 'href' => route('assessment-settings.index'), 'icon' => 'assessment-settings'];
         }
 
         if (in_array($activeRole, self::TIMETABLE_ACCESS_ROLES, true)) {

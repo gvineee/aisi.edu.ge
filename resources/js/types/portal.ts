@@ -11,7 +11,10 @@ export type PortalNavIconKey =
     | 'timetable'
     | 'admissions-pipeline'
     | 'pickup'
-    | 'consents';
+    | 'consents'
+    | 'gradebook'
+    | 'assessment-settings'
+    | 'progress';
 
 export interface PortalNavItem {
     key: string;
