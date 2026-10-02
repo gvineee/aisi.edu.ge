@@ -281,6 +281,11 @@ class PortalContext
             $items[] = ['key' => 'pulse', 'label' => 'სკოლის პულსი', 'href' => route('director.pulse'), 'icon' => 'pulse'];
         }
 
+        if (in_array(FeatureEntitlement::FEATURE_FINANCE, $enabledFeatures, true)
+            && in_array($activeRole, [TenantMembership::ROLE_ACCOUNTANT, TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ADMIN, TenantMembership::ROLE_GUARDIAN], true)) {
+            $items[] = ['key' => 'finance', 'label' => 'ფინანსები', 'href' => route('finance.index'), 'icon' => 'finance'];
+        }
+
         // One entry for the optional operations modules; each module's own
         // routes are additionally closed server-side by `feature:` middleware.
         if (array_intersect($enabledFeatures, [FeatureEntitlement::FEATURE_CLUBS, FeatureEntitlement::FEATURE_TRANSPORT, FeatureEntitlement::FEATURE_MEALS]) !== []) {

@@ -19,7 +19,8 @@ export type PortalNavIconKey =
     | 'health'
     | 'appointments'
     | 'services'
-    | 'pulse';
+    | 'pulse'
+    | 'finance';
 
 export interface PortalNavItem {
     key: string;

@@ -4,7 +4,9 @@ namespace App\Domain\Analytics;
 
 use App\Domain\Assessment\Models\ReportCard;
 use App\Domain\Documents\Actions\ListPendingApprovalRequests;
+use App\Domain\Finance\Models\Invoice;
 use App\Domain\Learning\Models\AttendanceRecord;
+use App\Domain\Tenancy\Models\FeatureEntitlement;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -60,20 +62,40 @@ class SchoolPulse
                     'დოკუმენტების ცენტრში დირექტორის გადაწყვეტილების მოლოდინში მყოფი მოთხოვნები.', '/documents/director-worklist'),
                 $this->count('report_cards_awaiting', 'დასამტკიცებელი ტაბელი', $reportCardsAwaiting, 'ამ წუთისთვის',
                     'დამრიგებლის მიერ განხილული და დირექტორის დამტკიცების მოლოდინში მყოფი ტაბელები.', '/portal/report-cards'),
-                [
-                    'key' => 'collection_current',
-                    'label' => 'მიმდინარე შემოსავალი',
-                    'value' => null,
-                    'status' => 'no_data',
-                    'definition' => 'ინვოისებით მოთხოვნილი თანხიდან რეალურად გადახდილის წილი მიმდინარე თვეში. ფინანსური მოდული და ბანკის ინტეგრაცია ჯერ ჩართული არ არის — მაჩვენებელი არ ითვლება.',
-                    'period' => 'მიმდინარე თვე',
-                    'numerator' => null,
-                    'denominator' => null,
-                    'drilldown' => null,
-                ],
+                $this->collection($tenantId, $now),
             ],
             'attendanceTrend' => $this->trend($tenantId, $now),
         ];
+    }
+
+    /**
+     * Share of this month's invoiced amount (non-void invoices issued this
+     * month) that has been paid. "No data" while finance is off or nothing
+     * was invoiced — never a guessed figure.
+     *
+     * @return array<string, mixed>
+     */
+    private function collection(int $tenantId, Carbon $now): array
+    {
+        $period = 'მიმდინარე თვე ('.$now->format('m.Y').')';
+        $definition = 'მიმდინარე თვეში გამოწერილი (გაუქმებულის გარდა) ინვოისების ჯამიდან გადახდილი წილი. ფინანსური მოდული ჯერ Sandbox რეჟიმშია.';
+
+        if (! FeatureEntitlement::isEnabled($tenantId, FeatureEntitlement::FEATURE_FINANCE)) {
+            return ['key' => 'collection_current', 'label' => 'მიმდინარე შემოსავალი', 'value' => null, 'status' => 'no_data', 'unit' => '%',
+                'numerator' => null, 'denominator' => null, 'definition' => 'ფინანსური მოდული ჩართული არ არის — მაჩვენებელი არ ითვლება.', 'period' => $period, 'drilldown' => null];
+        }
+
+        $invoices = Invoice::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', '!=', Invoice::STATUS_VOID)
+            ->whereDate('issued_on', '>=', $now->copy()->startOfMonth()->toDateString())
+            ->whereDate('issued_on', '<=', $now->copy()->endOfMonth()->toDateString())
+            ->get(['total_minor', 'paid_minor']);
+
+        $metric = $this->ratio('collection_current', 'მიმდინარე შემოსავალი', (int) $invoices->sum('paid_minor'), (int) $invoices->sum('total_minor'), $period, $definition, '/portal/finance');
+        $metric['moneyUnit'] = 'minor';
+
+        return $metric;
     }
 
     /**

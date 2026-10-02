@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\Portal\AcademicStructureController;
 use App\Http\Controllers\Portal\AdmissionsPipelineController;
 use App\Http\Controllers\Portal\AppointmentController;
@@ -17,6 +18,8 @@ use App\Http\Controllers\Portal\DocumentApprovalController;
 use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\EnrollmentVerificationController;
+use App\Http\Controllers\Portal\FinanceController;
+use App\Http\Controllers\Portal\FinanceSandboxController;
 use App\Http\Controllers\Portal\GradebookController;
 use App\Http\Controllers\Portal\HealthController;
 use App\Http\Controllers\Portal\LessonController;
@@ -68,6 +71,11 @@ Route::get('/teachers/{slug}', [PublicTeacherController::class, 'show'])->name('
 // edits above are easy to merge around. ---
 Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
+
+// Payment provider notifications (signature-authenticated, CSRF-exempt).
+Route::post('webhooks/payments/{provider}', PaymentWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('webhooks.payments');
 
 // Public authenticity check for a printed report card (no marks shown).
 Route::get('verify/report-card/{code}', ReportCardVerificationController::class)
@@ -338,6 +346,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('portal/meals/students/{student}/opt-out', [MealController::class, 'optOut'])->name('meals.opt-out');
     });
     // --- end Operations ---
+
+    // --- Finance (CLAUDE-PLATFORM-MODULES.md §12) — SANDBOX ONLY until a
+    // real provider contract and accountant UAT. ---
+    Route::middleware('feature:finance')->group(function () {
+        Route::get('portal/finance', [FinanceController::class, 'index'])->name('finance.index');
+        Route::post('portal/finance/invoices', [FinanceController::class, 'storeInvoice'])->name('finance.invoices.store');
+        Route::get('portal/finance/invoices/{invoice}', [FinanceController::class, 'showInvoice'])->name('finance.invoices.show');
+        Route::post('portal/finance/invoices/{invoice}/void', [FinanceController::class, 'voidInvoice'])->name('finance.invoices.void');
+        Route::post('portal/finance/invoices/{invoice}/pay', [FinanceController::class, 'pay'])->name('finance.invoices.pay');
+        Route::get('portal/finance/return/{intent}', [FinanceController::class, 'returnPage'])->name('finance.return');
+        Route::post('portal/finance/payments/{payment}/allocate', [FinanceController::class, 'allocate'])->name('finance.payments.allocate');
+        Route::post('portal/finance/payments/{payment}/refund', [FinanceController::class, 'refund'])->name('finance.payments.refund');
+        Route::get('portal/finance/reconciliation', [FinanceController::class, 'reconciliation'])->name('finance.reconciliation');
+        Route::post('portal/finance/clubs/{club}/invoice', [FinanceController::class, 'invoiceFromClub'])->name('finance.clubs.invoice');
+
+        Route::get('portal/finance/sandbox/{intent}', [FinanceSandboxController::class, 'checkout'])->name('finance.sandbox.checkout');
+        Route::post('portal/finance/sandbox/{intent}/simulate', [FinanceSandboxController::class, 'simulate'])->name('finance.sandbox.simulate');
+        Route::post('portal/finance/sandbox/refunds/{refund}/confirm', [FinanceSandboxController::class, 'confirmRefund'])->name('finance.sandbox.refunds.confirm');
+    });
+    // --- end Finance ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

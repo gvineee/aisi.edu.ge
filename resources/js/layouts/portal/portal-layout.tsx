@@ -24,6 +24,7 @@ import {
     UserCheck,
     UserPlus,
     Users,
+    Wallet,
 } from 'lucide-react';
 import { logout } from '@/routes';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     appointments: CalendarCheck,
     services: LayoutGrid,
     pulse: Activity,
+    finance: Wallet,
 };
 
 /**
