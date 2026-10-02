@@ -314,6 +314,10 @@ class PortalContext
             $items[] = ['key' => 'progress', 'label' => 'ჩემი პროგრესი', 'href' => route('progress.mine'), 'icon' => 'progress'];
         }
 
+        if ($activeRole === TenantMembership::ROLE_TEACHER || in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'report-cards', 'label' => 'ტაბელები', 'href' => route('report-cards.index'), 'icon' => 'report-cards'];
+        }
+
         if (in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'assessment-settings', 'label' => 'შეფასების წესები', 'href' => route('assessment-settings.index'), 'icon' => 'assessment-settings'];
         }

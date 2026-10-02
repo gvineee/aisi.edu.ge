@@ -24,6 +24,7 @@ use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PickupController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
+use App\Http\Controllers\Portal\ReportCardController;
 use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\TeacherController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Public\InvitationController;
 use App\Http\Controllers\Public\LibraryCatalogController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PostController;
+use App\Http\Controllers\Public\ReportCardVerificationController;
 use App\Http\Controllers\Public\RobotsController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\TeacherController as PublicTeacherController;
@@ -59,6 +61,12 @@ Route::get('/teachers/{slug}', [PublicTeacherController::class, 'show'])->name('
 // edits above are easy to merge around. ---
 Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
+
+// Public authenticity check for a printed report card (no marks shown).
+Route::get('verify/report-card/{code}', ReportCardVerificationController::class)
+    ->where('code', '[A-Za-z0-9]{6,16}')
+    ->middleware('throttle:30,1')
+    ->name('report-cards.verify');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
@@ -177,6 +185,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/academic-structure', [AcademicStructureController::class, 'index'])->name('academic-structure.index');
     Route::post('portal/academic-structure/academic-years', [AcademicStructureController::class, 'storeAcademicYear'])->name('academic-structure.academic-years.store');
     Route::post('portal/academic-structure/school-classes', [AcademicStructureController::class, 'storeSchoolClass'])->name('academic-structure.school-classes.store');
+    Route::post('portal/academic-structure/school-classes/{schoolClass}/homeroom', [AcademicStructureController::class, 'assignHomeroom'])->name('academic-structure.school-classes.homeroom');
     Route::post('portal/academic-structure/students', [AcademicStructureController::class, 'storeStudent'])->name('academic-structure.students.store');
     // --- end Academic structure ---
 
@@ -238,6 +247,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('portal/my-progress', [StudentProgressController::class, 'mine'])->name('progress.mine');
     Route::get('portal/students/{student}/progress', [StudentProgressController::class, 'show'])->name('progress.show');
+
+    Route::get('portal/report-cards', [ReportCardController::class, 'index'])->name('report-cards.index');
+    Route::post('portal/report-cards/generate', [ReportCardController::class, 'generate'])->name('report-cards.generate');
+    Route::get('portal/report-cards/{reportCard}', [ReportCardController::class, 'show'])->name('report-cards.show');
+    Route::post('portal/report-cards/{reportCard}/lines/{line}', [ReportCardController::class, 'saveLine'])->name('report-cards.lines.save');
+    Route::post('portal/report-cards/{reportCard}/homeroom-submit', [ReportCardController::class, 'homeroomSubmit'])->name('report-cards.homeroom-submit');
+    Route::post('portal/report-cards/{reportCard}/approve', [ReportCardController::class, 'approve'])->name('report-cards.approve');
+    Route::post('portal/report-cards/{reportCard}/publish', [ReportCardController::class, 'publish'])->name('report-cards.publish');
+    Route::post('portal/report-cards/{reportCard}/return', [ReportCardController::class, 'returnForChanges'])->name('report-cards.return');
+    Route::post('portal/report-cards/{reportCard}/revise', [ReportCardController::class, 'revise'])->name('report-cards.revise');
+    Route::get('portal/students/{student}/report-cards', [ReportCardController::class, 'forStudent'])->name('report-cards.student');
+    Route::get('portal/report-card-documents/{publication}', [ReportCardController::class, 'showPublication'])->name('report-cards.document');
     // --- end Assessment & Gradebook ---
 
     // --- Member management (admin/director) — added at the end of this

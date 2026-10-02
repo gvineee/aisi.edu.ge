@@ -22,6 +22,8 @@ type SchoolClassRow = {
     academicYearId: number;
     academicYearName: string;
     studentsCount: number;
+    homeroomTeacherId: number | null;
+    homeroomTeacherName: string | null;
 };
 
 type StudentRow = {
@@ -37,6 +39,7 @@ type Props = {
     academicYears: AcademicYear[];
     schoolClasses: SchoolClassRow[];
     students: StudentRow[];
+    teachers: { id: number; name: string }[];
 };
 
 /**
@@ -49,6 +52,7 @@ export default function AcademicStructureIndex({
     academicYears,
     schoolClasses,
     students,
+    teachers,
 }: Props) {
     const [showYearForm, setShowYearForm] = useState(false);
     const [showClassForm, setShowClassForm] = useState(false);
@@ -276,6 +280,47 @@ export default function AcademicStructureIndex({
                                         {schoolClass.studentsCount} მოსწავლე
                                     </p>
                                 </div>
+                                <label className="text-sm sm:w-64">
+                                    <span className="mb-1 block text-xs font-medium text-slate-600">
+                                        დამრიგებელი
+                                    </span>
+                                    <select
+                                        className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                        value={
+                                            schoolClass.homeroomTeacherId ?? ''
+                                        }
+                                        onChange={(event) =>
+                                            router.post(
+                                                `/portal/academic-structure/school-classes/${schoolClass.id}/homeroom`,
+                                                {
+                                                    homeroom_teacher_id:
+                                                        event.target.value,
+                                                },
+                                                {
+                                                    preserveScroll: true,
+                                                    onSuccess: () =>
+                                                        toast.success(
+                                                            'დამრიგებელი შენახულია.',
+                                                        ),
+                                                    onError: () =>
+                                                        toast.error(
+                                                            'ვერ შეინახა.',
+                                                        ),
+                                                },
+                                            )
+                                        }
+                                    >
+                                        <option value="">— არ არის —</option>
+                                        {teachers.map((teacher) => (
+                                            <option
+                                                key={teacher.id}
+                                                value={teacher.id}
+                                            >
+                                                {teacher.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
                             </li>
                         ))}
                     </ul>

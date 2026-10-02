@@ -1,6 +1,6 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { ChartLine } from 'lucide-react';
+import { ChartLine, ScrollText } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import AssessmentStatusBadge from '@/components/portal/assessment-status-badge';
 import { formatDay, formatPercent, formatScore } from '@/lib/assessment';
@@ -89,6 +89,12 @@ export default function ProgressShow({
                             ? 'ჩანს გამოქვეყნებული და თქვენთვის ხელმისაწვდომი დრაფტი შეფასებები.'
                             : 'ჩანს მხოლოდ მასწავლებლის მიერ გამოქვეყნებული შეფასებები.'}
                     </p>
+                    <Link
+                        href={`/portal/students/${student.id}/report-cards`}
+                        className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[var(--brand-primary)] underline-offset-4 hover:underline"
+                    >
+                        <ScrollText size={16} aria-hidden /> ტაბელები
+                    </Link>
                 </div>
                 {periods.length > 0 && (
                     <label className="text-sm font-medium">

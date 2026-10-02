@@ -14,7 +14,8 @@ export type PortalNavIconKey =
     | 'consents'
     | 'gradebook'
     | 'assessment-settings'
-    | 'progress';
+    | 'progress'
+    | 'report-cards';
 
 export interface PortalNavItem {
     key: string;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Domain\Academics\Actions\AssignHomeroomTeacher;
 use App\Domain\Academics\Actions\CreateAcademicYear;
 use App\Domain\Academics\Actions\CreateSchoolClass;
 use App\Domain\Academics\Actions\CreateStudent;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\StoreAcademicYearRequest;
 use App\Http\Requests\Portal\StoreSchoolClassRequest;
 use App\Http\Requests\Portal\StoreStudentRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -56,9 +58,18 @@ class AcademicStructureController extends Controller
         $schoolClasses = SchoolClass::query()
             ->where('tenant_id', $tenant->id)
             ->withCount('students')
-            ->with('academicYear')
+            ->with('academicYear', 'homeroomTeacher')
             ->orderBy('name')
             ->get();
+
+        $teachers = User::query()
+            ->whereIn('id', TenantMembership::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('role', TenantMembership::ROLE_TEACHER)
+                ->where('is_active', true)
+                ->select('user_id'))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         $students = Student::query()
             ->where('tenant_id', $tenant->id)
@@ -81,7 +92,10 @@ class AcademicStructureController extends Controller
                 'academicYearId' => $schoolClass->academic_year_id,
                 'academicYearName' => $schoolClass->academicYear->name,
                 'studentsCount' => $schoolClass->students_count,
+                'homeroomTeacherId' => $schoolClass->homeroom_teacher_id,
+                'homeroomTeacherName' => $schoolClass->homeroomTeacher?->name,
             ])->values(),
+            'teachers' => $teachers->map(fn (User $teacher) => ['id' => $teacher->id, 'name' => $teacher->name])->values(),
             'students' => $students->map(fn (Student $student) => [
                 'id' => $student->id,
                 'name' => $student->fullName(),
@@ -155,6 +169,22 @@ class AcademicStructureController extends Controller
 
         return redirect()->route('academic-structure.index')->with('toast', [
             'type' => 'success', 'message' => 'მოსწავლე დაემატა.',
+        ]);
+    }
+
+    public function assignHomeroom(Request $request, CurrentTenant $currentTenant, SchoolClass $schoolClass, AssignHomeroomTeacher $action): RedirectResponse
+    {
+        $tenant = $currentTenant->get();
+        abort_unless($schoolClass->tenant_id === $tenant->id, 404);
+        $actor = $request->user();
+        $this->authorizeAccess($tenant->id, $actor->id);
+
+        $request->validate(['homeroom_teacher_id' => ['nullable', 'integer']]);
+
+        $action->handle($schoolClass, $actor, $request->filled('homeroom_teacher_id') ? $request->integer('homeroom_teacher_id') : null);
+
+        return redirect()->route('academic-structure.index')->with('toast', [
+            'type' => 'success', 'message' => 'დამრიგებელი შენახულია.',
         ]);
     }
 

@@ -16,6 +16,7 @@ import {
     PenLine,
     Repeat,
     Scale,
+    ScrollText,
     UserCheck,
     UserPlus,
     Users,
@@ -55,6 +56,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     gradebook: PenLine,
     'assessment-settings': Scale,
     progress: ChartLine,
+    'report-cards': ScrollText,
 };
 
 /**
