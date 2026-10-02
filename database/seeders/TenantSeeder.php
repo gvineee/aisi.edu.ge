@@ -69,9 +69,14 @@ class TenantSeeder extends Seeder
             'social_links' => [],
         ]);
 
+        // Local/dev only: the optional operations modules are switched on so
+        // they can be exercised; production starts with them off.
         foreach ([
             FeatureEntitlement::FEATURE_WEB,
             FeatureEntitlement::FEATURE_SCHOOL_PORTAL,
+            FeatureEntitlement::FEATURE_CLUBS,
+            FeatureEntitlement::FEATURE_TRANSPORT,
+            FeatureEntitlement::FEATURE_MEALS,
         ] as $feature) {
             FeatureEntitlement::create([
                 'tenant_id' => $aisi->id,

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\NoIndexPrivateAreas;
@@ -18,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        $middleware->alias([
+            'feature' => EnsureFeatureEnabled::class,
+        ]);
 
         $middleware->web(prepend: [
             ResolveTenant::class,

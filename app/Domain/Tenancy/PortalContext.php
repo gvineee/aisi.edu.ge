@@ -2,6 +2,7 @@
 
 namespace App\Domain\Tenancy;
 
+use App\Domain\Tenancy\Models\FeatureEntitlement;
 use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Models\User;
@@ -266,14 +267,25 @@ class PortalContext
     }
 
     /**
+     * @param  array<int, string>  $enabledFeatures  feature entitlements switched on for the tenant
      * @return array<int, array{key: string, label: string, href: string, icon: string}>
      */
-    public function navItemsFor(string $activeRole): array
+    public function navItemsFor(string $activeRole, array $enabledFeatures = []): array
     {
         $items = [
             ['key' => 'dashboard', 'label' => 'დღეს', 'href' => route('dashboard'), 'icon' => 'home'],
             ['key' => 'messages', 'label' => 'შეტყობინებები', 'href' => route('messages.index'), 'icon' => 'messages'],
         ];
+
+        if (in_array($activeRole, [TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ADMIN], true)) {
+            $items[] = ['key' => 'pulse', 'label' => 'სკოლის პულსი', 'href' => route('director.pulse'), 'icon' => 'pulse'];
+        }
+
+        // One entry for the optional operations modules; each module's own
+        // routes are additionally closed server-side by `feature:` middleware.
+        if (array_intersect($enabledFeatures, [FeatureEntitlement::FEATURE_CLUBS, FeatureEntitlement::FEATURE_TRANSPORT, FeatureEntitlement::FEATURE_MEALS]) !== []) {
+            $items[] = ['key' => 'services', 'label' => 'სერვისები', 'href' => route('services.index'), 'icon' => 'services'];
+        }
 
         if (in_array($activeRole, self::DOCUMENT_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'documents', 'label' => 'დოკუმენტები', 'href' => route('documents.index'), 'icon' => 'documents'];
@@ -361,6 +373,18 @@ class PortalContext
     }
 
     /**
+     * @return array<int, string>
+     */
+    public function enabledFeatures(int $tenantId): array
+    {
+        return FeatureEntitlement::query()
+            ->where('tenant_id', $tenantId)
+            ->where('is_enabled', true)
+            ->pluck('feature')
+            ->all();
+    }
+
+    /**
      * @return array{activeRole: string|null, availableRoles: array<int, array{value: string, label: string}>, navItems: array<int, array{key: string, label: string, href: string, icon: string}>}
      */
     public function propsFor(Request $request, Tenant $tenant, User $user): array
@@ -371,7 +395,7 @@ class PortalContext
         return [
             'activeRole' => $activeRole,
             'availableRoles' => array_map(fn (string $role) => ['value' => $role, 'label' => self::ROLE_LABELS[$role] ?? $role], $available),
-            'navItems' => $activeRole !== null ? $this->navItemsFor($activeRole) : [],
+            'navItems' => $activeRole !== null ? $this->navItemsFor($activeRole, $this->enabledFeatures($tenant->id)) : [],
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Portal\AppointmentController;
 use App\Http\Controllers\Portal\AssessmentSettingsController;
 use App\Http\Controllers\Portal\AssignmentController;
 use App\Http\Controllers\Portal\AttendanceController;
+use App\Http\Controllers\Portal\ClubController;
 use App\Http\Controllers\Portal\CmsMediaController;
 use App\Http\Controllers\Portal\CmsPageController;
 use App\Http\Controllers\Portal\CmsPostController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Portal\EnrollmentVerificationController;
 use App\Http\Controllers\Portal\GradebookController;
 use App\Http\Controllers\Portal\HealthController;
 use App\Http\Controllers\Portal\LessonController;
+use App\Http\Controllers\Portal\MealController;
 use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
 use App\Http\Controllers\Portal\MyAssignmentsController;
@@ -27,9 +29,12 @@ use App\Http\Controllers\Portal\PickupController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
 use App\Http\Controllers\Portal\ReportCardController;
+use App\Http\Controllers\Portal\SchoolPulseController;
+use App\Http\Controllers\Portal\ServicesController;
 use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\TeacherController;
+use App\Http\Controllers\Portal\TransportController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\InvitationController;
 use App\Http\Controllers\Public\LibraryCatalogController;
@@ -302,6 +307,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/appointments/slots/{slot}/book', [AppointmentController::class, 'book'])->name('appointments.book');
     Route::post('portal/appointments/bookings/{booking}/cancel', [AppointmentController::class, 'cancelBooking'])->name('appointments.bookings.cancel');
     // --- end Parent–teacher meetings ---
+
+    // --- Operations (CLAUDE-PLATFORM-MODULES.md §11), each module behind
+    // its own feature entitlement. ---
+    Route::get('portal/services', [ServicesController::class, 'index'])->name('services.index');
+    Route::get('portal/director', SchoolPulseController::class)->name('director.pulse');
+
+    Route::middleware('feature:clubs')->group(function () {
+        Route::get('portal/clubs', [ClubController::class, 'index'])->name('clubs.index');
+        Route::post('portal/clubs', [ClubController::class, 'store'])->name('clubs.store');
+        Route::post('portal/clubs/{club}/capacity', [ClubController::class, 'updateCapacity'])->name('clubs.capacity');
+        Route::get('portal/clubs/{club}/roster', [ClubController::class, 'roster'])->name('clubs.roster');
+        Route::post('portal/clubs/{club}/join', [ClubController::class, 'join'])->name('clubs.join');
+        Route::post('portal/clubs/{club}/leave', [ClubController::class, 'leave'])->name('clubs.leave');
+    });
+
+    Route::middleware('feature:transport')->group(function () {
+        Route::get('portal/transport', [TransportController::class, 'index'])->name('transport.index');
+        Route::post('portal/transport/routes', [TransportController::class, 'storeRoute'])->name('transport.routes.store');
+        Route::post('portal/transport/routes/{transportRoute}/stops', [TransportController::class, 'storeStop'])->name('transport.stops.store');
+        Route::post('portal/transport/routes/{transportRoute}/assign', [TransportController::class, 'assign'])->name('transport.assign');
+        Route::post('portal/transport/routes/{transportRoute}/status', [TransportController::class, 'reportStatus'])->name('transport.status');
+    });
+
+    Route::middleware('feature:meals')->group(function () {
+        Route::get('portal/meals', [MealController::class, 'index'])->name('meals.index');
+        Route::post('portal/meals/menus', [MealController::class, 'saveDraft'])->name('meals.menus.save');
+        Route::post('portal/meals/menus/{menu}/publish', [MealController::class, 'publish'])->name('meals.menus.publish');
+        Route::post('portal/meals/students/{student}/dietary', [MealController::class, 'saveDietary'])->name('meals.dietary');
+        Route::post('portal/meals/students/{student}/opt-out', [MealController::class, 'optOut'])->name('meals.opt-out');
+    });
+    // --- end Operations ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

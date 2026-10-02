@@ -20,7 +20,9 @@
 | Health | `/portal/health`, `/portal/students/{s}/health` (+ access-log, permissions) | health_permission_grants, student_health_profiles, health_conditions, medications, emergency_contacts, care_plan_documents, health_incidents, health_emergency_accesses, health_access_events (encrypted fields) | explicit grants + 2FA; guardian; emergency (reason, TTL, review); teacher alerts-only | empty/needsMfa/emergency/alerts ✓ | `HealthRecordTest` (10) | ✓ | — | `verified_local` | retention/export იურიდიული ვადა; APP_KEY rotation runbook |
 | Substitution | `/portal/substitutions` | staff_absences, substitution_assignments | management | ✓ | 5 ტესტი | ✓ | deploy | `verified_local` | — |
 | Admissions CRM | `/portal/admissions-pipeline` | leads stage, appointments, decisions | management | ✓ | `AdmissionsPipelineTest` | ✓ | deploy | `verified_local` | — |
-| Transport / Meals / Clubs | — | — | — | — | — | — | — | `not_started` | — |
+| Clubs | `/portal/clubs` (feature:clubs) | clubs, club_sessions, club_enrollments, club_waitlist_entries | management / leader roster / guardian own child | full→waitlist, empty ✓ | `OperationsModulesTest` | ✓ | — | `verified_local` | საფასურის Finance-თან მიბმა |
+| Transport | `/portal/transport` (feature:transport) | transport_routes, transport_stops, student_transport_assignments, transport_runs, vehicle_events | management; guardian own child's route | no-GPS notice, empty ✓ | `OperationsModulesTest` | ✓ | — | `verified_local` | GPS provider (არ არის) |
+| Meals | `/portal/meals` (feature:meals) | meal_menus (versioned), meal_items, meal_allergens, student_dietary_profiles (codes only), meal_selections | management kitchen view; guardian own child | draft/published, allergen warning, cutoff ✓ | `OperationsModulesTest` | ✓ | — | `verified_local` | — |
 | Finance | — | — | — | — | — | — | — | `not_started` | ბანკის API, ბუღალტრის UAT, security review |
-| Director „სკოლის პულსი“ | `/dashboard` (director) | — | — | pending-count | — | — | — | `foundation` | attendance/billing aggregates |
+| Director „სკოლის პულსი“ | `/portal/director` | (live queries) | director/admin | no_data / definition / trend+table ✓ | `SchoolPulseTest` | ✓ | — | `verified_local` | collection metric — Finance-ის შემდეგ |
 | Platform admin (white-label) | — | — | — | — | — | — | — | `not_started` | კომერციული წესები |
