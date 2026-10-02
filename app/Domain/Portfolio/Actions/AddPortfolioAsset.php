@@ -5,6 +5,8 @@ namespace App\Domain\Portfolio\Actions;
 use App\Domain\Portfolio\Models\PortfolioAsset;
 use App\Domain\Portfolio\Models\PortfolioItem;
 use App\Domain\Portfolio\PortfolioFileStorage;
+use App\Domain\Uploads\ScanStatus;
+use App\Jobs\ScanUploadedFile;
 use Illuminate\Http\UploadedFile;
 use RuntimeException;
 
@@ -23,7 +25,10 @@ class AddPortfolioAsset
         $asset = new PortfolioAsset($stored);
         $asset->tenant_id = $item->tenant_id;
         $asset->portfolio_item_id = $item->id;
+        $asset->scan_status = ScanStatus::PENDING;
         $asset->save();
+
+        ScanUploadedFile::dispatch('portfolio_assets', $asset->id, $asset->storage_path);
 
         return $asset;
     }

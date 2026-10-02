@@ -16,8 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $mime
  * @property int $size
  * @property string $original_filename
+ * @property string $scan_status
  */
-#[Fillable(['portfolio_item_id', 'storage_path', 'checksum', 'mime', 'size', 'original_filename'])]
+#[Fillable(['portfolio_item_id', 'storage_path', 'checksum', 'mime', 'size', 'original_filename', 'scan_status', 'scanned_at'])]
 class PortfolioAsset extends Model
 {
     use BelongsToTenant;

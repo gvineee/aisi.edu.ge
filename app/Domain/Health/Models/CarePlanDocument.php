@@ -17,9 +17,10 @@ use Illuminate\Support\Carbon;
  * @property int $size
  * @property string $checksum
  * @property int $uploaded_by
+ * @property string $scan_status
  * @property Carbon|null $created_at
  */
-#[Fillable(['student_id', 'title', 'storage_path', 'mime', 'size', 'checksum', 'uploaded_by'])]
+#[Fillable(['student_id', 'title', 'storage_path', 'mime', 'size', 'checksum', 'uploaded_by', 'scan_status', 'scanned_at'])]
 class CarePlanDocument extends Model
 {
     use BelongsToTenant;

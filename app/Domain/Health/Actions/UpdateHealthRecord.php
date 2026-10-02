@@ -11,6 +11,8 @@ use App\Domain\Health\Models\HealthCondition;
 use App\Domain\Health\Models\HealthIncident;
 use App\Domain\Health\Models\Medication;
 use App\Domain\Health\Models\StudentHealthProfile;
+use App\Domain\Uploads\ScanStatus;
+use App\Jobs\ScanUploadedFile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -128,7 +130,7 @@ class UpdateHealthRecord
         $path = "health/{$tenantId}/".bin2hex(random_bytes(16)).".{$extension}";
         Storage::disk('local')->put($path, (string) file_get_contents($file->getRealPath()));
 
-        return $this->create($tenantId, $student, $actor, 'care_plan_uploaded', new CarePlanDocument([
+        $document = $this->create($tenantId, $student, $actor, 'care_plan_uploaded', new CarePlanDocument([
             'student_id' => $student->id,
             'title' => trim($title),
             'storage_path' => $path,
@@ -136,7 +138,12 @@ class UpdateHealthRecord
             'size' => $file->getSize() ?: 0,
             'checksum' => (string) hash_file('sha256', $file->getRealPath()),
             'uploaded_by' => $actor->id,
+            'scan_status' => ScanStatus::PENDING,
         ]));
+
+        ScanUploadedFile::dispatch('care_plan_documents', $document->id, $path);
+
+        return $document;
     }
 
     /**

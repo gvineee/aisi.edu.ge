@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Domain\Tenancy\CurrentTenant;
+use App\Domain\Uploads\FileScanner;
+use App\Domain\Uploads\NullFileScanner;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +19,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CurrentTenant::class);
+        // No antivirus engine is installed yet; see config/uploads.php.
+        $this->app->bind(FileScanner::class, NullFileScanner::class);
     }
 
     /**

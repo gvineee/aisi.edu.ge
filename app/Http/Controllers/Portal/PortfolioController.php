@@ -9,11 +9,15 @@ use App\Domain\Portfolio\Actions\AddPortfolioAsset;
 use App\Domain\Portfolio\Actions\CreatePortfolioItem;
 use App\Domain\Portfolio\Actions\DecidePortfolioItem;
 use App\Domain\Portfolio\Actions\SubmitPortfolioItem;
+use App\Domain\Portfolio\Models\Achievement;
 use App\Domain\Portfolio\Models\PortfolioAsset;
 use App\Domain\Portfolio\Models\PortfolioFeedback;
 use App\Domain\Portfolio\Models\PortfolioItem;
+use App\Domain\Portfolio\Models\PortfolioTag;
 use App\Domain\Portfolio\PortfolioFileStorage;
 use App\Domain\Tenancy\CurrentTenant;
+use App\Domain\Tenancy\Models\TenantMembership;
+use App\Domain\Uploads\ScanStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\DecidePortfolioItemRequest;
 use App\Http\Requests\Portal\StorePortfolioItemRequest;
@@ -55,10 +59,22 @@ class PortfolioController extends Controller
             ->latest('updated_at')
             ->get();
 
+        $tags = PortfolioTag::query()->where('tenant_id', $tenant->id)->whereIn('portfolio_item_id', $items->pluck('id'))->get()->groupBy('portfolio_item_id');
+
         return Inertia::render('portal/portfolio/index', [
             'student' => ['id' => $student->id, 'name' => $student->fullName()],
-            'items' => $items->map(fn (PortfolioItem $item) => $this->formatSummary($item))->values(),
+            'items' => $items->map(fn (PortfolioItem $item) => $this->formatSummary($item) + [
+                'tags' => $tags->get($item->id, collect())->pluck('tag')->values()->all(),
+            ])->values(),
             'canCreate' => $isOwner,
+            'canTag' => $isOwner || $isTeacher,
+            'canAward' => $isTeacher || TenantMembership::userHasAnyActiveRole($tenant->id, $user->id, AssessmentSettingsController::ACCESS_ROLES),
+            // Families see only shared achievements.
+            'achievements' => Achievement::query()->where('tenant_id', $tenant->id)->where('student_id', $student->id)
+                ->when(! $isOwner && ! $isTeacher, fn ($query) => $query->where('shared_with_family', true))
+                ->latest('awarded_on')->get()
+                ->map(fn (Achievement $a) => ['id' => $a->id, 'title' => $a->title, 'description' => $a->description, 'awardedOn' => $a->awarded_on->toDateString(), 'shared' => $a->shared_with_family])
+                ->values(),
         ]);
     }
 
@@ -146,6 +162,9 @@ class PortfolioController extends Controller
         if ($isTeacher && ! $isOwner) {
             abort_if($portfolioItem->status === PortfolioItem::STATUS_DRAFT, 403);
         }
+
+        // Pending or infected files are never served (CLAUDE.md #5).
+        abort_unless(ScanStatus::servable((string) $asset->scan_status), 423, 'ფაილი ჯერ შემოწმების პროცესშია.');
 
         return Storage::disk('local')->download($asset->storage_path, $asset->original_filename);
     }

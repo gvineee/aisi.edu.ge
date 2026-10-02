@@ -20,6 +20,7 @@ use App\Domain\Health\Models\Medication;
 use App\Domain\Health\Models\StudentHealthProfile;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
+use App\Domain\Uploads\ScanStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -359,6 +360,8 @@ class HealthController extends Controller
         // The signed URL only proves the link is fresh; access is re-checked now.
         $resolved = $this->access->resolve($tenant->id, $request->user(), $student);
         abort_unless(in_array($resolved['basis'], [HealthAccess::BASIS_FULL, HealthAccess::BASIS_GUARDIAN, HealthAccess::BASIS_EMERGENCY], true), 403);
+
+        abort_unless(ScanStatus::servable((string) $document->scan_status), 423, 'ფაილი ჯერ შემოწმების პროცესშია.');
 
         $this->access->log($tenant->id, $student, $request->user(), 'download_care_plan', $resolved['basis'], $resolved['emergency']);
 

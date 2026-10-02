@@ -33,6 +33,7 @@ use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\PickupController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
+use App\Http\Controllers\Portal\PortfolioExtrasController;
 use App\Http\Controllers\Portal\ReportCardController;
 use App\Http\Controllers\Portal\SchoolPulseController;
 use App\Http\Controllers\Portal\ServicesController;
@@ -123,6 +124,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('portfolio.assets.download');
     Route::post('portal/portfolio/{portfolioItem}/submit', [PortfolioController::class, 'submit'])->name('portfolio.submit');
     Route::post('portal/portfolio/{portfolioItem}/decide', [PortfolioController::class, 'decide'])->name('portfolio.decide');
+    Route::post('portal/portfolio/{portfolioItem}/tags', [PortfolioExtrasController::class, 'setTags'])->name('portfolio.tags');
+    Route::post('portal/portfolio/{portfolioItem}/archive', [PortfolioExtrasController::class, 'archive'])->name('portfolio.archive');
+    Route::post('portal/students/{student}/achievements', [PortfolioExtrasController::class, 'award'])->name('portfolio.achievements.store');
+    Route::get('portal/students/{student}/portfolio/export', [PortfolioExtrasController::class, 'export'])->name('portfolio.export');
 
     // --- Assignments & submissions (homework workflow) — teacher side under
     // portal/assignments, student side under portal/my-assignments. Mirrors
