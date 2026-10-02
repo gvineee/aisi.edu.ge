@@ -29,7 +29,8 @@ class ResolveTenant
             ->where('domain', $host)
             ->first();
 
-        if (! $domain || ! $domain->tenant || ! $domain->tenant->is_active) {
+        // A pending (not yet DNS-verified) domain serves nothing either.
+        if (! $domain || $domain->isPending() || ! $domain->tenant || ! $domain->tenant->is_active) {
             abort(404);
         }
 

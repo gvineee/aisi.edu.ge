@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PaymentWebhookController;
+use App\Http\Controllers\Platform\PlatformAdminController;
 use App\Http\Controllers\Portal\AcademicStructureController;
 use App\Http\Controllers\Portal\AdmissionsPipelineController;
 use App\Http\Controllers\Portal\AppointmentController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Portal\SchoolPulseController;
 use App\Http\Controllers\Portal\ServicesController;
 use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
+use App\Http\Controllers\Portal\SupportAccessController;
 use App\Http\Controllers\Portal\TeacherController;
 use App\Http\Controllers\Portal\TransportController;
 use App\Http\Controllers\Public\AdmissionLeadController;
@@ -367,6 +369,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     // --- end Finance ---
 
+    // --- Support access, school side (CLAUDE-PLATFORM-MODULES.md §14) ---
+    Route::get('portal/support-access', [SupportAccessController::class, 'index'])->name('support-access.index');
+    Route::post('portal/support-access/{supportRequest}', [SupportAccessController::class, 'decide'])->name('support-access.decide');
+
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---
     Route::get('portal/members', [MemberController::class, 'index'])->name('members.index');
@@ -374,6 +380,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/members/{membership}/revoke', [MemberController::class, 'revoke'])->name('members.revoke');
     Route::delete('portal/members/invitations/{invitation}', [MemberController::class, 'cancelInvitation'])->name('members.invitations.cancel');
     Route::post('portal/members/enrollment-requests/{enrollmentRequest}/decide', [MemberController::class, 'decideEnrollment'])->name('members.enrollment-requests.decide');
+});
+
+// --- Platform administration (CLAUDE-PLATFORM-MODULES.md §14) — platform
+// operators only (separate model + 2FA), 404 for everyone else. ---
+Route::middleware(['auth', 'verified', 'platform'])->prefix('platform-admin')->name('platform.')->group(function () {
+    Route::get('/', [PlatformAdminController::class, 'index'])->name('index');
+    Route::post('tenants', [PlatformAdminController::class, 'storeTenant'])->name('tenants.store');
+    Route::get('tenants/{tenant}', [PlatformAdminController::class, 'show'])->name('tenants.show');
+    Route::post('tenants/{tenant}/domains', [PlatformAdminController::class, 'addDomain'])->name('tenants.domains.store');
+    Route::post('tenants/{tenant}/domains/{domain}/verify', [PlatformAdminController::class, 'verifyDomain'])->name('tenants.domains.verify');
+    Route::post('tenants/{tenant}/onboarding/{step}', [PlatformAdminController::class, 'onboarding'])->name('tenants.onboarding');
+    Route::post('tenants/{tenant}/features', [PlatformAdminController::class, 'setFeature'])->name('tenants.features');
+    Route::post('tenants/{tenant}/subscription', [PlatformAdminController::class, 'assignPlan'])->name('tenants.subscription');
+    Route::post('tenants/{tenant}/support-requests', [PlatformAdminController::class, 'requestSupport'])->name('tenants.support.request');
+    Route::get('tenants/{tenant}/support-view', [PlatformAdminController::class, 'supportView'])->name('tenants.support.view');
+    Route::post('plans', [PlatformAdminController::class, 'storePlan'])->name('plans.store');
 });
 
 require __DIR__.'/settings.php';

@@ -20,7 +20,8 @@ export type PortalNavIconKey =
     | 'appointments'
     | 'services'
     | 'pulse'
-    | 'finance';
+    | 'finance'
+    | 'support-access';
 
 export interface PortalNavItem {
     key: string;

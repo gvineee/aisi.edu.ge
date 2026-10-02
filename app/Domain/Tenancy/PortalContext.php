@@ -278,6 +278,10 @@ class PortalContext
         ];
 
         if (in_array($activeRole, [TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ADMIN], true)) {
+            $items[] = ['key' => 'support-access', 'label' => 'მხარდაჭერის წვდომა', 'href' => route('support-access.index'), 'icon' => 'support-access'];
+        }
+
+        if (in_array($activeRole, [TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ADMIN], true)) {
             $items[] = ['key' => 'pulse', 'label' => 'სკოლის პულსი', 'href' => route('director.pulse'), 'icon' => 'pulse'];
         }
 

@@ -27,6 +27,8 @@ class NoIndexPrivateAreas
         'two-factor-challenge', 'user/*', 'email/*',
         'invitations/*',
         'verify/*',
+        'platform-admin', 'platform-admin/*',
+        'webhooks/*',
     ];
 
     public function handle(Request $request, Closure $next): Response

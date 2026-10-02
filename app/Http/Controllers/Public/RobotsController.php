@@ -15,7 +15,7 @@ class RobotsController extends Controller
         // X-Robots-Tag header to their responses as well.
         $lines = ['User-agent: *'];
 
-        foreach (['/portal/', '/dashboard', '/settings/', '/login', '/register', '/invitations/', '/verify/'] as $path) {
+        foreach (['/portal/', '/dashboard', '/settings/', '/login', '/register', '/invitations/', '/verify/', '/platform-admin/', '/webhooks/'] as $path) {
             $lines[] = 'Disallow: '.$path;
         }
 

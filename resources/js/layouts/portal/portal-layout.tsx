@@ -13,6 +13,7 @@ import {
     HeartPulse,
     House,
     LayoutGrid,
+    LifeBuoy,
     LogOut,
     Menu,
     MessageSquareText,
@@ -67,6 +68,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     services: LayoutGrid,
     pulse: Activity,
     finance: Wallet,
+    'support-access': LifeBuoy,
 };
 
 /**

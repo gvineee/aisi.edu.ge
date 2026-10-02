@@ -4,6 +4,43 @@
 
 > განახლებულია: 2026-09-11 · ეტაპი 1 დასრულებულია (ბრენდის სინქრონიზაცია + სრული საჯარო საიტი, ახლა დიზაინთან მჭიდრო fidelity-თი — იხ. ქვემოთ); **ეტაპი 2 მნიშვნელოვნად დაწინაურებულია** (როლზე დაფუძნებული dashboard-ები ყველა როლისთვის — guardian/teacher/student/director/admin —, სრული sidebar/bottom-nav portal layout, დოკუმენტების ცენტრის Stage 1+2, კონტენტის მიგრაციის importer ყველა 92 source key-ს ცხადი გადაწყვეტილებით). `CLAUDE-PLATFORM-MODULES.md`-ის **Phase A ("საერთო საფუძველი და vertical slice") ამჟამად სრულადაა დაფარული**: PortalLayout/sidebar/mobile nav ✓, role/context (`PortalContext`) ✓, დღის ცენტრი (`BuildDailyActionFeed`) ✓, Messaging ✓, tenant/role/guardian auth ყველგან ✓. **Phase B დაწყებულია: Portfolio ✓** (draft→submit→publish/return, student/teacher/guardian ხილვადობის წესები — დეტალები ქვემოთ). **ადმინისტრაციული ხარვეზები (CMS UI, წევრების მართვა, მედიის ფაილების რეალური გადმოტანა) ამ ეტაპზე დახურულია** — დეტალები ქვემოთ. დანარჩენი Phase B-C-D-E (Assessment/Gradebook, Health, Pickup/Consent, Admissions CRM, Finance, Transport/Meals/Clubs, Platform white-label) ჯერ არ დაწყებულა — დეტალები `docs/design-parity-checklist.md`-ში. სრული ტესტ-suite: **190/190 passed, 843 assertions** (Pint/PHPStan level 7/`npm run types:check`/`npm run build` ყველა სუფთა). **ყველა ცვლილება production-ზეც დეპლოირებული და რეალურ ბრაუზერში/`curl`-ით დამოწმებულია** (`https://aisi.edu.ge`) — 19 რეალური მიგრირებული ფოტო ფაქტობრივად არსებობს production storage-ზე, hero-ს/header-ის/nav-ის ვიზუალური ბაგები გასწორებულია, **მასწავლებლების ცალკე ბლოკი აშენდა და 17 რეალური მასწავლებელი გამოქვეყნებულია**, **20 რეალური ამბავი + 10 რეალური გვერდი გამოქვეყნებულია (9 ყალბი WordPress-თემის Lorem-Ipsum პოსტი და ორმაგი/დუბლირებული გვერდი განზრახ არ გამოქვეყნებულა)**, და **ისტორიული სიახლეების რეალური თარიღები აღდგენილია** (ადრე ყველა publish ღილაკზე დაწკაპებისას "დღეს" თარიღი იწერებოდა).
 
+### 2026-10-03 (გაგრძელება, მე-2) — ფაზა E: white-label platform administration (§14) — `verified_local`
+
+**გამიჯვნა:** platform operator არის ცალკე მოდელი (`platform_operators`), რომელიც tenant-ის როლს არ უკავშირდება. სკოლის admin-ი პლატფორმაზე წვდომას ვერ იღებს. `/platform-admin` დაცულია `platform` middleware-ით: საჭიროა აქტიური operator და დადასტურებული 2FA, სხვაგვარად ბრუნდება 404. operator-ად დანიშვნა შესაძლებელია **მხოლოდ სერვერიდან**, ბრძანებით `php artisan platform:operator <email> [--revoke] --reason=...` (audit). web-გზა განზრახ არ არსებობს.
+
+**ახალი სკოლა:** operator ქმნის tenant-ს **არააქტიური** სტატუსით. ის იღებს pending დომენს verification token-ით, საწყის brand-ს და 8 onboarding ნაბიჯს. `ResolveTenant` ახლა **pending დომენსაც 404-ით პასუხობს**; unknown host fallback არ არსებობს. დომენის მფლობელობა მტკიცდება DNS TXT ჩანაწერით `_platform-verify.<domain>`. არსებული დომენები migration-ში verified-ად ჩაიწერა, რადგან ხელით იყო დაკონფიგურირებული.
+
+**Wizard** (identity → domain → brand → locale → academic_year → staff_invites → modules → review): ყოველი ნაბიჯი **idempotent-ია** და შეწყვეტის შემდეგ იმავე ადგილიდან გრძელდება. სასწავლო წელი სახელით ახლდება, მოწვევა ღია invitation-ს იყენებს — ტესტით დამოწმებულია, რომ განმეორება ერთ ჩანაწერს ტოვებს.
+- **brand:** მხოლოდ `#RRGGBB` ფერები. ლოგო (lockup), მუქი ვარიანტი და იკონი — PNG/JPEG/WebP ≤2MB; **SVG უარყოფილია**. ფაილები `brand/{tenant}/` ქვეშ შემთხვევითი სახელით ინახება.
+- **locale:** დროის სარტყელი IANA-ს სიით მოწმდება.
+- **staff_invites:** იქმნება პირველი ადმინისტრატორის მოწვევა და ჩანს მისი ბმული.
+- **modules:** feature entitlements-ის ჩართვა.
+- **review:** სკოლა აქტიურდება **მხოლოდ** მაშინ, როცა ყველა ნაბიჯი დასრულებულია და ძირითადი დომენი დადასტურებულია.
+
+**სხვა:** feature-ის გამორთვა route-ს ხურავს, **მონაცემს არ შლის** (ტესტით). subscription plans არის **მხოლოდ კონფიგურაცია, ფასის გარეშე**. SaaS subscription tuition-ს არ ერევა.
+
+**Support წვდომა:**
+- operator ითხოვს მიზეზით (≥10 სიმბოლო) და ვადით (15–240 წთ).
+- მოთხოვნას **მხოლოდ სკოლის admin/director ამტკიცებს** `/portal/support-access`-ზე; საკუთარ მოთხოვნას ვერავინ დაამტკიცებს.
+- დამტკიცების შემდეგ ხსნება **მხოლოდ სანახავი** support view: კონფიგურაცია და აგრეგირებული რაოდენობები, ხილული banner-ით და ვადით.
+- ვადის ამოწურვა ან გაუქმება წვდომას მაშინვე ხურავს.
+- ყველა ნაბიჯი აღირიცხება ორივე მხარეს: `platform_audit_events` და სკოლის `audit_events`.
+- ფარული impersonation არ არსებობს.
+
+Offboarding, ექსპორტი, შენახვა და წაშლა აღწერილია `docs/platform-offboarding-and-retention.md`-ში. სამართლებრივი ვადების დადასტურებამდე ავტომატური წაშლა/ექსპორტი განზრახ არ არსებობს.
+
+**noindex:** `/platform-admin` და `/webhooks` დაემატა X-Robots-Tag-სა და robots.txt Disallow-ს.
+
+**შემოწმება:** `PlatformAdministrationTest`, 4 ტესტი:
+1. მხოლოდ operator + MFA; სკოლის admin, operator 2FA-ის გარეშე და revoked operator → 404.
+2. wizard: idempotency, SVG/ფერის/timezone ვალიდაცია, pending დომენი არ ემსახურება, DNS fail/ok, review gate, სკოლის ჩართვა.
+3. feature off → 404, მონაცემი ინახება; plan ფასის გარეშე; plan-ის მინიჭება.
+4. support: მოთხოვნა → წვდომა დამტკიცებამდე არ არის → მხოლოდ სკოლის admin ამტკიცებს → view → revoke → expiry → audit ორივე მხარეს.
+
+სრული suite → **298/298 passed, 2269 assertion**. Pint, PHPStan (0), types და build სუფთაა. ლოკალურ PostgreSQL-ზე migrate გავიდა.
+
+**ღიაა:** საფოსტო გაგზავნა (მოწვევის ბმული ჯერ ხელით გადაეცემა); რეალური billing provider SaaS-ისთვის; ფასები და კომერციული წესები; custom domain-ის TLS ავტომატიზაცია (CloudPanel-ის მხარე).
+
 ### 2026-10-03 (გაგრძელება) — Finance (`app/Domain/Finance`, §12, ფაზა 3) — **SANDBOX ONLY**, `verified_local`, **production-ready არ არის**
 
 **რატომ sandbox:** ბანკის/მერჩანტის API პირობები და credentials არ გვაქვს (CLAUDE.md „კითხვები, რომელთა პასუხი არ უნდა გამოიგონო"). ამიტომ ერთადერთი adapter არის `SandboxPaymentProvider`, რომელიც **რეალურ ფულს არ ამოძრავებს**; ყველა ფინანსურ ეკრანზე ჩანს Sandbox banner. `feature:finance` production-ში გამორთულია; `FINANCE_SANDBOX_ENABLED` production-ში default `false`. ბუღალტრის UAT-მდე მოდული production-ready-დ **არ** ცხადდება.
