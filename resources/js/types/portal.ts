@@ -16,7 +16,8 @@ export type PortalNavIconKey =
     | 'assessment-settings'
     | 'progress'
     | 'report-cards'
-    | 'health';
+    | 'health'
+    | 'appointments';
 
 export interface PortalNavItem {
     key: string;

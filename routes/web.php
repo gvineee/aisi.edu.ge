@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Portal\AcademicStructureController;
 use App\Http\Controllers\Portal\AdmissionsPipelineController;
+use App\Http\Controllers\Portal\AppointmentController;
 use App\Http\Controllers\Portal\AssessmentSettingsController;
 use App\Http\Controllers\Portal\AssignmentController;
 use App\Http\Controllers\Portal\AttendanceController;
@@ -223,6 +224,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/pickup', [PickupController::class, 'index'])->name('pickup.index');
     Route::post('portal/pickup', [PickupController::class, 'store'])->name('pickup.store');
     Route::post('portal/pickup/{authorizedPickup}/remove', [PickupController::class, 'destroy'])->name('pickup.remove');
+    Route::post('portal/pickup/codes', [PickupController::class, 'issueCode'])->middleware('throttle:10,1')->name('pickup.codes.issue');
+    Route::post('portal/pickup/codes/{pickupCode}/cancel', [PickupController::class, 'cancelCode'])->name('pickup.codes.cancel');
+    Route::get('portal/pickup-desk', [PickupController::class, 'verifyDesk'])->name('pickup.verify-desk');
+    // Rate-limited: a code is short, so guessing must be impractical.
+    Route::post('portal/pickup-desk/verify', [PickupController::class, 'verify'])->middleware('throttle:10,1')->name('pickup.verify');
+    Route::post('portal/pickup-desk/override', [PickupController::class, 'override'])->name('pickup.override');
 
     Route::get('portal/consents', [ConsentController::class, 'index'])->name('consents.index');
     Route::post('portal/consents', [ConsentController::class, 'store'])->name('consents.store');
@@ -287,6 +294,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('id')
         ->name('health.items.remove');
     // --- end Health record ---
+
+    // --- Parent–teacher meetings (ფაზა C appointments) ---
+    Route::get('portal/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+    Route::post('portal/appointments/slots', [AppointmentController::class, 'storeSlot'])->name('appointments.slots.store');
+    Route::post('portal/appointments/slots/{slot}/cancel', [AppointmentController::class, 'cancelSlot'])->name('appointments.slots.cancel');
+    Route::post('portal/appointments/slots/{slot}/book', [AppointmentController::class, 'book'])->name('appointments.book');
+    Route::post('portal/appointments/bookings/{booking}/cancel', [AppointmentController::class, 'cancelBooking'])->name('appointments.bookings.cancel');
+    // --- end Parent–teacher meetings ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---

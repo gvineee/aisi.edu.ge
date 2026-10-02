@@ -8,6 +8,7 @@ use App\Domain\PickupConsent\Actions\PublishConsentForm;
 use App\Domain\PickupConsent\Actions\RespondToConsent;
 use App\Domain\PickupConsent\Models\ConsentForm;
 use App\Domain\PickupConsent\Models\ConsentResponse;
+use App\Domain\PickupConsent\Models\ConsentResponseEvent;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Http\Controllers\Controller;
@@ -16,6 +17,7 @@ use App\Http\Requests\Portal\RespondToConsentRequest;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -58,6 +60,9 @@ class ConsentController extends Controller
             title: $request->string('title')->toString(),
             body: $request->string('body')->toString(),
             requiresSignature: $request->boolean('requires_signature', true),
+            responsesCloseAt: $request->filled('responses_close_at')
+                ? Carbon::parse((string) $request->string('responses_close_at'), 'Asia/Tbilisi')->utc()
+                : null,
         );
 
         return redirect()->route('consents.index');
@@ -124,6 +129,7 @@ class ConsentController extends Controller
             student: $link->student,
             guardian: $user,
             granted: $request->boolean('granted'),
+            link: $link,
         );
 
         return redirect()->route('consents.index');
@@ -146,6 +152,7 @@ class ConsentController extends Controller
                     'title' => $form->title,
                     'requiresSignature' => $form->requires_signature,
                     'createdAt' => $form->created_at?->toIso8601String(),
+                    'closesAt' => $form->responses_close_at?->toIso8601String(),
                     'totalStudents' => $totalActiveStudents,
                     'granted' => $granted,
                     'denied' => $denied,
@@ -192,17 +199,26 @@ class ConsentController extends Controller
             ->get()
             ->keyBy('consent_form_id');
 
+        $events = ConsentResponseEvent::query()
+            ->where('tenant_id', $link->tenant_id)
+            ->where('student_id', $link->student_id)
+            ->with('guardian')
+            ->latest('id')
+            ->get()
+            ->groupBy('consent_form_id');
+
         return [
             'id' => $link->student->id,
             'name' => $link->student->fullName(),
-            'forms' => $forms->map(fn (ConsentForm $form) => $this->formatFormStatus($form, $responses->get($form->id)))->values(),
+            'forms' => $forms->map(fn (ConsentForm $form) => $this->formatFormStatus($form, $responses->get($form->id), $events->get($form->id, collect())))->values(),
         ];
     }
 
     /**
+     * @param  \Illuminate\Support\Collection<int, ConsentResponseEvent>  $events
      * @return array<string, mixed>
      */
-    private function formatFormStatus(ConsentForm $form, ?ConsentResponse $response): array
+    private function formatFormStatus(ConsentForm $form, ?ConsentResponse $response, \Illuminate\Support\Collection $events): array
     {
         return [
             'id' => $form->id,
@@ -211,6 +227,13 @@ class ConsentController extends Controller
             'requiresSignature' => $form->requires_signature,
             'granted' => $response?->granted,
             'respondedAt' => $response?->responded_at?->toIso8601String(),
+            'closesAt' => $form->responses_close_at?->toIso8601String(),
+            'isClosed' => $form->isClosed(),
+            'history' => $events->map(fn (ConsentResponseEvent $event) => [
+                'decision' => $event->decision,
+                'guardianName' => $event->guardian->name ?? null,
+                'createdAt' => $event->created_at?->toIso8601String(),
+            ])->values()->all(),
         ];
     }
 }

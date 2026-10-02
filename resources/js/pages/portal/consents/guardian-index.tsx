@@ -10,6 +10,7 @@ import {
     EmptyTitle,
     EmptyDescription,
 } from '@/components/ui/empty';
+import { formatDateTime } from '@/lib/assessment';
 
 type ConsentFormStatus = {
     id: number;
@@ -18,6 +19,19 @@ type ConsentFormStatus = {
     requiresSignature: boolean;
     granted: boolean | null;
     respondedAt: string | null;
+    closesAt: string | null;
+    isClosed: boolean;
+    history: {
+        decision: 'granted' | 'declined' | 'revoked';
+        guardianName: string | null;
+        createdAt: string | null;
+    }[];
+};
+
+const DECISIONS: Record<string, string> = {
+    granted: 'თანხმობა',
+    declined: 'უარი',
+    revoked: 'თანხმობის გაუქმება',
 };
 
 type Child = {
@@ -78,9 +92,7 @@ export default function ConsentsGuardianIndex({ children }: Props) {
                             key={child.id}
                             className="rounded-xl border border-slate-200 bg-white p-5"
                         >
-                            <h2 className="mb-4 font-semibold">
-                                {child.name}
-                            </h2>
+                            <h2 className="mb-4 font-semibold">{child.name}</h2>
 
                             {child.forms.length === 0 ? (
                                 <p className="py-4 text-center text-sm text-slate-500">
@@ -115,7 +127,20 @@ export default function ConsentsGuardianIndex({ children }: Props) {
                                             <p className="mb-3 text-sm whitespace-pre-line text-slate-600">
                                                 {form.body}
                                             </p>
-                                            <div className="flex gap-2">
+                                            {form.closesAt && (
+                                                <p className="mb-3 text-sm text-slate-500">
+                                                    {form.isClosed
+                                                        ? 'პასუხის ვადა ამოიწურა'
+                                                        : 'პასუხის ბოლო ვადა'}
+                                                    :{' '}
+                                                    {formatDateTime(
+                                                        form.closesAt,
+                                                    )}
+                                                </p>
+                                            )}
+                                            <div
+                                                className={`flex gap-2 ${form.isClosed ? 'hidden' : ''}`}
+                                            >
                                                 <Button
                                                     size="sm"
                                                     variant={
@@ -148,9 +173,41 @@ export default function ConsentsGuardianIndex({ children }: Props) {
                                                         )
                                                     }
                                                 >
-                                                    არ ვეთანხმები
+                                                    {form.granted === true
+                                                        ? 'თანხმობის გაუქმება'
+                                                        : 'არ ვეთანხმები'}
                                                 </Button>
                                             </div>
+                                            {form.history.length > 0 && (
+                                                <details className="mt-3 text-sm">
+                                                    <summary className="flex min-h-11 cursor-pointer items-center text-slate-600">
+                                                        პასუხების ისტორია
+                                                    </summary>
+                                                    <ul className="mt-1 space-y-1 text-slate-600">
+                                                        {form.history.map(
+                                                            (h, index) => (
+                                                                <li key={index}>
+                                                                    {DECISIONS[
+                                                                        h
+                                                                            .decision
+                                                                    ] ??
+                                                                        h.decision}{' '}
+                                                                    ·{' '}
+                                                                    {
+                                                                        h.guardianName
+                                                                    }{' '}
+                                                                    ·{' '}
+                                                                    {h.createdAt
+                                                                        ? formatDateTime(
+                                                                              h.createdAt,
+                                                                          )
+                                                                        : ''}
+                                                                </li>
+                                                            ),
+                                                        )}
+                                                    </ul>
+                                                </details>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>

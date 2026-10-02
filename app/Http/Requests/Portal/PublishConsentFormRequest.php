@@ -20,6 +20,7 @@ class PublishConsentFormRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:5000'],
             'requires_signature' => ['nullable', 'boolean'],
+            'responses_close_at' => ['nullable', 'date'],
         ];
     }
 }

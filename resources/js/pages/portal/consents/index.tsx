@@ -45,6 +45,7 @@ export default function ConsentsIndex({ forms }: Props) {
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
     const [requiresSignature, setRequiresSignature] = useState(true);
+    const [closesAt, setClosesAt] = useState('');
     const [saving, setSaving] = useState(false);
 
     const submitCreate = (event: FormEvent) => {
@@ -57,6 +58,7 @@ export default function ConsentsIndex({ forms }: Props) {
                 title,
                 body,
                 requires_signature: requiresSignature,
+                responses_close_at: closesAt || undefined,
             },
             {
                 onSuccess: () => {
@@ -64,6 +66,7 @@ export default function ConsentsIndex({ forms }: Props) {
                     setTitle('');
                     setBody('');
                     setRequiresSignature(true);
+                    setClosesAt('');
                     toast.success('თანხმობის ფორმა გამოქვეყნდა.');
                 },
                 onError: () =>
@@ -153,6 +156,20 @@ export default function ConsentsIndex({ forms }: Props) {
                                 }
                                 required
                                 className="min-h-32 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="consent-closes-at">
+                                პასუხის ბოლო ვადა (არასავალდებულო)
+                            </Label>
+                            <input
+                                id="consent-closes-at"
+                                type="datetime-local"
+                                value={closesAt}
+                                onChange={(event) =>
+                                    setClosesAt(event.target.value)
+                                }
+                                className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm"
                             />
                         </div>
                         <div className="flex items-center gap-2">

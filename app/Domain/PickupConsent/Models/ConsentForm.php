@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * A school-wide consent request (e.g. a field trip or a photo-use
@@ -20,10 +21,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $tenant_id
  * @property string $title
  * @property string $body
+ * @property string|null $body_checksum
  * @property bool $requires_signature
+ * @property Carbon|null $responses_close_at
  * @property int $created_by
  */
-#[Fillable(['title', 'body', 'requires_signature', 'created_by'])]
+#[Fillable(['title', 'body', 'body_checksum', 'requires_signature', 'responses_close_at', 'created_by'])]
 class ConsentForm extends Model
 {
     use BelongsToTenant;
@@ -32,7 +35,18 @@ class ConsentForm extends Model
     {
         return [
             'requires_signature' => 'boolean',
+            'responses_close_at' => 'datetime',
         ];
+    }
+
+    public static function checksumFor(string $title, string $body): string
+    {
+        return hash('sha256', $title."\n".$body);
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->responses_close_at !== null && $this->responses_close_at->isPast();
     }
 
     /**

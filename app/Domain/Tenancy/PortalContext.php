@@ -318,6 +318,15 @@ class PortalContext
             $items[] = ['key' => 'report-cards', 'label' => 'ტაბელები', 'href' => route('report-cards.index'), 'icon' => 'report-cards'];
         }
 
+        if (in_array($activeRole, [TenantMembership::ROLE_TEACHER, TenantMembership::ROLE_GUARDIAN], true)) {
+            $items[] = ['key' => 'appointments', 'label' => 'შეხვედრები', 'href' => route('appointments.index'), 'icon' => 'appointments'];
+        }
+
+        // PickupController::verifyDesk re-checks the verifier roles itself.
+        if ($activeRole === TenantMembership::ROLE_TEACHER || in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'pickup-desk', 'label' => 'გაყვანის მაგიდა', 'href' => route('pickup.verify-desk'), 'icon' => 'pickup'];
+        }
+
         // HealthController::index re-checks HealthAccess itself and shows each
         // staff member only what their grants / classes allow.
         if ($activeRole === TenantMembership::ROLE_TEACHER || in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {

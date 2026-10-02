@@ -1,6 +1,7 @@
 import { Form, Link, router, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren } from 'react';
 import {
+    CalendarCheck,
     CalendarClock,
     CalendarRange,
     ChartLine,
@@ -59,6 +60,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     progress: ChartLine,
     'report-cards': ScrollText,
     health: HeartPulse,
+    appointments: CalendarCheck,
 };
 
 /**
