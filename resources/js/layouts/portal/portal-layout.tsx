@@ -8,6 +8,7 @@ import {
     FileCheck2,
     FileText,
     GraduationCap,
+    HeartPulse,
     House,
     LogOut,
     Menu,
@@ -57,6 +58,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     'assessment-settings': Scale,
     progress: ChartLine,
     'report-cards': ScrollText,
+    health: HeartPulse,
 };
 
 /**

@@ -1,6 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { BookMarked, CalendarClock, ChartLine, Users } from 'lucide-react';
+import {
+    BookMarked,
+    CalendarClock,
+    ChartLine,
+    HeartPulse,
+    Users,
+} from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 import DashboardHeading from '@/components/portal/dashboard-heading';
@@ -179,6 +185,18 @@ export default function ParentDashboard({
                                     </Link>
                                 )}
                             </div>
+
+                            <Link
+                                href={`/portal/students/${selected.id}/health`}
+                                className="mb-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 text-sm font-medium ring-1 ring-slate-200 hover:bg-slate-50"
+                            >
+                                <HeartPulse
+                                    size={18}
+                                    className="text-[#c84925]"
+                                    aria-hidden
+                                />
+                                {selected.name}-ის ჯანმრთელობის ჩანაწერი
+                            </Link>
 
                             <StatGrid stats={stats} />
 

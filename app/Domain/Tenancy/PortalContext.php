@@ -318,6 +318,12 @@ class PortalContext
             $items[] = ['key' => 'report-cards', 'label' => 'ტაბელები', 'href' => route('report-cards.index'), 'icon' => 'report-cards'];
         }
 
+        // HealthController::index re-checks HealthAccess itself and shows each
+        // staff member only what their grants / classes allow.
+        if ($activeRole === TenantMembership::ROLE_TEACHER || in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'health', 'label' => 'ჯანმრთელობა', 'href' => route('health.index'), 'icon' => 'health'];
+        }
+
         if (in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'assessment-settings', 'label' => 'შეფასების წესები', 'href' => route('assessment-settings.index'), 'icon' => 'assessment-settings'];
         }

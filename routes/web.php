@@ -16,6 +16,7 @@ use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\EnrollmentVerificationController;
 use App\Http\Controllers\Portal\GradebookController;
+use App\Http\Controllers\Portal\HealthController;
 use App\Http\Controllers\Portal\LessonController;
 use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
@@ -260,6 +261,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/students/{student}/report-cards', [ReportCardController::class, 'forStudent'])->name('report-cards.student');
     Route::get('portal/report-card-documents/{publication}', [ReportCardController::class, 'showPublication'])->name('report-cards.document');
     // --- end Assessment & Gradebook ---
+
+    // --- Health record (CLAUDE-PLATFORM-MODULES.md §8) — access decided by
+    // HealthAccess (explicit capability grants + 2FA, guardian link,
+    // reasoned emergency access, alerts-only for the student's teachers). ---
+    Route::get('portal/health', [HealthController::class, 'index'])->name('health.index');
+    Route::get('portal/health/permissions', [HealthController::class, 'permissions'])->name('health.permissions');
+    Route::post('portal/health/permissions', [HealthController::class, 'grant'])->name('health.permissions.grant');
+    Route::post('portal/health/permissions/{grant}/revoke', [HealthController::class, 'revoke'])->name('health.permissions.revoke');
+    Route::post('portal/health/emergency-accesses/{emergencyAccess}/review', [HealthController::class, 'reviewEmergency'])->name('health.emergency.review');
+    Route::get('portal/students/{student}/health', [HealthController::class, 'show'])->name('health.show');
+    Route::get('portal/students/{student}/health/access-log', [HealthController::class, 'accessLog'])->name('health.access-log');
+    Route::post('portal/students/{student}/health/profile', [HealthController::class, 'saveProfile'])->name('health.profile.save');
+    Route::post('portal/students/{student}/health/conditions', [HealthController::class, 'storeCondition'])->name('health.conditions.store');
+    Route::post('portal/students/{student}/health/medications', [HealthController::class, 'storeMedication'])->name('health.medications.store');
+    Route::post('portal/students/{student}/health/contacts', [HealthController::class, 'storeContact'])->name('health.contacts.store');
+    Route::post('portal/students/{student}/health/care-plans', [HealthController::class, 'storeCarePlan'])->name('health.care-plans.store');
+    Route::get('portal/students/{student}/health/care-plans/{document}/download', [HealthController::class, 'downloadCarePlan'])
+        ->middleware('signed')
+        ->name('health.care-plans.download');
+    Route::post('portal/students/{student}/health/incidents', [HealthController::class, 'storeIncident'])->name('health.incidents.store');
+    Route::post('portal/students/{student}/health/emergency-access', [HealthController::class, 'requestEmergency'])->name('health.emergency.request');
+    Route::post('portal/students/{student}/health/{type}/{id}/remove', [HealthController::class, 'destroyItem'])
+        ->whereIn('type', ['conditions', 'medications', 'contacts', 'care-plans'])
+        ->whereNumber('id')
+        ->name('health.items.remove');
+    // --- end Health record ---
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---
