@@ -1,5 +1,17 @@
 import { Link } from '@inertiajs/react';
-import { CheckCircle2, FileCheck2, MessageSquareText } from 'lucide-react';
+import {
+    CalendarCheck,
+    CheckCircle2,
+    ClipboardCheck,
+    ClipboardList,
+    FileCheck2,
+    LifeBuoy,
+    MessageSquareText,
+    Receipt,
+    Repeat,
+    ScrollText,
+    UserCheck,
+} from 'lucide-react';
 
 export type ActionItem = {
     key: string;
@@ -7,18 +19,48 @@ export type ActionItem = {
     title: string;
     contextLabel: string | null;
     href: string;
+    dueAt?: string | null;
+    priority?: 'urgent' | 'high' | 'normal';
 };
 
 const ICONS: Record<string, typeof FileCheck2> = {
     document_approval: FileCheck2,
     unread_message: MessageSquareText,
+    consent_request: FileCheck2,
+    invoice: Receipt,
+    report_card: ScrollText,
+    appointment: CalendarCheck,
+    attendance: UserCheck,
+    substitution: Repeat,
+    grading: ClipboardCheck,
+    assignment: ClipboardList,
+    support_access: LifeBuoy,
 };
+
+const PRIORITY: Record<
+    string,
+    { label: string; className: string } | undefined
+> = {
+    urgent: { label: 'სასწრაფო', className: 'bg-red-100 text-red-800' },
+    high: { label: 'მნიშვნელოვანი', className: 'bg-amber-100 text-amber-900' },
+};
+
+function dueLabel(iso: string): string {
+    return new Date(iso).toLocaleString('ka-GE', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Tbilisi',
+    });
+}
 
 /**
  * Aggregated "needs your attention" list (CLAUDE-PLATFORM-MODULES.md §3's
  * დღის ცენტრი) — every item is a real, currently-pending thing this user
- * can act on right now, resolved server-side by BuildDailyActionFeed.
- * Empty means the day is genuinely clear, not that the feature is missing.
+ * can act on right now, resolved and ordered server-side by
+ * BuildDailyActionFeed (urgent/overdue first). Empty means the day is
+ * genuinely clear, not that the feature is missing.
  */
 export default function ActionFeed({ items }: { items: ActionItem[] }) {
     return (
@@ -36,6 +78,9 @@ export default function ActionFeed({ items }: { items: ActionItem[] }) {
                 <ul className="divide-y divide-slate-100">
                     {items.map((item) => {
                         const Icon = ICONS[item.type] ?? FileCheck2;
+                        const priority = item.priority
+                            ? PRIORITY[item.priority]
+                            : undefined;
 
                         return (
                             <li key={item.key} className="py-1">
@@ -50,12 +95,26 @@ export default function ActionFeed({ items }: { items: ActionItem[] }) {
                                         <span className="block truncate font-medium">
                                             {item.title}
                                         </span>
-                                        {item.contextLabel && (
+                                        {(item.contextLabel || item.dueAt) && (
                                             <span className="block truncate text-xs text-slate-500">
-                                                {item.contextLabel}
+                                                {[
+                                                    item.contextLabel,
+                                                    item.dueAt
+                                                        ? `ვადა: ${dueLabel(item.dueAt)}`
+                                                        : null,
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(' · ')}
                                             </span>
                                         )}
                                     </span>
+                                    {priority && (
+                                        <span
+                                            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${priority.className}`}
+                                        >
+                                            {priority.label}
+                                        </span>
+                                    )}
                                 </Link>
                             </li>
                         );

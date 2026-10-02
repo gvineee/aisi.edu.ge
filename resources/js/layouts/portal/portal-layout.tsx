@@ -19,6 +19,7 @@ import {
     MessageSquareText,
     Newspaper,
     PenLine,
+    Presentation,
     Repeat,
     Scale,
     ScrollText,
@@ -69,6 +70,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     pulse: Activity,
     finance: Wallet,
     'support-access': LifeBuoy,
+    'teacher-workspace': Presentation,
 };
 
 /**

@@ -328,6 +328,7 @@ class PortalContext
         }
 
         if ($activeRole === TenantMembership::ROLE_TEACHER) {
+            $items[] = ['key' => 'teacher-workspace', 'label' => 'ჩემი სივრცე', 'href' => route('teacher-workspace.index'), 'icon' => 'teacher-workspace'];
             $items[] = ['key' => 'gradebook', 'label' => 'შეფასებები', 'href' => route('gradebook.index'), 'icon' => 'gradebook'];
         }
 

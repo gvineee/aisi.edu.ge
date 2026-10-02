@@ -6,10 +6,12 @@ use App\Domain\Governance\AuditLogger;
 use App\Domain\Learning\Models\AttendanceRecord;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Timetable\Models\Lesson;
+use App\Domain\Timetable\Models\SubstitutionAssignment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\StoreAttendanceRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -23,11 +25,11 @@ class AttendanceController extends Controller
 {
     public function show(Request $request, CurrentTenant $currentTenant, Lesson $lesson): Response
     {
-        $this->authorizeTeacher($request, $currentTenant, $lesson);
-
         $date = $request->string('date')->isNotEmpty()
             ? Carbon::parse((string) $request->string('date'))
             : Carbon::now($currentTenant->get()->timezone);
+
+        $this->authorizeTeacher($request, $currentTenant, $lesson, $date->toDateString());
 
         $students = $lesson->schoolClass->students()
             ->where('is_active', true)
@@ -59,11 +61,20 @@ class AttendanceController extends Controller
 
     public function store(StoreAttendanceRequest $request, CurrentTenant $currentTenant, Lesson $lesson, AuditLogger $auditLogger): HttpResponse
     {
-        $this->authorizeTeacher($request, $currentTenant, $lesson);
-
         $tenant = $currentTenant->get();
         $occurredOn = Carbon::parse($request->validated('occurred_on'))->toDateString();
         $actorId = $request->user()->id;
+
+        $this->authorizeTeacher($request, $currentTenant, $lesson, $occurredOn);
+
+        // Only students of this lesson's own class roster may be marked.
+        $roster = $lesson->schoolClass->students()->where('tenant_id', $tenant->id)->where('is_active', true)->pluck('id')->all();
+
+        foreach ($request->validated('records') as $index => $entry) {
+            if (! in_array((int) $entry['student_id'], $roster, true)) {
+                throw ValidationException::withMessages(["records.{$index}.student_id" => 'მოსწავლე ამ კლასის სიაში არ არის.']);
+            }
+        }
 
         foreach ($request->validated('records') as $entry) {
             $existing = AttendanceRecord::query()
@@ -100,13 +111,26 @@ class AttendanceController extends Controller
         return back();
     }
 
-    private function authorizeTeacher(Request $request, CurrentTenant $currentTenant, Lesson $lesson): void
+    /**
+     * The lesson's own teacher, or — only for the covered date — the
+     * teacher assigned to substitute that lesson (CLAUDE-PLATFORM-MODULES
+     * §9: a substitute's roster access is bound to the lesson and time).
+     */
+    private function authorizeTeacher(Request $request, CurrentTenant $currentTenant, Lesson $lesson, string $date): void
     {
         $tenant = $currentTenant->get();
+        abort_unless($lesson->tenant_id === $tenant->id, 404);
 
-        abort_unless(
-            $lesson->tenant_id === $tenant->id && $lesson->teacher_id === $request->user()->id,
-            403,
-        );
+        $userId = $request->user()->id;
+        $isOwner = $lesson->teacher_id === $userId;
+        $isSubstitute = SubstitutionAssignment::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('lesson_id', $lesson->id)
+            ->where('substitute_teacher_id', $userId)
+            ->where('status', SubstitutionAssignment::STATUS_ASSIGNED)
+            ->whereDate('date', $date)
+            ->exists();
+
+        abort_unless($isOwner || $isSubstitute, 403);
     }
 }

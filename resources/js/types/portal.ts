@@ -21,7 +21,8 @@ export type PortalNavIconKey =
     | 'services'
     | 'pulse'
     | 'finance'
-    | 'support-access';
+    | 'support-access'
+    | 'teacher-workspace';
 
 export interface PortalNavItem {
     key: string;

@@ -39,6 +39,7 @@ use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\SupportAccessController;
 use App\Http\Controllers\Portal\TeacherController;
+use App\Http\Controllers\Portal\TeacherWorkspaceController;
 use App\Http\Controllers\Portal\TransportController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\InvitationController;
@@ -87,6 +88,11 @@ Route::get('verify/report-card/{code}', ReportCardVerificationController::class)
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    // CLAUDE-PLATFORM-MODULES §3 names the day centre /portal/today; it is
+    // the same role-aware start page.
+    Route::get('portal/today', DashboardController::class)->name('portal.today');
+    Route::get('portal/teacher', [TeacherWorkspaceController::class, 'index'])->name('teacher-workspace.index');
+    Route::get('portal/teacher/lessons/{lesson}', [TeacherWorkspaceController::class, 'lesson'])->name('teacher-workspace.lesson');
 
     // --- Self-service enrollment identity verification (student/guardian
     // claims a roster identity; admin/director approves via the members
