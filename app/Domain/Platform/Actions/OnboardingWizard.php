@@ -12,10 +12,12 @@ use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantDomain;
 use App\Domain\Tenancy\Models\TenantInvitation;
 use App\Domain\Tenancy\Models\TenantMembership;
+use App\Mail\TenantInvitationMail;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -136,9 +138,36 @@ class OnboardingWizard
 
         $invitation = $existing ?? $this->createInvitation->handle($tenant->id, $operator, $email, TenantMembership::ROLE_ADMIN, null, null, null);
 
+        // The link only works once the school is live on its verified
+        // domain; before that the operator shares it manually and it is
+        // e-mailed on activation (review()).
+        if ($existing === null && $tenant->is_active) {
+            $this->emailInvitation($tenant, $invitation);
+        }
+
         $this->done($operator, $tenant, 'staff_invites');
 
         return $invitation;
+    }
+
+    /**
+     * Sends the invitation e-mail with a link on the tenant's verified
+     * primary domain; does nothing while that domain is unverified.
+     */
+    private function emailInvitation(Tenant $tenant, TenantInvitation $invitation): void
+    {
+        $domain = TenantDomain::query()->where('tenant_id', $tenant->id)->where('is_primary', true)->whereNotNull('verified_at')->value('domain');
+
+        if ($domain === null) {
+            return;
+        }
+
+        Mail::to($invitation->email)->queue(new TenantInvitationMail(
+            invitation: $invitation,
+            tenantName: $tenant->name,
+            acceptUrl: "https://{$domain}/invitations/{$invitation->token}",
+            roleLabel: 'ადმინისტრატორი',
+        ));
     }
 
     /**
@@ -167,12 +196,23 @@ class OnboardingWizard
             throw ValidationException::withMessages(['review' => 'დასასრულებელია: '.implode(', ', $missing === [] ? ['domain'] : $missing)]);
         }
 
+        $wasActive = $tenant->is_active;
+
         DB::transaction(function () use ($operator, $tenant) {
             $tenant->is_active = true;
             $tenant->save();
             $this->done($operator, $tenant, 'review');
             $this->audit->record($operator, 'tenant.activated', $tenant->id);
         });
+
+        if ($wasActive) {
+            return;
+        }
+
+        foreach (TenantInvitation::query()->withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)
+            ->whereNull('accepted_at')->where('expires_at', '>', Carbon::now())->get() as $invitation) {
+            $this->emailInvitation($tenant, $invitation);
+        }
     }
 
     private function done(User $operator, Tenant $tenant, string $step): void

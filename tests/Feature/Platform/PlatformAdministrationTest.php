@@ -15,9 +15,11 @@ use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantDomain;
 use App\Domain\Tenancy\Models\TenantInvitation;
 use App\Domain\Tenancy\Models\TenantMembership;
+use App\Mail\TenantInvitationMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -96,6 +98,8 @@ class PlatformAdministrationTest extends TestCase
         // Absolute: the request above moved the test client to the other host.
         $base = "http://localhost/platform-admin/tenants/{$tenant->id}";
 
+        Mail::fake();
+
         // Review is refused while steps are missing.
         $this->actingAs($this->operator)->post("{$base}/onboarding/review")->assertSessionHasErrors('review');
 
@@ -118,6 +122,8 @@ class PlatformAdministrationTest extends TestCase
         $this->assertSame(1, AcademicYear::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->count());
         $this->assertSame(1, TenantInvitation::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->count());
         $this->assertSame('admin', TenantInvitation::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->value('role'));
+        // Not e-mailed while the school is not live (the link would not work yet).
+        Mail::assertNothingQueued();
 
         $this->actingAs($this->operator)->post("{$base}/onboarding/modules", ['features' => ['web', 'school_portal', 'clubs']])->assertSessionHasNoErrors();
         $this->assertTrue(FeatureEntitlement::isEnabled($tenant->id, 'clubs'));
@@ -135,6 +141,10 @@ class PlatformAdministrationTest extends TestCase
 
         $this->actingAs($this->operator)->post("{$base}/onboarding/review")->assertSessionHasNoErrors();
         $this->assertTrue($tenant->fresh()->is_active);
+        // Activation e-mails the open invitation once, with a link on the school's own domain.
+        Mail::assertQueued(TenantInvitationMail::class, 1);
+        Mail::assertQueued(TenantInvitationMail::class, fn (TenantInvitationMail $mail) => $mail->hasTo('director@mze-school.test')
+            && str_starts_with($mail->acceptUrl, 'https://mze-school.test/invitations/'));
         // Served now (an authenticated user is redirected away from /login, not 404).
         $this->assertNotSame(404, $this->get('http://mze-school.test/login', ['Host' => 'mze-school.test'])->status());
 
