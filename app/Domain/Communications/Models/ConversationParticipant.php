@@ -18,8 +18,9 @@ use Illuminate\Support\Carbon;
  * @property bool $muted
  * @property int|null $last_read_message_id
  * @property Carbon $joined_at
+ * @property Carbon|null $archived_at
  */
-#[Fillable(['conversation_id', 'user_id', 'role_context', 'muted', 'last_read_message_id', 'joined_at'])]
+#[Fillable(['conversation_id', 'user_id', 'role_context', 'muted', 'last_read_message_id', 'joined_at', 'archived_at'])]
 class ConversationParticipant extends Model
 {
     use BelongsToTenant;
@@ -29,6 +30,7 @@ class ConversationParticipant extends Model
         return [
             'muted' => 'boolean',
             'joined_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 

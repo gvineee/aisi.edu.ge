@@ -2,10 +2,14 @@
 
 namespace App\Domain\Communications\Actions;
 
+use App\Domain\Communications\Models\ActionRequest;
 use App\Domain\Communications\Models\Conversation;
 use App\Domain\Communications\Models\ConversationParticipant;
 use App\Domain\Communications\Models\Message;
 use App\Domain\Communications\Models\MessageDelivery;
+use App\Domain\Communications\Models\NotificationPreference;
+use App\Domain\Tenancy\Models\Tenant;
+use App\Jobs\SendMessageEmailNotification;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -52,14 +56,41 @@ class SendMessage
                 ->where('user_id', '!=', $sender->id)
                 ->get();
 
+            $schoolName = (string) (Tenant::query()->whereKey($tenantId)->with('brandSetting')->first()?->brandSetting->display_name ?? '');
+
             foreach ($otherParticipants as $participant) {
                 $delivery = new MessageDelivery;
                 $delivery->tenant_id = $tenantId;
                 $delivery->message_id = $message->id;
                 $delivery->recipient_id = $participant->user_id;
+                $delivery->channel = MessageDelivery::CHANNEL_IN_APP;
+                $delivery->status = 'delivered';
                 $delivery->delivered_at = Carbon::now();
                 $delivery->save();
+
+                // Email only for recipients who opted in and did not mute
+                // this conversation; one row per recipient keeps it idempotent.
+                if (! $participant->muted && NotificationPreference::emailEnabled($tenantId, $participant->user_id)) {
+                    $email = new MessageDelivery;
+                    $email->tenant_id = $tenantId;
+                    $email->message_id = $message->id;
+                    $email->recipient_id = $participant->user_id;
+                    $email->channel = MessageDelivery::CHANNEL_EMAIL;
+                    $email->status = 'queued';
+                    $email->save();
+
+                    SendMessageEmailNotification::dispatch($email->id, $schoolName, $conversation->subject, route('messages.show', $conversation));
+                }
             }
+
+            // Replying closes any open "please reply" request addressed to the sender.
+            ActionRequest::query()
+                ->where('tenant_id', $tenantId)
+                ->where('conversation_id', $conversation->id)
+                ->where('target_user_id', $sender->id)
+                ->where('type', 'reply')
+                ->where('status', 'open')
+                ->update(['status' => 'done', 'completed_at' => Carbon::now()]);
 
             return $message;
         });

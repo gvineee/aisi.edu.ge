@@ -9,6 +9,7 @@ use App\Domain\Academics\Models\TeacherAssignment;
 use App\Domain\Assessment\Models\ReportCard;
 use App\Domain\Assessment\Models\ReportCardPublication;
 use App\Domain\Assessment\Models\ReportCardSubject;
+use App\Domain\Communications\Models\ActionRequest;
 use App\Domain\Communications\Models\AppointmentBooking;
 use App\Domain\Communications\Models\ConversationParticipant;
 use App\Domain\Documents\Actions\ListPendingApprovalRequests;
@@ -55,7 +56,7 @@ class BuildDailyActionFeed
         $timezone = Tenant::query()->whereKey($tenantId)->value('timezone') ?: 'Asia/Tbilisi';
         $now = Carbon::now($timezone);
 
-        $items = collect($this->unreadConversations($tenantId, $user));
+        $items = collect($this->unreadConversations($tenantId, $user))->merge($this->openActionRequests($tenantId, $user));
 
         $items = $items->merge(match ($activeRole) {
             TenantMembership::ROLE_GUARDIAN => $this->guardianItems($tenantId, $user, $now),
@@ -269,6 +270,22 @@ class BuildDailyActionFeed
 
         return $this->item("document_approval:{$approvalRequest->id}", 'document_approval', "დასამტკიცებელია: {$document->title}",
             $approvalRequest->documentVersion->author->name, "/documents/{$document->id}", null, 'normal');
+    }
+
+    /**
+     * "Needs response" requests addressed to this user (§4 action_requests).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function openActionRequests(int $tenantId, User $user): array
+    {
+        return ActionRequest::query()->where('tenant_id', $tenantId)->where('target_user_id', $user->id)->where('status', 'open')
+            ->with('conversation')->get()
+            ->map(fn (ActionRequest $r) => $this->item("action_request:{$r->id}", 'action_request',
+                ($r->type === 'reply' ? 'პასუხს ელოდებიან: ' : 'დადასტურება სჭირდება: ').($r->conversation->subject ?? ''),
+                null, "/portal/messages/{$r->conversation_id}", $r->due_at,
+                $r->due_at !== null && $r->due_at->isPast() ? 'urgent' : 'high'))
+            ->all();
     }
 
     /**

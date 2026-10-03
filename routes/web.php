@@ -150,6 +150,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/messages', [MessageController::class, 'store'])->name('messages.store');
     Route::get('portal/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
     Route::post('portal/messages/{conversation}/reply', [MessageController::class, 'reply'])->name('messages.reply');
+    Route::post('portal/messages-preferences', [MessageController::class, 'preferences'])->name('messages.preferences');
+    Route::post('portal/messages/{conversation}/archive', [MessageController::class, 'archive'])->name('messages.archive');
+    Route::post('portal/messages/{conversation}/messages/{message}/request-response', [MessageController::class, 'requestResponse'])->name('messages.request-response');
+    Route::post('portal/action-requests/{actionRequest}/acknowledge', [MessageController::class, 'acknowledge'])->name('action-requests.acknowledge');
 
     Route::get('lessons/{lesson}/attendance', [AttendanceController::class, 'show'])->name('attendance.show');
     Route::post('lessons/{lesson}/attendance', [AttendanceController::class, 'store'])->name('attendance.store');

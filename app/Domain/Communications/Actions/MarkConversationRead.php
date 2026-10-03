@@ -43,6 +43,7 @@ class MarkConversationRead
             MessageDelivery::query()
                 ->where('tenant_id', $tenantId)
                 ->where('recipient_id', $user->id)
+                ->where('channel', MessageDelivery::CHANNEL_IN_APP)
                 ->whereNull('read_at')
                 ->whereHas('message', fn ($query) => $query->where('conversation_id', $conversation->id))
                 ->update(['read_at' => now()]);

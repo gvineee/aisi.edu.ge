@@ -16,11 +16,19 @@ use Illuminate\Support\Carbon;
  * @property int $recipient_id
  * @property Carbon|null $delivered_at
  * @property Carbon|null $read_at
+ * @property string $channel
+ * @property string $status
+ * @property string|null $failure_reason
+ * @property int $attempts
  */
-#[Fillable(['message_id', 'recipient_id', 'delivered_at', 'read_at'])]
+#[Fillable(['message_id', 'recipient_id', 'delivered_at', 'read_at', 'channel', 'status', 'failure_reason', 'attempts'])]
 class MessageDelivery extends Model
 {
     use BelongsToTenant;
+
+    public const CHANNEL_IN_APP = 'in_app';
+
+    public const CHANNEL_EMAIL = 'email';
 
     protected function casts(): array
     {

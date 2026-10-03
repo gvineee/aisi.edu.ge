@@ -451,3 +451,11 @@ composer run dev                            # server + queue + vite ერთა
 ## საჭირო მონაცემები გასაგრძელებლად
 
 უცვლელი — იხილეთ `docs/02-product-and-platform-spec.md`-ის მე-14 თავი და `START-HERE-CLAUDE.md`-ის მე-9 თავი (credentials/school facts არ მოვიგონეთ).
+
+### 2026-10-03 — Messaging-ის გაფართოება (§4)
+
+- `conversation_participants.archived_at` — პირადი არქივი (`POST /portal/messages/{id}/archive`), სხვა მონაწილეს არ ეხება; `?archived=1` და `?q=` ძებნა მხოლოდ მომხმარებლის საკუთარ საუბრებში.
+- `action_requests` — გამგზავნი ითხოვს პასუხს/დადასტურებას; ჩნდება სამიზნის დღის ცენტრში (`action_request`); პასუხი ხურავს `reply` მოთხოვნას, `acknowledge`-ს ხურავს მხოლოდ სამიზნე.
+- `message_deliveries.channel/status/attempts/failure_reason` — ელფოსტის შეტყობინება მხოლოდ opt-in-ით (`notification_preferences`), `SendMessageEmailNotification` job ატომური claim-ით (ერთხელ იგზავნება), 3 ცდა backoff-ით; წერილში მხოლოდ თემა/ბმული, შეტყობინების ტექსტი არა (ჯანმრთელობის/პირადი მონაცემის გაჟონვის თავიდან ასაცილებლად).
+- Read receipt (`წაიკითხა n/m`) მხოლოდ გამგზავნის საკუთარ შეტყობინებებზე.
+- ტესტები: `MessagingExtrasTest`; სრული suite **304/304 passed, 2486 assertions**; Pint/PHPStan/types:check/build სუფთა. Production deploy — მომხმარებლის მხარეს (migration `2026_10_02_000003_extend_messaging`).
