@@ -23,6 +23,8 @@ tar -tzf /tmp/aisi-release-$STAMP.tar.gz | xargs -r tar -czf ../_backups/files-$
 # 2. Unpack and install dependencies (dompdf is new).
 tar -xzf /tmp/aisi-release-$STAMP.tar.gz
 rm -f public/robots.txt
+# Removed in this release (light-only theme).
+rm -f resources/js/components/appearance-tabs.tsx resources/js/pages/settings/appearance.tsx
 composer install --no-dev --optimize-autoloader --no-interaction
 
 # 3. Permissions, compiled views, incremental migrations, caches.
