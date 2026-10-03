@@ -26,7 +26,7 @@ class ScanUploadedFile implements ShouldQueue
 
     public function handle(FileScanner $scanner): void
     {
-        abort_unless(in_array($this->table, ['portfolio_assets', 'care_plan_documents'], true), 500);
+        abort_unless(in_array($this->table, ['portfolio_assets', 'care_plan_documents', 'message_attachments'], true), 500);
 
         DB::table($this->table)->where('id', $this->id)->update([
             'scan_status' => $scanner->scan('local', $this->path),

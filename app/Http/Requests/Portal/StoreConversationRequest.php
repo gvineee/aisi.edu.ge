@@ -20,6 +20,7 @@ class StoreConversationRequest extends FormRequest
             'recipient_id' => ['required', 'integer'],
             'subject' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:5000'],
+            'attachment' => ['nullable', 'file', 'max:20480', 'mimetypes:application/pdf,image/png,image/jpeg,image/webp'],
         ];
     }
 }

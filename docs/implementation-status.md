@@ -490,3 +490,9 @@ composer run dev                            # server + queue + vite ერთა
 - `DeliverMessageBroadcast` job (afterCommit, 3 ცდა, backoff 60/300/900): თითო ოჯახს ცალკე პირადი საუბარი (მშობლები ერთმანეთს ვერ ხედავენ); recipient row lock + delivered-ის გამოტოვება → retry ორჯერ არ აგზავნის; წევრობადაკარგული მშობელი არ იღებს (`membership_inactive`); ერთი შეცდომა სხვებს არ აჩერებს (`partial`). Opt-in ელფოსტა იგივე `SendMessageEmailNotification`-ით; queue-დან ბმული tenant-ის primary domain-ზე იგება.
 - UI: „კლასის განცხადება“ dialog + „ჩემი განცხადებები“ (delivered/recipients).
 - ტესტი `ClassBroadcastTest`; სრული suite **311/311 passed**; Pint/PHPStan/types/build სუფთა.
+
+### 2026-10-03 — შეტყობინების მიმაგრებული ფაილები (§4, CLAUDE.md #5)
+
+- `message_attachments`: private `local` disk (`messages/{tenant}/{message}/random`), PDF/PNG/JPEG/WebP ≤ 20MB (Form Request + `PortfolioFileStorage::assertAllowed`), sha256, `scan_status` → `ScanUploadedFile` job; ჩამოტვირთვა (`/portal/messages/{c}/attachments/{a}`) მხოლოდ იმავე tenant-ის საუბრის მონაწილეს და მხოლოდ `ScanStatus::servable`-ის შემდეგ (pending/infected → 423).
+- UI: პასუხის ფორმაში 📎 (44px), შეტყობინებაში ფაილის ბმული ან „მოწმდება“. ახალ საუბარზეც (API) მიიღება.
+- ტესტი `MessageAttachmentTest`; სრული suite **312/312 passed**; Pint/PHPStan/types/build სუფთა.

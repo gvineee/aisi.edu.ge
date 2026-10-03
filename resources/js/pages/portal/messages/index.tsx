@@ -7,6 +7,7 @@ import {
     CheckCheck,
     Megaphone,
     MessageSquareText,
+    Paperclip,
     Plus,
     Send,
 } from 'lucide-react';
@@ -44,6 +45,12 @@ type MessageEntry = {
     createdAt: string | null;
     isOwn: boolean;
     delivery: { recipients: number; read: number } | null;
+    attachments: {
+        id: number;
+        name: string;
+        size: number;
+        available: boolean;
+    }[];
 };
 
 type ActiveConversation = {
@@ -110,6 +117,7 @@ export default function MessagesIndex({
     const [sending, setSending] = useState(false);
     const [replyBody, setReplyBody] = useState('');
     const [replying, setReplying] = useState(false);
+    const [replyFile, setReplyFile] = useState<File | null>(null);
 
     const submitCompose = (event: FormEvent) => {
         event.preventDefault();
@@ -151,9 +159,15 @@ export default function MessagesIndex({
         setReplying(true);
         router.post(
             `/portal/messages/${activeConversation.id}/reply`,
-            { body: replyBody },
+            replyFile
+                ? { body: replyBody, attachment: replyFile }
+                : { body: replyBody },
             {
-                onSuccess: () => setReplyBody(''),
+                forceFormData: replyFile !== null,
+                onSuccess: () => {
+                    setReplyBody('');
+                    setReplyFile(null);
+                },
                 onError: () => toast.error('პასუხი ვერ გაიგზავნა.'),
                 onFinish: () => setReplying(false),
             },
@@ -499,6 +513,32 @@ export default function MessagesIndex({
                                         <p className="whitespace-pre-wrap">
                                             {message.body}
                                         </p>
+                                        {message.attachments.map((a) =>
+                                            a.available ? (
+                                                <a
+                                                    key={a.id}
+                                                    href={`/portal/messages/${activeConversation.id}/attachments/${a.id}`}
+                                                    className="mt-1 flex min-h-8 items-center gap-1 text-sm underline"
+                                                >
+                                                    <Paperclip
+                                                        size={14}
+                                                        aria-hidden
+                                                    />
+                                                    {a.name}
+                                                </a>
+                                            ) : (
+                                                <p
+                                                    key={a.id}
+                                                    className="mt-1 flex items-center gap-1 text-sm opacity-70"
+                                                >
+                                                    <Paperclip
+                                                        size={14}
+                                                        aria-hidden
+                                                    />
+                                                    {a.name} — მოწმდება
+                                                </p>
+                                            ),
+                                        )}
                                         <p className="mt-1 text-xs opacity-60">
                                             {formatTimestamp(message.createdAt)}
                                             {message.delivery &&
@@ -570,6 +610,29 @@ export default function MessagesIndex({
                                     placeholder="დაწერეთ პასუხი..."
                                     className="h-11 min-h-11 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
                                 />
+                                <label
+                                    className={`inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-md ring-1 ring-slate-300 hover:bg-slate-50 ${replyFile ? 'bg-amber-50' : ''}`}
+                                    title={
+                                        replyFile
+                                            ? replyFile.name
+                                            : 'ფაილის მიმაგრება (PDF ან სურათი, 20MB-მდე)'
+                                    }
+                                >
+                                    <Paperclip size={18} aria-hidden />
+                                    <span className="sr-only">
+                                        ფაილის მიმაგრება
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept="application/pdf,image/png,image/jpeg,image/webp"
+                                        className="sr-only"
+                                        onChange={(event) =>
+                                            setReplyFile(
+                                                event.target.files?.[0] ?? null,
+                                            )
+                                        }
+                                    />
+                                </label>
                                 <Button
                                     type="submit"
                                     disabled={

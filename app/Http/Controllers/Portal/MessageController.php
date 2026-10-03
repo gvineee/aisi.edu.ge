@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Domain\Academics\Models\SchoolClass;
+use App\Domain\Communications\Actions\AttachFileToMessage;
 use App\Domain\Communications\Actions\CreateClassBroadcast;
 use App\Domain\Communications\Actions\MarkConversationRead;
 use App\Domain\Communications\Actions\ResolveMessageableUsers;
@@ -12,11 +13,13 @@ use App\Domain\Communications\Models\ActionRequest;
 use App\Domain\Communications\Models\Conversation;
 use App\Domain\Communications\Models\ConversationParticipant;
 use App\Domain\Communications\Models\Message;
+use App\Domain\Communications\Models\MessageAttachment;
 use App\Domain\Communications\Models\MessageBroadcast;
 use App\Domain\Communications\Models\MessageDelivery;
 use App\Domain\Communications\Models\NotificationPreference;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\PortalContext;
+use App\Domain\Uploads\ScanStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\ReplyToConversationRequest;
 use App\Http\Requests\Portal\StoreConversationRequest;
@@ -25,8 +28,10 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * "შეტყობინებები" — every role's conversation inbox (docs/09-design-source-map.md
@@ -85,6 +90,11 @@ class MessageController extends Controller
             body: $request->string('body')->toString(),
         );
 
+        if ($request->hasFile('attachment')) {
+            $first = Message::query()->where('tenant_id', $tenant->id)->where('conversation_id', $conversation->id)->orderBy('id')->firstOrFail();
+            app(AttachFileToMessage::class)->handle($first, $request->file('attachment'));
+        }
+
         return redirect()->route('messages.show', $conversation);
     }
 
@@ -101,9 +111,29 @@ class MessageController extends Controller
 
         abort_unless($isParticipant, 403);
 
-        $sendMessage->handle($tenant->id, $conversation, $request->user(), $request->string('body')->toString());
+        $message = $sendMessage->handle($tenant->id, $conversation, $request->user(), $request->string('body')->toString());
+
+        if ($request->hasFile('attachment')) {
+            app(AttachFileToMessage::class)->handle($message, $request->file('attachment'));
+        }
 
         return redirect()->route('messages.show', $conversation);
+    }
+
+    /**
+     * Participants only, same tenant, and never before the scan allows it
+     * (CLAUDE.md #5).
+     */
+    public function downloadAttachment(Request $request, CurrentTenant $currentTenant, Conversation $conversation, MessageAttachment $attachment): StreamedResponse
+    {
+        $tenant = $currentTenant->get();
+        abort_unless($conversation->tenant_id === $tenant->id && $attachment->tenant_id === $tenant->id, 404);
+        abort_unless(Message::query()->where('tenant_id', $tenant->id)->whereKey($attachment->message_id)->where('conversation_id', $conversation->id)->exists(), 404);
+        abort_unless(ConversationParticipant::query()->where('tenant_id', $tenant->id)->where('conversation_id', $conversation->id)
+            ->where('user_id', $request->user()->id)->exists(), 403);
+        abort_unless(ScanStatus::servable($attachment->scan_status), 423, 'ფაილი ჯერ შემოწმების პროცესშია.');
+
+        return Storage::disk('local')->download($attachment->storage_path, $attachment->original_filename);
     }
 
     public function broadcast(Request $request, CurrentTenant $currentTenant, CreateClassBroadcast $action): RedirectResponse
@@ -239,6 +269,13 @@ class MessageController extends Controller
                         'body' => $message->body,
                         'createdAt' => $message->created_at?->toIso8601String(),
                         'isOwn' => $isOwn,
+                        'attachments' => MessageAttachment::query()->where('tenant_id', $tenant->id)->where('message_id', $message->id)->get()
+                            ->map(fn (MessageAttachment $a) => [
+                                'id' => $a->id,
+                                'name' => $a->original_filename,
+                                'size' => $a->size,
+                                'available' => ScanStatus::servable($a->scan_status),
+                            ])->values(),
                         // Read receipts only for the sender of the message.
                         'delivery' => $isOwn ? [
                             'recipients' => MessageDelivery::query()->where('tenant_id', $tenant->id)->where('message_id', $message->id)->where('channel', MessageDelivery::CHANNEL_IN_APP)->count(),

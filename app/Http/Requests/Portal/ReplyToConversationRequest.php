@@ -18,6 +18,7 @@ class ReplyToConversationRequest extends FormRequest
     {
         return [
             'body' => ['required', 'string', 'max:5000'],
+            'attachment' => ['nullable', 'file', 'max:20480', 'mimetypes:application/pdf,image/png,image/jpeg,image/webp'],
         ];
     }
 }
