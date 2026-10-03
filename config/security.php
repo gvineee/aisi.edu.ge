@@ -8,4 +8,11 @@ return [
      * emergency.
      */
     'admin_mfa_required' => (bool) env('ADMIN_MFA_REQUIRED', true),
+
+    /*
+     * §15 privileged re-auth: role/invitation, health permission and
+     * support-access changes need a recent password confirmation
+     * (RequireRecentPassword).
+     */
+    'privileged_reauth' => (bool) env('PRIVILEGED_REAUTH', true),
 ];

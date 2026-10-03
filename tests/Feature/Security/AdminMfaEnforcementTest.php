@@ -41,6 +41,25 @@ class AdminMfaEnforcementTest extends TestCase
         $this->actingAs($admin)->get('/dashboard')->assertOk();
     }
 
+    public function test_privileged_changes_need_a_recent_password_confirmation(): void
+    {
+        config(['security.privileged_reauth' => true]);
+        $tenant = TenantDomain::query()->where('domain', 'localhost')->first()->tenant;
+        $admin = User::factory()->create();
+        TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $admin->id, 'role' => TenantMembership::ROLE_ADMIN, 'is_active' => true]);
+
+        $this->actingAs($admin)->from('/portal/members')
+            ->post('/portal/members/invite', ['email' => 'new@school.test', 'role' => TenantMembership::ROLE_EDITOR])
+            ->assertRedirect(route('password.confirm'))
+            ->assertSessionHas('url.intended', url('/portal/members'));
+        $this->assertDatabaseMissing('tenant_invitations', ['email' => 'new@school.test']);
+
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()])
+            ->post('/portal/members/invite', ['email' => 'new@school.test', 'role' => TenantMembership::ROLE_EDITOR])
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('tenant_invitations', ['email' => 'new@school.test']);
+    }
+
     public function test_responses_carry_baseline_security_headers(): void
     {
         $response = $this->get('/robots.txt');

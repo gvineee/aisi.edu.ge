@@ -317,8 +317,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // reasoned emergency access, alerts-only for the student's teachers). ---
     Route::get('portal/health', [HealthController::class, 'index'])->name('health.index');
     Route::get('portal/health/permissions', [HealthController::class, 'permissions'])->name('health.permissions');
-    Route::post('portal/health/permissions', [HealthController::class, 'grant'])->name('health.permissions.grant');
-    Route::post('portal/health/permissions/{grant}/revoke', [HealthController::class, 'revoke'])->name('health.permissions.revoke');
+    Route::post('portal/health/permissions', [HealthController::class, 'grant'])->middleware('reauth')->name('health.permissions.grant');
+    Route::post('portal/health/permissions/{grant}/revoke', [HealthController::class, 'revoke'])->middleware('reauth')->name('health.permissions.revoke');
     Route::post('portal/health/emergency-accesses/{emergencyAccess}/review', [HealthController::class, 'reviewEmergency'])->name('health.emergency.review');
     Route::get('portal/students/{student}/health', [HealthController::class, 'show'])->name('health.show');
     Route::get('portal/students/{student}/health/access-log', [HealthController::class, 'accessLog'])->name('health.access-log');
@@ -399,13 +399,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- Support access, school side (CLAUDE-PLATFORM-MODULES.md §14) ---
     Route::get('portal/support-access', [SupportAccessController::class, 'index'])->name('support-access.index');
-    Route::post('portal/support-access/{supportRequest}', [SupportAccessController::class, 'decide'])->name('support-access.decide');
+    Route::post('portal/support-access/{supportRequest}', [SupportAccessController::class, 'decide'])->middleware('reauth')->name('support-access.decide');
 
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---
     Route::get('portal/members', [MemberController::class, 'index'])->name('members.index');
-    Route::post('portal/members/invite', [MemberController::class, 'store'])->name('members.invite');
-    Route::post('portal/members/{membership}/revoke', [MemberController::class, 'revoke'])->name('members.revoke');
+    Route::post('portal/members/invite', [MemberController::class, 'store'])->middleware('reauth')->name('members.invite');
+    Route::post('portal/members/{membership}/revoke', [MemberController::class, 'revoke'])->middleware('reauth')->name('members.revoke');
     Route::delete('portal/members/invitations/{invitation}', [MemberController::class, 'cancelInvitation'])->name('members.invitations.cancel');
     Route::post('portal/members/enrollment-requests/{enrollmentRequest}/decide', [MemberController::class, 'decideEnrollment'])->name('members.enrollment-requests.decide');
 });

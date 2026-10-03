@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsurePlatformOperator;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\NoIndexPrivateAreas;
+use App\Http\Middleware\RequireRecentPassword;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'feature' => EnsureFeatureEnabled::class,
             'platform' => EnsurePlatformOperator::class,
+            'reauth' => RequireRecentPassword::class,
         ]);
 
         $middleware->web(prepend: [

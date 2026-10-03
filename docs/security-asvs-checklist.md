@@ -12,7 +12,7 @@
 | V6 Authentication — MFA privileged roles | ✓ | `EnsureAdminMfa` (admin/director/accountant), finance/health 2FA, `platform` middleware; `AdminMfaEnforcementTest` | WebAuthn/passkey არ არის |
 | V6 Rate limiting | ◐ | login (Fortify), 2FA, admissions lead, pickup codes/verify, invitations, messages/broadcast, payment start, webhooks, report-card verify | გლობალური per-tenant ლიმიტი; abuse monitoring |
 | V7 Session management | ◐ | Laravel session (Redis production), CSRF ყველა web form-ზე (webhooks — ხელმოწერით) | „სხვა მოწყობილობებიდან გასვლა“/device list UI არ არის |
-| V6 Privileged re-auth | ◐ | 2FA ჩართვა/გამორთვა password confirm-ით (starter kit) | password confirm როლის/guardian link-ის ცვლილებაზე ჯერ არ არის |
+| V6 Privileged re-auth | ✓ | `RequireRecentPassword` (`reauth`): მოწვევა/როლის გაუქმება, health permission grant/revoke, support access decision; 2FA settings (starter kit) | guardian link-ის რედაქტირება ცალკე UI-ში ჯერ არ არის |
 | V3 Secure headers | ◐ | `SecurityHeaders`: nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS (HTTPS) | **CSP არ არის** (Inertia/Vite nonce სტრატეგია საჭიროა) |
 | V5 File handling | ✓ | private `local` disk, MIME/size allow-list, sha256, `scan_status` + `ScanStatus::servable`, policy-checked download (portfolio, health care plan, message attachments) | რეალური AV engine (ClamAV) — მანამდე `NullFileScanner` = `skipped` |
 | V5 SVG/brand upload | ✓ | brand logo: SVG უარყოფილი, ფერები ვალიდირდება (`PlatformAdministrationTest`) | — |
@@ -32,4 +32,4 @@
 2. Backup + restore drill (`clpctl db:export` + storage), შედეგი ჩაიწეროს.
 3. ClamAV (ან provider) `FileScanner` adapter, შემდეგ `UPLOADS_ALLOW_UNSCANNED=false`.
 4. CSP nonce-ით (report-only → enforce).
-5. Password re-confirm როლის/guardian link-ის ცვლილებაზე; device/session list.
+5. Device/session list.
