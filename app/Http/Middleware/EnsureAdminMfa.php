@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * CLAUDE.md invariant #4: tenant administrators need MFA. A signed-in user
- * with an active admin membership in the current school who has not
+ * CLAUDE.md #4 / §15: privileged tenant roles need MFA. A signed-in user
+ * with an active admin, director or accountant membership here who has not
  * confirmed two-factor authentication is sent to the security settings to
  * enrol before using the private portal. Settings, logout and the public
  * site stay reachable, so nobody is locked out — enrolment is the way in.
@@ -18,6 +18,17 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureAdminMfa
 {
+    /**
+     * §15: admin, director and accountant are privileged tenant roles.
+     *
+     * @var array<int, string>
+     */
+    private const PRIVILEGED_ROLES = [
+        TenantMembership::ROLE_ADMIN,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ACCOUNTANT,
+    ];
+
     public function __construct(private readonly CurrentTenant $currentTenant) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -31,7 +42,7 @@ class EnsureAdminMfa
             && $tenantId !== null
             && $user->two_factor_confirmed_at === null
             && ($request->is('portal', 'portal/*', 'dashboard', 'lessons/*'))
-            && TenantMembership::userHasActiveRole($tenantId, $user->id, TenantMembership::ROLE_ADMIN)
+            && TenantMembership::userHasAnyActiveRole($tenantId, $user->id, self::PRIVILEGED_ROLES)
         ) {
             return redirect()->route('security.edit')->with('toast', [
                 'type' => 'warning',

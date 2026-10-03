@@ -91,3 +91,12 @@
 - DNS/MX ჩანაწერების მიგრაციის კონკრეტული ნაბიჯები — დამოკიდებულია საბოლოო hosting/დომენის გადაწყვეტილებაზე.
 
 ეს დოკუმენტი განახლდება, როცა ეს გადაწყვეტილებები მიიღება — არ დაემატება გამოგონილი კონკრეტიკა მანამდე.
+
+## Scheduler და queue (განახლება 2026-10-03)
+
+ახალი ფუნქციები ეყრდნობა queue-ს და scheduler-ს — production-ზე ორივე აუცილებელია, სანამ რეალურ ელფოსტას ჩავრთავთ:
+
+- **cron:** `* * * * * cd /home/aisi/htdocs/aisi.edu.ge && php artisan schedule:run >> /dev/null 2>&1` (შეხვედრის შეხსენებები — `appointments:send-reminders`, hourly).
+- **queue worker** (supervisor/CloudPanel): `php artisan queue:work --tries=3 --max-time=3600`; deploy-ის შემდეგ `php artisan queue:restart`. Queue-ზეა: ელფოსტის შეტყობინებები, კლასის განცხადებები (`DeliverMessageBroadcast`), ფაილის სკანირება, ჩანაცვლების/მოწვევის/შეხსენების წერილები.
+- **failed jobs:** `php artisan queue:failed` რეგულარულად; alert-ის აწყობა ღიაა (`docs/security-asvs-checklist.md`).
+- **MFA deploy-ის შემდეგ:** admin/director/accountant პორტალში შესვლისას 2FA-ს ჩართვას მოითხოვს (`ADMIN_MFA_REQUIRED`).

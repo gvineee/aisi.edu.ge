@@ -33,7 +33,22 @@ class AdminMfaEnforcementTest extends TestCase
 
         $this->actingAs($teacher)->get('/dashboard')->assertOk();
 
+        $director = User::factory()->create();
+        TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $director->id, 'role' => TenantMembership::ROLE_DIRECTOR, 'is_active' => true]);
+        $this->actingAs($director)->get('/portal/director')->assertRedirect(route('security.edit'));
+
         $admin->forceFill(['two_factor_confirmed_at' => now()])->save();
         $this->actingAs($admin)->get('/dashboard')->assertOk();
+    }
+
+    public function test_responses_carry_baseline_security_headers(): void
+    {
+        $response = $this->get('/robots.txt');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+        $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeaderMissing('Strict-Transport-Security');
+
+        $this->get('https://localhost/robots.txt')->assertHeader('Strict-Transport-Security', 'max-age=31536000');
     }
 }

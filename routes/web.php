@@ -75,8 +75,8 @@ Route::get('/teachers/{slug}', [PublicTeacherController::class, 'show'])->name('
 // --- Tenant invitation accept flow (public, unauthenticated) — members/invite
 // feature. Added at the end of the public route block so parallel agent
 // edits above are easy to merge around. ---
-Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
-Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
+Route::get('invitations/{token}', [InvitationController::class, 'show'])->middleware('throttle:30,1')->name('invitations.show');
+Route::post('invitations/{token}/accept', [InvitationController::class, 'accept'])->middleware('throttle:10,1')->name('invitations.accept');
 
 // Payment provider notifications (signature-authenticated, CSRF-exempt).
 Route::post('webhooks/payments/{provider}', PaymentWebhookController::class)
@@ -148,11 +148,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- end Assignments ---
 
     Route::get('portal/messages', [MessageController::class, 'index'])->name('messages.index');
-    Route::post('portal/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::post('portal/messages', [MessageController::class, 'store'])->middleware('throttle:20,1')->name('messages.store');
     Route::get('portal/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
-    Route::post('portal/messages/{conversation}/reply', [MessageController::class, 'reply'])->name('messages.reply');
+    Route::post('portal/messages/{conversation}/reply', [MessageController::class, 'reply'])->middleware('throttle:60,1')->name('messages.reply');
     Route::get('portal/messages/{conversation}/attachments/{attachment}', [MessageController::class, 'downloadAttachment'])->name('messages.attachments.download');
-    Route::post('portal/messages-broadcasts', [MessageController::class, 'broadcast'])->name('messages.broadcast');
+    Route::post('portal/messages-broadcasts', [MessageController::class, 'broadcast'])->middleware('throttle:5,1')->name('messages.broadcast');
     Route::post('portal/messages-preferences', [MessageController::class, 'preferences'])->name('messages.preferences');
     Route::post('portal/messages/{conversation}/archive', [MessageController::class, 'archive'])->name('messages.archive');
     Route::post('portal/messages/{conversation}/messages/{message}/request-response', [MessageController::class, 'requestResponse'])->name('messages.request-response');
@@ -384,7 +384,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('portal/finance/invoices', [FinanceController::class, 'storeInvoice'])->name('finance.invoices.store');
         Route::get('portal/finance/invoices/{invoice}', [FinanceController::class, 'showInvoice'])->name('finance.invoices.show');
         Route::post('portal/finance/invoices/{invoice}/void', [FinanceController::class, 'voidInvoice'])->name('finance.invoices.void');
-        Route::post('portal/finance/invoices/{invoice}/pay', [FinanceController::class, 'pay'])->name('finance.invoices.pay');
+        Route::post('portal/finance/invoices/{invoice}/pay', [FinanceController::class, 'pay'])->middleware('throttle:10,1')->name('finance.invoices.pay');
         Route::get('portal/finance/return/{intent}', [FinanceController::class, 'returnPage'])->name('finance.return');
         Route::post('portal/finance/payments/{payment}/allocate', [FinanceController::class, 'allocate'])->name('finance.payments.allocate');
         Route::post('portal/finance/payments/{payment}/refund', [FinanceController::class, 'refund'])->name('finance.payments.refund');
