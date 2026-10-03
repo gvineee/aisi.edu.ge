@@ -50,3 +50,5 @@ yarn-error.log
 
 # Redis RDB snapshot from a local redis-server run.
 /dump.rdb
+/deploy/*.tar.gz
+/deploy/files.txt
