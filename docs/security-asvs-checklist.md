@@ -13,8 +13,8 @@
 | V6 Rate limiting | ◐ | login (Fortify), 2FA, admissions lead, pickup codes/verify, invitations, messages/broadcast, payment start, webhooks, report-card verify | გლობალური per-tenant ლიმიტი; abuse monitoring |
 | V7 Session management | ◐ | Laravel session (Redis production), CSRF ყველა web form-ზე (webhooks — ხელმოწერით) | „სხვა მოწყობილობებიდან გასვლა“/device list UI არ არის |
 | V6 Privileged re-auth | ✓ | `RequireRecentPassword` (`reauth`): მოწვევა/როლის გაუქმება, health permission grant/revoke, support access decision; 2FA settings (starter kit) | guardian link-ის რედაქტირება ცალკე UI-ში ჯერ არ არის |
-| V3 Secure headers | ◐ | `SecurityHeaders`: nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS (HTTPS) | **CSP არ არის** (Inertia/Vite nonce სტრატეგია საჭიროა) |
-| V5 File handling | ✓ | private `local` disk, MIME/size allow-list, sha256, `scan_status` + `ScanStatus::servable`, policy-checked download (portfolio, health care plan, message attachments) | რეალური AV engine (ClamAV) — მანამდე `NullFileScanner` = `skipped` |
+| V3 Secure headers + CSP | ◐ | `SecurityHeaders`: nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS (HTTPS); CSP nonce-ით (Vite + inline bootstrap script), `SECURITY_CSP=report-only` | `enforce` — მხოლოდ ბრაუზერში ყველა გვერდის გადამოწმების შემდეგ; report-uri endpoint |
+| V5 File handling | ✓ | private `local` disk, MIME/size allow-list, sha256, `scan_status` + `ScanStatus::servable`, policy-checked download (portfolio, health care plan, message attachments) | `ClamdFileScanner` (INSTREAM, `UPLOADS_SCANNER=clamd`) მზადაა და ტესტირებულია; სერვერზე clamd-ის დაყენება ღიაა — მანამდე `NullFileScanner` = `skipped` |
 | V5 SVG/brand upload | ✓ | brand logo: SVG უარყოფილი, ფერები ვალიდირდება (`PlatformAdministrationTest`) | — |
 | V11 Cryptography / sensitive data | ◐ | health ველები encrypted cast-ით; pickup codes HMAC; ფული integer | key rotation runbook |
 | V16 Logging / audit | ✓ | `AuditLogger` (როლები, guardian links, შეფასება, დასწრება, ფინანსი, export, support access, ჩანაცვლება, broadcast) — payload/ტოკენი არ იწერება | ცენტრალიზებული log shipping/alerting |
@@ -30,6 +30,6 @@
 
 1. Production: queue worker (supervisor) + `* * * * * php artisan schedule:run` cron + failed jobs alert.
 2. Backup + restore drill (`clpctl db:export` + storage), შედეგი ჩაიწეროს.
-3. ClamAV (ან provider) `FileScanner` adapter, შემდეგ `UPLOADS_ALLOW_UNSCANNED=false`.
-4. CSP nonce-ით (report-only → enforce).
+3. სერვერზე clamd → `UPLOADS_SCANNER=clamd`, შემდეგ `UPLOADS_ALLOW_UNSCANNED=false` (adapter უკვე არის).
+4. CSP: ბრაუზერის console-ში report-only დარღვევების შემოწმება → `SECURITY_CSP=enforce`.
 5. Device/session list.

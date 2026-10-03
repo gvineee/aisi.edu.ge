@@ -70,4 +70,22 @@ class AdminMfaEnforcementTest extends TestCase
 
         $this->get('https://localhost/robots.txt')->assertHeader('Strict-Transport-Security', 'max-age=31536000');
     }
+
+    public function test_csp_nonce_matches_the_inline_script_and_mode_is_configurable(): void
+    {
+        $html = $this->get('/login');
+        $policy = (string) $html->headers->get('Content-Security-Policy-Report-Only');
+        $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-([A-Za-z0-9]+)'/", $policy);
+        preg_match("/'nonce-([A-Za-z0-9]+)'/", $policy, $m);
+        $this->assertStringContainsString('<script nonce="'.$m[1].'">', (string) $html->getContent());
+        $this->assertNull($html->headers->get('Content-Security-Policy'));
+
+        config(['security.csp' => 'enforce']);
+        $this->assertNotNull($this->get('/login')->headers->get('Content-Security-Policy'));
+
+        config(['security.csp' => 'off']);
+        $off = $this->get('/login');
+        $this->assertNull($off->headers->get('Content-Security-Policy'));
+        $this->assertNull($off->headers->get('Content-Security-Policy-Report-Only'));
+    }
 }

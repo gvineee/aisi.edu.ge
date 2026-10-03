@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Domain\Tenancy\CurrentTenant;
+use App\Domain\Uploads\ClamdFileScanner;
 use App\Domain\Uploads\FileScanner;
 use App\Domain\Uploads\NullFileScanner;
 use Carbon\CarbonImmutable;
@@ -19,8 +20,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CurrentTenant::class);
-        // No antivirus engine is installed yet; see config/uploads.php.
-        $this->app->bind(FileScanner::class, NullFileScanner::class);
+        // NullFileScanner (`skipped`) until an engine is configured; see config/uploads.php.
+        $this->app->bind(FileScanner::class, fn () => config('uploads.scanner') === 'clamd'
+            ? new ClamdFileScanner((string) config('uploads.clamd_address'), (int) config('uploads.clamd_timeout'))
+            : new NullFileScanner);
     }
 
     /**

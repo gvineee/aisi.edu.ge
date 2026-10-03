@@ -8,4 +8,9 @@
  */
 return [
     'allow_unscanned' => (bool) env('UPLOADS_ALLOW_UNSCANNED', true),
+
+    // `null` (default, marks files `skipped`) or `clamd` (ClamdFileScanner).
+    'scanner' => env('UPLOADS_SCANNER', 'null'),
+    'clamd_address' => env('CLAMD_ADDRESS', 'tcp://127.0.0.1:3310'),
+    'clamd_timeout' => (int) env('CLAMD_TIMEOUT', 30),
 ];

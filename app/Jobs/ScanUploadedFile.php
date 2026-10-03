@@ -16,6 +16,14 @@ class ScanUploadedFile implements ShouldQueue
 {
     use Queueable;
 
+    // A scanner outage retries; the file stays `pending` (never served) meanwhile.
+    public int $tries = 5;
+
+    /**
+     * @var array<int, int>
+     */
+    public array $backoff = [60, 300, 900, 3600];
+
     public function __construct(
         public readonly string $table,
         public readonly int $id,

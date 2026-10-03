@@ -15,4 +15,11 @@ return [
      * (RequireRecentPassword).
      */
     'privileged_reauth' => (bool) env('PRIVILEGED_REAUTH', true),
+
+    /*
+     * Content-Security-Policy (SecurityHeaders): `report-only` (default,
+     * violations only reported in the browser console), `enforce` once
+     * verified in a real browser, or `off`.
+     */
+    'csp' => env('SECURITY_CSP', 'report-only'),
 ];
