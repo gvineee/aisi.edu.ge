@@ -81,8 +81,9 @@ class TeacherWorkspaceController extends Controller
         $today = Carbon::now($tenant->timezone)->toDateString();
 
         $isOwner = $lesson->teacher_id === $user->id;
-        $isSubstituteToday = SubstitutionAssignment::query()->where('tenant_id', $tenant->id)->where('lesson_id', $lesson->id)
-            ->where('substitute_teacher_id', $user->id)->where('status', SubstitutionAssignment::STATUS_ASSIGNED)->whereDate('date', $today)->exists();
+        $coverToday = SubstitutionAssignment::query()->where('tenant_id', $tenant->id)->where('lesson_id', $lesson->id)
+            ->where('substitute_teacher_id', $user->id)->where('status', SubstitutionAssignment::STATUS_ASSIGNED)->whereDate('date', $today)->with('handoff')->first();
+        $isSubstituteToday = $coverToday !== null;
         abort_unless(TenantMembership::userHasActiveRole($tenant->id, $user->id, TenantMembership::ROLE_TEACHER) && ($isOwner || $isSubstituteToday), 403);
 
         $lesson->load('subject', 'schoolClass', 'room');
@@ -111,6 +112,12 @@ class TeacherWorkspaceController extends Controller
             'roster' => Student::query()->where('tenant_id', $tenant->id)->where('school_class_id', $lesson->school_class_id)->where('is_active', true)
                 ->orderBy('last_name')->get()->map(fn (Student $s) => ['id' => $s->id, 'name' => $s->fullName(), 'attendance' => $attendance->get($s->id)?->status])->values(),
             'assignments' => $assignments,
+            // The absent teacher's plan, only through today's active cover.
+            'handoff' => $isOwner || $coverToday->handoff === null ? null : [
+                'plan' => $coverToday->handoff->plan,
+                'materials' => $coverToday->handoff->materials,
+                'notes' => $coverToday->handoff->notes,
+            ],
         ]);
     }
 

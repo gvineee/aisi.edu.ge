@@ -14,6 +14,7 @@ use App\Http\Controllers\Portal\CmsPageController;
 use App\Http\Controllers\Portal\CmsPostController;
 use App\Http\Controllers\Portal\CompetencyController;
 use App\Http\Controllers\Portal\ConsentController;
+use App\Http\Controllers\Portal\CoverageController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
 use App\Http\Controllers\Portal\DocumentApprovalController;
@@ -231,6 +232,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/substitutions/absences', [SubstitutionController::class, 'storeAbsence'])->name('substitutions.absences.store');
     Route::post('portal/substitutions/assign', [SubstitutionController::class, 'assign'])->name('substitutions.assign');
     Route::post('portal/substitutions/{substitutionAssignment}/cancel', [SubstitutionController::class, 'cancel'])->name('substitutions.cancel');
+    Route::post('portal/substitutions/requests/{substitutionRequest}/decide', [SubstitutionController::class, 'decideRequest'])->name('substitutions.requests.decide');
+    Route::get('portal/my-coverage', [CoverageController::class, 'index'])->name('coverage.index');
+    Route::post('portal/my-coverage/requests', [CoverageController::class, 'storeRequest'])->name('coverage.requests.store');
+    Route::post('portal/my-coverage/requests/{substitutionRequest}/withdraw', [CoverageController::class, 'withdrawRequest'])->name('coverage.requests.withdraw');
+    Route::post('portal/substitutions/{substitutionAssignment}/handoff', [CoverageController::class, 'saveHandoff'])->name('coverage.handoff');
     // --- end Substitutions ---
 
     // --- Admissions pipeline (admin/academic_manager/director) — extends

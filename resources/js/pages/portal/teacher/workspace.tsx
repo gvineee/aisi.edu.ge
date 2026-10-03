@@ -77,7 +77,13 @@ export default function TeacherWorkspace({
         <PortalLayout>
             <Head title="ჩემი სივრცე" />
             <h1 className="mb-1 text-2xl">ჩემი სივრცე</h1>
-            <p className="mb-6 text-sm text-slate-500">{formatDay(date)}</p>
+            <p className="mb-2 text-sm text-slate-500">{formatDay(date)}</p>
+            <Link
+                href="/portal/my-coverage"
+                className="mb-6 inline-flex min-h-11 items-center text-sm font-medium text-[#c84925] underline-offset-4 hover:underline"
+            >
+                ჩემი ჩანაცვლებები და გეგმები →
+            </Link>
 
             <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
                 <Tile

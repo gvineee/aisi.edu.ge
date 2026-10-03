@@ -6,9 +6,12 @@ use App\Domain\Governance\AuditLogger;
 use App\Domain\Timetable\Models\Lesson;
 use App\Domain\Timetable\Models\StaffAbsence;
 use App\Domain\Timetable\Models\SubstitutionAssignment;
+use App\Mail\SubstituteAssignedMail;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -19,6 +22,12 @@ use Illuminate\Validation\ValidationException;
  * module's own substitution_assignments) via CheckSubstituteAvailability,
  * never trusted from the client. Rejects with a clear validation error on
  * conflict instead of silently double-booking a teacher.
+ *
+ * Concurrency (CLAUDE-PLATFORM-MODULES §9): the substitute's user row is
+ * locked for the transaction so two parallel assignments of the same
+ * teacher serialize their conflict check, and the unique `active_key`
+ * makes the database reject a second active assignment of the same lesson
+ * occurrence. The substitute is e-mailed only after commit.
  */
 class AssignSubstitute
 {
@@ -35,7 +44,20 @@ class AssignSubstitute
         Carbon $date,
         ?StaffAbsence $absence,
     ): SubstitutionAssignment {
+        try {
+            return $this->assign($tenantId, $actor, $lesson, $substituteTeacher, $date, $absence);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages([
+                'lesson_id' => 'ამ გაკვეთილზე ამ თარიღით უკვე დანიშნულია შემცვლელი.',
+            ]);
+        }
+    }
+
+    private function assign(int $tenantId, User $actor, Lesson $lesson, User $substituteTeacher, Carbon $date, ?StaffAbsence $absence): SubstitutionAssignment
+    {
         return DB::transaction(function () use ($tenantId, $actor, $lesson, $substituteTeacher, $date, $absence) {
+            User::query()->whereKey($substituteTeacher->id)->lockForUpdate()->first();
+
             if ($substituteTeacher->id === $lesson->teacher_id) {
                 throw ValidationException::withMessages([
                     'substitute_teacher_id' => 'შემცვლელი ვერ იქნება იგივე მასწავლებელი, ვინც არ ესწრება.',
@@ -71,6 +93,7 @@ class AssignSubstitute
                 'created_by' => $actor->id,
             ]);
             $assignment->tenant_id = $tenantId;
+            $assignment->active_key = SubstitutionAssignment::activeKeyFor($lesson->id, $date->toDateString());
             $assignment->save();
 
             if ($absence !== null && $absence->status !== StaffAbsence::STATUS_COVERED) {
@@ -85,6 +108,15 @@ class AssignSubstitute
                 'date' => $date->toDateString(),
                 'absence_id' => $absence?->id,
             ]);
+
+            $lesson->loadMissing('subject', 'schoolClass');
+            $mail = new SubstituteAssignedMail(
+                (string) ($lesson->subject->name ?? ''),
+                (string) ($lesson->schoolClass->name ?? ''),
+                $date->toDateString(),
+                substr($lesson->starts_at, 0, 5).'–'.substr($lesson->ends_at, 0, 5),
+            );
+            DB::afterCommit(fn () => Mail::to($substituteTeacher)->queue($mail));
 
             return $assignment;
         });

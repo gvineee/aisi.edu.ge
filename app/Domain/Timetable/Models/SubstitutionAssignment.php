@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -28,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $date
  * @property string $status
  * @property int|null $created_by
+ * @property string|null $active_key
  */
 #[Fillable(['lesson_id', 'absence_id', 'absent_teacher_id', 'substitute_teacher_id', 'date', 'status', 'created_by'])]
 class SubstitutionAssignment extends Model
@@ -51,6 +53,23 @@ class SubstitutionAssignment extends Model
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
+    }
+
+    /**
+     * Uniqueness key for an active assignment of one lesson occurrence;
+     * NULL once cancelled so the occurrence can be re-assigned.
+     */
+    public static function activeKeyFor(int $lessonId, string $date): string
+    {
+        return $lessonId.':'.$date;
+    }
+
+    /**
+     * @return HasOne<LessonHandoff, $this>
+     */
+    public function handoff(): HasOne
+    {
+        return $this->hasOne(LessonHandoff::class, 'substitution_assignment_id');
     }
 
     /**

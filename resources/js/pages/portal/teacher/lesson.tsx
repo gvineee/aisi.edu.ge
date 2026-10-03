@@ -22,6 +22,11 @@ type Props = {
         status: string;
         dueAt: string | null;
     }[];
+    handoff: {
+        plan: string;
+        materials: string | null;
+        notes: string | null;
+    } | null;
 };
 
 const ATTENDANCE: Record<string, string> = {
@@ -42,6 +47,7 @@ export default function TeacherLesson({
     date,
     roster,
     assignments,
+    handoff,
 }: Props) {
     return (
         <PortalLayout>
@@ -63,6 +69,32 @@ export default function TeacherLesson({
                 {isSubstitute &&
                     ' · ჩანაცვლება (მხოლოდ დღევანდელი გაკვეთილისთვის)'}
             </p>
+            {isSubstitute && (
+                <section
+                    aria-labelledby="lesson-handoff"
+                    className="mb-6 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200"
+                >
+                    <h2 id="lesson-handoff" className="mb-2 text-lg">
+                        გეგმა შემცვლელისთვის
+                    </h2>
+                    {handoff ? (
+                        <div className="space-y-2 text-sm whitespace-pre-line">
+                            <p>{handoff.plan}</p>
+                            {handoff.materials && (
+                                <p>
+                                    <strong>მასალები:</strong>{' '}
+                                    {handoff.materials}
+                                </p>
+                            )}
+                            {handoff.notes && <p>{handoff.notes}</p>}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-slate-600">
+                            მასწავლებელს გეგმა ჯერ არ დაუტოვებია.
+                        </p>
+                    )}
+                </section>
+            )}
             <div className="mb-6 flex flex-wrap gap-2">
                 <Link
                     href={`/lessons/${lesson.id}/attendance?date=${date}`}

@@ -26,6 +26,7 @@ class CancelSubstitutionAssignment
         }
 
         $assignment->status = SubstitutionAssignment::STATUS_CANCELLED;
+        $assignment->active_key = null;
         $assignment->save();
 
         $this->auditLogger->record($assignment->tenant_id, 'substitution.cancelled', $assignment, $actor->id, [

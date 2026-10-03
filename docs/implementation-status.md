@@ -459,3 +459,13 @@ composer run dev                            # server + queue + vite ერთა
 - `message_deliveries.channel/status/attempts/failure_reason` — ელფოსტის შეტყობინება მხოლოდ opt-in-ით (`notification_preferences`), `SendMessageEmailNotification` job ატომური claim-ით (ერთხელ იგზავნება), 3 ცდა backoff-ით; წერილში მხოლოდ თემა/ბმული, შეტყობინების ტექსტი არა (ჯანმრთელობის/პირადი მონაცემის გაჟონვის თავიდან ასაცილებლად).
 - Read receipt (`წაიკითხა n/m`) მხოლოდ გამგზავნის საკუთარ შეტყობინებებზე.
 - ტესტები: `MessagingExtrasTest`; სრული suite **304/304 passed, 2486 assertions**; Pint/PHPStan/types:check/build სუფთა. Production deploy — მომხმარებლის მხარეს (migration `2026_10_02_000003_extend_messaging`).
+
+### 2026-10-03 — ჩანაცვლების სრული ნაკადი (§9)
+
+- `substitution_requests`: მასწავლებელი ითხოვს ჩანაცვლებას (`/portal/my-coverage`), კოორდინატორი ამტკიცებს/უარყოფს; დამტკიცება row lock-ით ქმნის `StaffAbsence`-ს — ორმაგი დაწკაპება ორ გაცდენას ვერ შექმნის.
+- `substitution_assignments.active_key` + unique index: ერთი გაკვეთილის ერთ თარიღზე მეორე აქტიურ ჩანაცვლებას თავად ბაზა უარყოფს (parallel click); შემცვლელის user row იკეტება ტრანზაქციაში, რომ ერთი მასწავლებელი ორ გადაფარულ გაკვეთილზე ერთდროულად ვერ დაინიშნოს. გაუქმება ათავისუფლებს key-ს. არსებული მონაცემების backfill დუბლიკატზე არ ვარდება.
+- კანდიდატები გამოთვლილია (`RankSubstituteCandidates`): გამორიცხავს გაცდენილს, საკუთარი გადაფარული გაკვეთილის ან სხვა ჩანაცვლების მქონეს; რიგი — იგივე საგანი → იცნობს კლასს → დღის დატვირთვა. AssignSubstitute მაინც თავად ამოწმებს.
+- `SubstituteAssignedMail` იგზავნება მხოლოდ commit-ის შემდეგ (`DB::afterCommit`), მოსწავლეთა მონაცემის გარეშე.
+- `lesson_handoffs`: გეგმა/მასალები/შენიშვნა წერს გაცდენილი მასწავლებელი ან კოორდინატორი; შემცვლელი ხედავს მხოლოდ აქტიური ჩანაცვლებით (დღევანდელი გაკვეთილის გვერდზე და მომავალ ჩანაცვლებებში), გაუქმების შემდეგ წვდომა იკარგება.
+- დღის ცენტრი: მასწავლებელს — „შემცვლელს გეგმა სჭირდება“ (7 დღე), დირექტორს/ადმინს — მოლოდინში მყოფი მოთხოვნები.
+- ტესტები: `SubstitutionCoverageTest` (3); სრული suite **307/307 passed**; Pint/PHPStan/types:check/build სუფთა. Migration `2026_10_03_000001_substitution_requests_and_handoffs` (MySQL identifier-ები < 64).

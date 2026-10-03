@@ -44,6 +44,27 @@ type AssignmentRow = {
     absentTeacherName: string;
     substituteTeacherName: string;
     status: string;
+    handoff: Handoff | null;
+};
+
+type Handoff = { plan: string; materials: string | null; notes: string | null };
+
+type RequestRow = {
+    id: number;
+    teacherName: string;
+    startsOn: string;
+    endsOn: string;
+    reason: string | null;
+    status: string;
+    decisionNote: string | null;
+};
+
+type Candidate = {
+    id: number;
+    name: string;
+    qualified: boolean;
+    knowsClass: boolean;
+    load: number;
 };
 
 type Props = {
@@ -51,7 +72,26 @@ type Props = {
     absences: AbsenceRow[];
     coverageNeeded: CoverageRow[];
     assignments: AssignmentRow[];
+    requests: RequestRow[];
+    candidates: Record<string, Candidate[]>;
 };
+
+const REQUEST_STATUS_LABELS: Record<string, string> = {
+    pending: 'განსახილველი',
+    approved: 'დამტკიცებული',
+    declined: 'უარყოფილი',
+    withdrawn: 'გაუქმებული',
+};
+
+function candidateLabel(c: Candidate): string {
+    const tags = [
+        c.qualified ? 'იგივე საგანი' : null,
+        c.knowsClass ? 'იცნობს კლასს' : null,
+        `დღეს ${c.load} გაკვ.`,
+    ].filter(Boolean);
+
+    return `${c.name} (${tags.join(', ')})`;
+}
 
 const ABSENCE_STATUS_LABELS: Record<string, string> = {
     reported: 'დაფიქსირებულია',
@@ -74,6 +114,8 @@ export default function SubstitutionsIndex({
     absences,
     coverageNeeded,
     assignments,
+    requests,
+    candidates: rankedCandidates,
 }: Props) {
     const [showAbsenceForm, setShowAbsenceForm] = useState(false);
     const [sending, setSending] = useState(false);
@@ -115,6 +157,29 @@ export default function SubstitutionsIndex({
                 ),
             onFinish: () => setAssigningKey(null),
         });
+    };
+
+    const decideRequest = (row: RequestRow, approve: boolean) => {
+        router.post(
+            `/portal/substitutions/requests/${row.id}/decide`,
+            { approve, note: '' },
+            { preserveScroll: true },
+        );
+    };
+
+    const saveHandoff = (
+        event: FormEvent<HTMLFormElement>,
+        assignment: AssignmentRow,
+    ) => {
+        event.preventDefault();
+        router.post(
+            `/portal/substitutions/${assignment.id}/handoff`,
+            new FormData(event.currentTarget),
+            {
+                preserveScroll: true,
+                onError: () => toast.error('გეგმა ვერ შეინახა.'),
+            },
+        );
     };
 
     const cancelAssignment = (assignment: AssignmentRow) => {
@@ -196,6 +261,56 @@ export default function SubstitutionsIndex({
                 </form>
             )}
 
+            {requests.length > 0 && (
+                <section className="mb-8">
+                    <h2 className="mb-3 text-lg">მასწავლებლების მოთხოვნები</h2>
+                    <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+                        {requests.map((row) => (
+                            <li
+                                key={row.id}
+                                className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                                <div>
+                                    <p className="font-medium">
+                                        {row.teacherName}
+                                    </p>
+                                    <p className="text-sm text-slate-500">
+                                        {row.startsOn} – {row.endsOn}
+                                        {row.reason && ` · ${row.reason}`}
+                                    </p>
+                                </div>
+                                {row.status === 'pending' ? (
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            onClick={() =>
+                                                decideRequest(row, true)
+                                            }
+                                        >
+                                            დამტკიცება
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                                decideRequest(row, false)
+                                            }
+                                        >
+                                            უარყოფა
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium">
+                                        {REQUEST_STATUS_LABELS[row.status] ??
+                                            row.status}
+                                    </span>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+
             <section className="mb-8">
                 <h2 className="mb-3 text-lg">დაფიქსირებული გაცდენები</h2>
                 {absences.length === 0 ? (
@@ -244,9 +359,12 @@ export default function SubstitutionsIndex({
                     <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
                         {coverageNeeded.map((row) => {
                             const key = `${row.lessonId}-${row.date}`;
-                            const candidates = teachers.filter(
-                                (teacher) => teacher.id !== row.absentTeacherId,
-                            );
+                            // Server-computed: only free teachers, ranked by
+                            // subject, class familiarity and day load.
+                            const candidates =
+                                rankedCandidates[
+                                    `${row.lessonId}:${row.date}`
+                                ] ?? [];
 
                             return (
                                 <li
@@ -260,41 +378,49 @@ export default function SubstitutionsIndex({
                                         <p className="text-sm text-slate-500">
                                             {row.date} · {row.startsAt}–
                                             {row.endsAt} ·{' '}
-                                            {row.absentTeacherName}-ს
-                                            ნაცვლად
+                                            {row.absentTeacherName}-ს ნაცვლად
                                         </p>
                                     </div>
-                                    <form
-                                        onSubmit={(event) =>
-                                            submitAssign(event, row)
-                                        }
-                                        className="flex flex-wrap items-center gap-2"
-                                    >
-                                        <select
-                                            name="substitute_teacher_id"
-                                            required
-                                            className="h-9 rounded-md border border-slate-300 px-3 text-sm"
+                                    {candidates.length === 0 ? (
+                                        <p className="text-sm text-amber-800">
+                                            ამ დროს თავისუფალი მასწავლებელი ვერ
+                                            მოიძებნა.
+                                        </p>
+                                    ) : (
+                                        <form
+                                            onSubmit={(event) =>
+                                                submitAssign(event, row)
+                                            }
+                                            className="flex flex-wrap items-center gap-2"
                                         >
-                                            <option value="">
-                                                შემცვლელი...
-                                            </option>
-                                            {candidates.map((teacher) => (
-                                                <option
-                                                    key={teacher.id}
-                                                    value={teacher.id}
-                                                >
-                                                    {teacher.name}
+                                            <select
+                                                name="substitute_teacher_id"
+                                                required
+                                                className="h-9 rounded-md border border-slate-300 px-3 text-sm"
+                                            >
+                                                <option value="">
+                                                    შემცვლელი...
                                                 </option>
-                                            ))}
-                                        </select>
-                                        <Button
-                                            type="submit"
-                                            size="sm"
-                                            disabled={assigningKey === key}
-                                        >
-                                            დანიშვნა
-                                        </Button>
-                                    </form>
+                                                {candidates.map((teacher) => (
+                                                    <option
+                                                        key={teacher.id}
+                                                        value={teacher.id}
+                                                    >
+                                                        {candidateLabel(
+                                                            teacher,
+                                                        )}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                disabled={assigningKey === key}
+                                            >
+                                                დანიშვნა
+                                            </Button>
+                                        </form>
+                                    )}
                                 </li>
                             );
                         })}
@@ -317,7 +443,7 @@ export default function SubstitutionsIndex({
                                 key={assignment.id}
                                 className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
                             >
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <p className="font-medium">
                                         {assignment.subject} ·{' '}
                                         {assignment.className}
@@ -330,6 +456,60 @@ export default function SubstitutionsIndex({
                                         ჩაანაცვლებს{' '}
                                         {assignment.absentTeacherName}-ს
                                     </p>
+                                    {assignment.status === 'assigned' && (
+                                        <details className="mt-2 text-sm">
+                                            <summary className="min-h-8 cursor-pointer text-slate-600">
+                                                {assignment.handoff
+                                                    ? 'გეგმა შემცვლელისთვის ✓'
+                                                    : 'გეგმა შემცვლელისთვის — ჯერ არ არის'}
+                                            </summary>
+                                            <form
+                                                onSubmit={(event) =>
+                                                    saveHandoff(
+                                                        event,
+                                                        assignment,
+                                                    )
+                                                }
+                                                className="mt-2 space-y-2"
+                                            >
+                                                <label className="block">
+                                                    <span className="mb-1 block text-xs font-medium">
+                                                        გაკვეთილის გეგმა
+                                                    </span>
+                                                    <textarea
+                                                        name="plan"
+                                                        required
+                                                        defaultValue={
+                                                            assignment.handoff
+                                                                ?.plan ?? ''
+                                                        }
+                                                        className="min-h-20 w-full rounded-md border border-slate-300 p-2"
+                                                    />
+                                                </label>
+                                                <label className="block">
+                                                    <span className="mb-1 block text-xs font-medium">
+                                                        მასალები
+                                                    </span>
+                                                    <textarea
+                                                        name="materials"
+                                                        defaultValue={
+                                                            assignment.handoff
+                                                                ?.materials ??
+                                                            ''
+                                                        }
+                                                        className="min-h-16 w-full rounded-md border border-slate-300 p-2"
+                                                    />
+                                                </label>
+                                                <Button
+                                                    type="submit"
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    გეგმის შენახვა
+                                                </Button>
+                                            </form>
+                                        </details>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium">

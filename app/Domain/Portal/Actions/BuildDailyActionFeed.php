@@ -27,6 +27,7 @@ use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Domain\Timetable\Models\Lesson;
 use App\Domain\Timetable\Models\SubstitutionAssignment;
+use App\Domain\Timetable\Models\SubstitutionRequest;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -164,6 +165,14 @@ class BuildDailyActionFeed
             $items[] = $this->item("substitution:{$sub->id}", 'substitution', 'დღეს ჩანაცვლება გაქვთ', $sub->lesson->schoolClass->name ?? null, '/dashboard', null, 'high');
         }
 
+        // My own lessons someone covers this week that still have no handoff plan.
+        foreach (SubstitutionAssignment::query()->where('tenant_id', $tenantId)->where('absent_teacher_id', $user->id)->where('status', 'assigned')
+            ->whereDate('date', '>=', $today)->whereDate('date', '<=', $now->copy()->addDays(7)->toDateString())
+            ->doesntHave('handoff')->with('lesson.schoolClass')->get() as $cover) {
+            $items[] = $this->item("handoff:{$cover->id}", 'handoff', 'შემცვლელს გეგმა სჭირდება', ($cover->lesson->schoolClass->name ?? '').' · '.$cover->date->toDateString(),
+                '/portal/my-coverage', $cover->date, $cover->date->toDateString() === $today ? 'urgent' : 'high');
+        }
+
         $toGrade = AssignmentSubmission::query()->where('tenant_id', $tenantId)->where('status', AssignmentSubmission::STATUS_SUBMITTED)
             ->whereIn('assignment_id', Assignment::query()->where('tenant_id', $tenantId)->whereIn('teacher_assignment_id', $taIds)->select('id'))->count();
 
@@ -236,6 +245,12 @@ class BuildDailyActionFeed
             if ($awaiting > 0) {
                 $items[] = $this->item('report_cards_to_approve', 'report_card', 'დასამტკიცებელი ტაბელები', "{$awaiting} ტაბელი", '/portal/report-cards', null, 'high');
             }
+        }
+
+        $coverageRequests = SubstitutionRequest::query()->where('tenant_id', $tenantId)->where('status', SubstitutionRequest::STATUS_PENDING)->count();
+
+        if ($coverageRequests > 0) {
+            $items[] = $this->item('substitution_requests', 'substitution_request', 'ჩანაცვლების მოთხოვნები', "{$coverageRequests} მოთხოვნა", '/portal/substitutions', null, 'high');
         }
 
         foreach (SupportAccessRequest::query()->where('tenant_id', $tenantId)->where('status', 'requested')->get() as $request) {

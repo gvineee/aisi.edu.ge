@@ -6,10 +6,13 @@ use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Domain\Timetable\Actions\AssignSubstitute;
 use App\Domain\Timetable\Actions\CancelSubstitutionAssignment;
+use App\Domain\Timetable\Actions\ManageSubstitutionRequests;
+use App\Domain\Timetable\Actions\RankSubstituteCandidates;
 use App\Domain\Timetable\Actions\RecordStaffAbsence;
 use App\Domain\Timetable\Models\Lesson;
 use App\Domain\Timetable\Models\StaffAbsence;
 use App\Domain\Timetable\Models\SubstitutionAssignment;
+use App\Domain\Timetable\Models\SubstitutionRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\AssignSubstituteRequest;
 use App\Http\Requests\Portal\StoreStaffAbsenceRequest;
@@ -49,7 +52,7 @@ class SubstitutionController extends Controller
      */
     private const MAX_COVERAGE_DAYS = 31;
 
-    public function index(Request $request, CurrentTenant $currentTenant): Response
+    public function index(Request $request, CurrentTenant $currentTenant, RankSubstituteCandidates $rankSubstituteCandidates): Response
     {
         $tenant = $currentTenant->get();
         $this->authorizeAccess($tenant->id, $request->user()->id);
@@ -75,12 +78,32 @@ class SubstitutionController extends Controller
 
         $assignments = SubstitutionAssignment::query()
             ->where('tenant_id', $tenant->id)
-            ->with(['lesson.subject', 'lesson.schoolClass', 'absentTeacher', 'substituteTeacher'])
+            ->with(['lesson.subject', 'lesson.schoolClass', 'absentTeacher', 'substituteTeacher', 'handoff'])
             ->orderByDesc('date')
             ->get();
 
+        $coverageNeeded = $this->coverageNeeded($tenant->id, $absences);
+        $candidates = $rankSubstituteCandidates->handle(
+            $tenant->id,
+            $teachers->all(),
+            array_map(fn (array $row) => ['lessonId' => (int) $row['lessonId'], 'date' => (string) $row['date']], $coverageNeeded),
+        );
+
+        $requests = SubstitutionRequest::query()->where('tenant_id', $tenant->id)->with('requester')
+            ->orderByRaw("case when status = 'pending' then 0 else 1 end")->latest('id')->limit(50)->get();
+
         return Inertia::render('portal/substitutions/index', [
             'teachers' => $teachers,
+            'requests' => $requests->map(fn (SubstitutionRequest $r) => [
+                'id' => $r->id,
+                'teacherName' => $r->requester->name,
+                'startsOn' => $r->starts_on->toDateString(),
+                'endsOn' => $r->ends_on->toDateString(),
+                'reason' => $r->reason,
+                'status' => $r->status,
+                'decisionNote' => $r->decision_note,
+            ])->values(),
+            'candidates' => $candidates,
             'absences' => $absences->map(fn (StaffAbsence $absence) => [
                 'id' => $absence->id,
                 'teacherId' => $absence->user_id,
@@ -90,7 +113,7 @@ class SubstitutionController extends Controller
                 'reason' => $absence->reason,
                 'status' => $absence->status,
             ])->values(),
-            'coverageNeeded' => $this->coverageNeeded($tenant->id, $absences),
+            'coverageNeeded' => $coverageNeeded,
             'assignments' => $assignments->map(fn (SubstitutionAssignment $assignment) => [
                 'id' => $assignment->id,
                 'lessonId' => $assignment->lesson_id,
@@ -102,6 +125,11 @@ class SubstitutionController extends Controller
                 'absentTeacherName' => $assignment->absentTeacher->name,
                 'substituteTeacherName' => $assignment->substituteTeacher->name,
                 'status' => $assignment->status,
+                'handoff' => $assignment->handoff === null ? null : [
+                    'plan' => $assignment->handoff->plan,
+                    'materials' => $assignment->handoff->materials,
+                    'notes' => $assignment->handoff->notes,
+                ],
             ])->values(),
         ]);
     }
@@ -165,6 +193,21 @@ class SubstitutionController extends Controller
 
         return redirect()->route('substitutions.index')->with('toast', [
             'type' => 'success', 'message' => 'შემცვლელი დაინიშნა.',
+        ]);
+    }
+
+    public function decideRequest(Request $request, CurrentTenant $currentTenant, SubstitutionRequest $substitutionRequest, ManageSubstitutionRequests $action): RedirectResponse
+    {
+        $tenant = $currentTenant->get();
+        $actor = $request->user();
+        $this->authorizeAccess($tenant->id, $actor->id);
+        abort_unless($substitutionRequest->tenant_id === $tenant->id, 404);
+
+        $data = $request->validate(['approve' => ['required', 'boolean'], 'note' => ['nullable', 'string', 'max:500']]);
+        $action->decide($substitutionRequest, $actor, (bool) $data['approve'], $data['note'] ?? null);
+
+        return redirect()->route('substitutions.index')->with('toast', [
+            'type' => 'success', 'message' => $data['approve'] ? 'მოთხოვნა დამტკიცდა; გაცდენა დაფიქსირდა.' : 'მოთხოვნა უარყოფილია.',
         ]);
     }
 
