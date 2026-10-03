@@ -502,3 +502,12 @@ composer run dev                            # server + queue + vite ერთა
 - Chrome extension დაკავშირებულია, მაგრამ ლოკალური სერვერი (`php artisan serve`, localhost/127.0.0.1:8000) ბრაუზერიდან **ERR_CONNECTION_REFUSED**-ს აბრუნებს (ამავე მანქანიდან `curl` → 200). დასკვნა: ბრაუზერი/გარემო ერთ ქსელს არ იზიარებს, ამიტომ 360/390/768/1440 ვიზუალური QA **არ ჩატარებულა** — §17-ის ეს პუნქტი ღიაა. ალტერნატივა: QA production/staging URL-ზე deploy-ის შემდეგ.
 - Production deploy ჯერ მომხმარებლის მხარეს რჩება (`4fdd202..HEAD`): ახალი migrations, `config/security.php`, scheduler cron და queue worker (იხ. `docs/deployment-and-rollback.md`). Deploy-ის შემდეგ admin/director/accountant-ს 2FA-ს ჩართვა მოეთხოვება.
 - სხვა ღია blocker-ები (გარე/სკოლის გადაწყვეტილება): ბანკის რეალური adapter + ბუღალტრის UAT, ClamAV, CSP nonce, server-side PDF (ქართული font), retention ვადები, რეალური საფასური/grading policy/კომპეტენციების შინაარსი, device/session list (Redis sessions).
+
+### 2026-10-03 — server-side PDF, ClamAV adapter, CSP
+
+- **ტაბელის PDF** (`/portal/report-card-documents/{id}/pdf`): `dompdf/dompdf ^3.1.6` + პროექტის Noto Sans Georgian (OFL); იგივე უფლებები, რაც დოკუმენტის გვერდზე; მხოლოდ გამოქვეყნებული snapshot-იდან; remote resources გამორთული, chroot = `resources/fonts`; `Cache-Control: private, no-store`. ნიმუში ვიზუალურად შემოწმდა (ქართული glyph-ები სწორია).
+- `league/commonmark` განახლდა (2 advisory, high/medium) — `composer audit` სუფთაა.
+- `ClamdFileScanner` (INSTREAM) + `UPLOADS_SCANNER=clamd`; scan job 5 ცდა backoff-ით, daemon-ის შეცდომისას ფაილი `pending` რჩება.
+- CSP nonce-ით, `SECURITY_CSP=report-only` (enforce — ბრაუზერში შემოწმების შემდეგ).
+- შენიშვნა: ლოკალურად `bootstrap/cache`-ს Windows ReadOnly ატრიბუტი ჰქონდა (OneDrive) — `attrib -r` შემდეგ `package:discover` მუშაობს.
+- სრული suite **318/318 passed**.

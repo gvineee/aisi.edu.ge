@@ -208,6 +208,13 @@ class ReportCardWorkflowTest extends TestCase
                 ->where('isLatest', true));
         }
 
+        // Server-side PDF from the snapshot, for the same viewers only.
+        $pdf = $this->actingAs($f['guardian'])->get("/portal/report-card-documents/{$publication->id}/pdf");
+        $pdf->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF-', (string) $pdf->getContent());
+        $this->assertStringContainsString('private', (string) $pdf->headers->get('Cache-Control'));
+        $this->actingAs($f['outsiderTeacher'])->get("/portal/report-card-documents/{$publication->id}/pdf")->assertForbidden();
+
         // A teacher of another class cannot open it.
         $this->actingAs($f['outsiderTeacher'])->get("/portal/report-card-documents/{$publication->id}")->assertForbidden();
         $this->actingAs($f['outsiderTeacher'])->get("/portal/report-cards/{$card->id}")->assertForbidden();

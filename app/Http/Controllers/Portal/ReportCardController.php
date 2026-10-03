@@ -14,6 +14,7 @@ use App\Domain\Assessment\Models\ReportCardApproval;
 use App\Domain\Assessment\Models\ReportCardComment;
 use App\Domain\Assessment\Models\ReportCardPublication;
 use App\Domain\Assessment\Models\ReportCardSubject;
+use App\Domain\Assessment\ReportCardPdf;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantMembership;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -366,6 +368,22 @@ class ReportCardController extends Controller
      * The printable document for one published revision. Data comes only
      * from the frozen snapshot.
      */
+    public function downloadPublicationPdf(Request $request, CurrentTenant $currentTenant, ReportCardPublication $publication, ReportCardPdf $pdf): HttpResponse
+    {
+        $tenant = $currentTenant->get();
+        abort_unless($publication->tenant_id === $tenant->id, 404);
+        $publication->load('reportCard.student');
+        abort_unless($this->mayViewPublished($tenant->id, $request->user(), $publication->reportCard->student), 403);
+
+        $content = $pdf->render($publication, route('report-cards.verify', $publication->verification_code), $tenant->timezone ?: 'Asia/Tbilisi');
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="report-card-'.$publication->verification_code.'.pdf"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     public function showPublication(Request $request, CurrentTenant $currentTenant, ReportCardPublication $publication): Response
     {
         $tenant = $currentTenant->get();
@@ -383,6 +401,7 @@ class ReportCardController extends Controller
             'document' => $publication->snapshot,
             'isLatest' => $publication->revision === $latestRevision,
             'verificationUrl' => route('report-cards.verify', $publication->verification_code),
+            'pdfUrl' => route('report-cards.document.pdf', $publication),
             'studentId' => $publication->reportCard->student_id,
         ]);
     }

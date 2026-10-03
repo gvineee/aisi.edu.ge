@@ -310,6 +310,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/report-cards/{reportCard}/revise', [ReportCardController::class, 'revise'])->name('report-cards.revise');
     Route::get('portal/students/{student}/report-cards', [ReportCardController::class, 'forStudent'])->name('report-cards.student');
     Route::get('portal/report-card-documents/{publication}', [ReportCardController::class, 'showPublication'])->name('report-cards.document');
+    Route::get('portal/report-card-documents/{publication}/pdf', [ReportCardController::class, 'downloadPublicationPdf'])->middleware('throttle:20,1')->name('report-cards.document.pdf');
     // --- end Assessment & Gradebook ---
 
     // --- Health record (CLAUDE-PLATFORM-MODULES.md §8) — access decided by

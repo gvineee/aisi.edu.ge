@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/public/logo';
 import { formatDateTime, formatDay, formatPercent } from '@/lib/assessment';
@@ -31,19 +31,21 @@ type Props = {
     document: Snapshot;
     isLatest: boolean;
     verificationUrl: string;
+    pdfUrl: string;
     studentId: number;
 };
 
 /**
  * Printable report card. Everything shown comes from the frozen
- * publication snapshot; the brand logo comes from tenant settings. "Print"
- * uses the browser's print/save-as-PDF — a server-generated PDF is a
- * documented follow-up (needs a PDF engine with Georgian fonts).
+ * publication snapshot; the brand logo comes from tenant settings. The PDF
+ * download is rendered on the server from the same snapshot (ReportCardPdf);
+ * "Print" uses the browser.
  */
 export default function ReportCardDocument({
     document: doc,
     isLatest,
     verificationUrl,
+    pdfUrl,
     studentId,
 }: Props) {
     const { brand } = usePage<{ brand: Brand | null }>().props;
@@ -59,9 +61,17 @@ export default function ReportCardDocument({
                 >
                     <ArrowLeft size={16} /> ტაბელები
                 </Link>
-                <Button onClick={() => window.print()}>
-                    <Printer size={16} /> ბეჭდვა / PDF
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                    <a
+                        href={pdfUrl}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-4 text-sm font-medium ring-1 ring-slate-300 hover:bg-slate-50"
+                    >
+                        <Download size={16} aria-hidden /> PDF ჩამოტვირთვა
+                    </a>
+                    <Button onClick={() => window.print()}>
+                        <Printer size={16} /> ბეჭდვა
+                    </Button>
+                </div>
             </div>
 
             {!isLatest && (
