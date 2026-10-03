@@ -5,6 +5,7 @@ namespace App\Domain\Finance\Models;
 use App\Domain\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * A line on an invoice.
@@ -32,5 +33,13 @@ class InvoiceItem extends Model
             'amount_minor' => 'integer',
             'source_id' => 'integer',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Invoice, $this>
+     */
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
     }
 }

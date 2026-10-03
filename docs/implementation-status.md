@@ -469,3 +469,9 @@ composer run dev                            # server + queue + vite ერთა
 - `lesson_handoffs`: გეგმა/მასალები/შენიშვნა წერს გაცდენილი მასწავლებელი ან კოორდინატორი; შემცვლელი ხედავს მხოლოდ აქტიური ჩანაცვლებით (დღევანდელი გაკვეთილის გვერდზე და მომავალ ჩანაცვლებებში), გაუქმების შემდეგ წვდომა იკარგება.
 - დღის ცენტრი: მასწავლებელს — „შემცვლელს გეგმა სჭირდება“ (7 დღე), დირექტორს/ადმინს — მოლოდინში მყოფი მოთხოვნები.
 - ტესტები: `SubstitutionCoverageTest` (3); სრული suite **307/307 passed**; Pint/PHPStan/types:check/build სუფთა. Migration `2026_10_03_000001_substitution_requests_and_handoffs` (MySQL identifier-ები < 64).
+
+### 2026-10-03 — კლუბის საფასური Finance-ში და შეხვედრის შეხსენებები
+
+- კლუბის საფასური: ფინანსების გვერდზე (staff + 2FA) „გამოუწერელი კლუბის საფასური“; ინვოისის ხაზი `source_type=club_enrollment`, `source_id` = ჩარიცხვა. ჩარიცხვის row lock + შემოწმება: ერთ ჩარიცხვაზე ერთი არა-void ინვოისი (ორმაგი დაწკაპება მეორეს არ ქმნის); void-ის შემდეგ ისევ ჩანს. ინვოისი ავტომატურად არ იწერება — საფასურის პერიოდულობა სკოლის დასადგენია.
+- შეხვედრის შეხსენება: `appointments:send-reminders` (hourly scheduler, `routes/console.php`), 24 სთ-ით ადრე მშობელსა და მასწავლებელს; `appointment_bookings.reminder_sent_at` პირობითი update-ით (ერთხელ); წერილში შენიშვნის ტექსტი არ არის. **Production-ზე საჭიროა cron: `* * * * * php artisan schedule:run`** და queue worker.
+- ტესტები: `ClubFeeInvoicingTest`, `AppointmentReminderTest`; სრული suite **309/309 passed, 2605 assertions**; Pint/PHPStan/types:check/build სუფთა.

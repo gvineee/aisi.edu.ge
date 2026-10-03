@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $note
  * @property string $status
  * @property Carbon|null $cancelled_at
+ * @property Carbon|null $reminder_sent_at
  */
 #[Fillable(['appointment_slot_id', 'student_id', 'guardian_id', 'note', 'status', 'cancelled_at'])]
 class AppointmentBooking extends Model
@@ -33,6 +34,7 @@ class AppointmentBooking extends Model
     {
         return [
             'cancelled_at' => 'datetime',
+            'reminder_sent_at' => 'datetime',
         ];
     }
 

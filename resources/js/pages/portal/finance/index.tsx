@@ -27,6 +27,13 @@ type Props = {
     staff: {
         invoices: InvoiceRow[];
         students: { id: number; name: string }[];
+        billableClubFees: {
+            clubId: number;
+            clubName: string;
+            studentId: number;
+            studentName: string;
+            feeMinor: number;
+        }[];
     } | null;
     children: {
         id: number;
@@ -316,6 +323,69 @@ export default function FinanceIndex({ needsMfa, staff, children }: Props) {
                     />
                 </section>
             ))}
+
+            {staff && staff.billableClubFees.length > 0 && (
+                <section
+                    className="mb-6 rounded-xl bg-white p-5 ring-1 ring-slate-200"
+                    aria-labelledby="club-fees"
+                >
+                    <h2 id="club-fees" className="mb-1 text-lg">
+                        გამოუწერელი კლუბის საფასური
+                    </h2>
+                    <p className="mb-3 text-sm text-slate-500">
+                        თითო ჩარიცხვაზე ერთი ინვოისი; განმეორებითი ბილინგი
+                        სკოლის საფასურის წესის დადგენამდე არ ხდება.
+                    </p>
+                    <ul className="divide-y divide-slate-100">
+                        {staff.billableClubFees.map((fee) => (
+                            <li
+                                key={`${fee.clubId}-${fee.studentId}`}
+                                className="py-3 text-sm"
+                            >
+                                <form
+                                    className="flex flex-wrap items-center gap-2"
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        const form = new FormData(
+                                            event.currentTarget,
+                                        );
+                                        postWithToast(
+                                            `/portal/finance/clubs/${fee.clubId}/invoice`,
+                                            {
+                                                student_id: fee.studentId,
+                                                due_on: form.get('due_on'),
+                                            },
+                                            'ინვოისი გამოიწერა.',
+                                        );
+                                    }}
+                                >
+                                    <span className="min-w-0 flex-1">
+                                        <strong>{fee.studentName}</strong> ·{' '}
+                                        {fee.clubName} ·{' '}
+                                        {formatMoney(fee.feeMinor)}
+                                    </span>
+                                    <label
+                                        className="sr-only"
+                                        htmlFor={`due-${fee.clubId}-${fee.studentId}`}
+                                    >
+                                        გადახდის ვადა
+                                    </label>
+                                    <Input
+                                        id={`due-${fee.clubId}-${fee.studentId}`}
+                                        name="due_on"
+                                        type="date"
+                                        required
+                                        className="w-auto"
+                                    />
+                                    <Button type="submit" size="sm">
+                                        ინვოისის გამოწერა
+                                    </Button>
+                                </form>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
 
             {staff && (
                 <section

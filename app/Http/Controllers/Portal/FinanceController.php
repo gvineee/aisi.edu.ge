@@ -25,6 +25,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,6 +41,8 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
  */
 class FinanceController extends Controller
 {
+    private const SOURCE_CLUB_ENROLLMENT = 'club_enrollment';
+
     /**
      * @var array<int, string>
      */
@@ -68,6 +71,7 @@ class FinanceController extends Controller
                 'invoices' => $invoices->map(fn (Invoice $invoice) => $this->invoiceRow($invoice))->values(),
                 'students' => Student::query()->where('tenant_id', $tenant->id)->where('is_active', true)->orderBy('last_name')->get()
                     ->map(fn (Student $s) => ['id' => $s->id, 'name' => $s->fullName()])->values(),
+                'billableClubFees' => $this->billableClubFees($tenant->id),
             ];
         }
 
@@ -127,16 +131,27 @@ class FinanceController extends Controller
         $request->validate(['student_id' => ['required', 'integer'], 'due_on' => ['required', 'date']]);
 
         abort_unless($club->fee_minor !== null && $club->fee_minor > 0, 422);
-        $enrollment = ClubEnrollment::query()->where('tenant_id', $tenant->id)->where('club_id', $club->id)
-            ->where('student_id', $request->integer('student_id'))->where('status', ClubEnrollment::STATUS_ENROLLED)->with('student')->firstOrFail();
 
-        $invoice = $invoices->issue($invoices->accountFor($enrollment->student), [[
-            'description' => "კლუბი: {$club->name}",
-            'quantity' => 1,
-            'unit_minor' => $club->fee_minor,
-            'source_type' => 'club',
-            'source_id' => $club->id,
-        ]], Carbon::parse((string) $request->string('due_on'), 'Asia/Tbilisi'), $request->user());
+        // One invoice per enrollment (until voided): the enrollment row is
+        // locked so a double click cannot bill the same child twice.
+        // Recurring/term club billing waits for the school's fee policy.
+        $invoice = DB::transaction(function () use ($request, $tenant, $club, $invoices) {
+            $enrollment = ClubEnrollment::query()->where('tenant_id', $tenant->id)->where('club_id', $club->id)
+                ->where('student_id', $request->integer('student_id'))->where('status', ClubEnrollment::STATUS_ENROLLED)
+                ->lockForUpdate()->firstOrFail();
+
+            if ($this->enrollmentInvoiced($tenant->id, $enrollment->id)) {
+                throw ValidationException::withMessages(['student_id' => 'ამ ჩარიცხვაზე ინვოისი უკვე გამოწერილია.']);
+            }
+
+            return $invoices->issue($invoices->accountFor(Student::query()->where('tenant_id', $tenant->id)->whereKey($enrollment->student_id)->firstOrFail()), [[
+                'description' => "კლუბი: {$club->name}",
+                'quantity' => 1,
+                'unit_minor' => (int) $club->fee_minor,
+                'source_type' => self::SOURCE_CLUB_ENROLLMENT,
+                'source_id' => $enrollment->id,
+            ]], Carbon::parse((string) $request->string('due_on'), 'Asia/Tbilisi'), $request->user());
+        });
 
         return redirect()->route('finance.invoices.show', $invoice);
     }
@@ -293,6 +308,36 @@ class FinanceController extends Controller
         return GuardianLink::query()->where('tenant_id', $tenantId)->where('user_id', $user->id)
             ->where('is_active', true)->where('can_view_financial', true)
             ->with('student')->get()->pluck('student')->filter()->values();
+    }
+
+    /**
+     * Enrolled students in fee-bearing clubs not yet billed by a non-void
+     * invoice line.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function billableClubFees(int $tenantId): array
+    {
+        $invoiced = InvoiceItem::query()->where('tenant_id', $tenantId)->where('source_type', self::SOURCE_CLUB_ENROLLMENT)
+            ->whereHas('invoice', fn ($query) => $query->where('status', '!=', Invoice::STATUS_VOID))->pluck('source_id');
+
+        return ClubEnrollment::query()->where('tenant_id', $tenantId)->where('status', ClubEnrollment::STATUS_ENROLLED)
+            ->whereHas('club', fn ($query) => $query->where('fee_minor', '>', 0))
+            ->whereNotIn('id', $invoiced)
+            ->with('club', 'student')->orderBy('id')->limit(200)->get()
+            ->map(fn (ClubEnrollment $e) => [
+                'clubId' => $e->club_id,
+                'clubName' => $e->club->name,
+                'studentId' => $e->student_id,
+                'studentName' => $e->student->fullName(),
+                'feeMinor' => (int) $e->club->fee_minor,
+            ])->values()->all();
+    }
+
+    private function enrollmentInvoiced(int $tenantId, int $enrollmentId): bool
+    {
+        return InvoiceItem::query()->where('tenant_id', $tenantId)->where('source_type', self::SOURCE_CLUB_ENROLLMENT)->where('source_id', $enrollmentId)
+            ->whereHas('invoice', fn ($query) => $query->where('status', '!=', Invoice::STATUS_VOID))->exists();
     }
 
     private function isStaffRole(int $tenantId, User $user): bool
