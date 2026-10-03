@@ -12,14 +12,6 @@ export type UseAppearanceReturn = {
 const listeners = new Set<() => void>();
 let currentAppearance: Appearance = 'system';
 
-const prefersDark = (): boolean => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-};
-
 const setCookie = (name: string, value: string, days = 365): void => {
     if (typeof document === 'undefined') {
         return;
@@ -37,9 +29,10 @@ const getStoredAppearance = (): Appearance => {
     return (localStorage.getItem('appearance') as Appearance) || 'system';
 };
 
-const isDarkMode = (appearance: Appearance): boolean => {
-    return appearance === 'dark' || (appearance === 'system' && prefersDark());
-};
+// The brand design is light-only: no dark theme has been designed, and
+// following the OS dark preference mixed dark shadcn tokens with light brand
+// colours (dark-on-dark buttons, found in headless QA 2026-10-03).
+const isDarkMode = (_appearance: Appearance): boolean => false;
 
 const applyTheme = (appearance: Appearance): void => {
     if (typeof document === 'undefined') {

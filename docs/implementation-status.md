@@ -511,3 +511,17 @@ composer run dev                            # server + queue + vite ერთა
 - CSP nonce-ით, `SECURITY_CSP=report-only` (enforce — ბრაუზერში შემოწმების შემდეგ).
 - შენიშვნა: ლოკალურად `bootstrap/cache`-ს Windows ReadOnly ატრიბუტი ჰქონდა (OneDrive) — `attrib -r` შემდეგ `package:discover` მუშაობს.
 - სრული suite **318/318 passed**.
+
+### 2026-10-03 — ბრაუზერის QA (§17): headless Chrome, რეალური Laravel routes
+
+Chrome extension ლოკალურ სერვერს ვერ სწვდებოდა, ამიტომ QA ჩატარდა ლოკალური headless Chrome-ით (DevTools Protocol, `scripts/responsive-qa.mjs`) — **104 გვერდი×სიგანე** (360/390/768/1440): საჯარო 10 გვერდი + მშობლის, მასწავლებლისა და მოსწავლის პორტალი (seed მომხმარებლებით შესვლა).
+
+შედეგი გასწორების შემდეგ: horizontal overflow **0**, server error **0**, console error **0**, `h1`-ის გარეშე გვერდი **0**.
+
+ნაპოვნი და გასწორებული რეალური ხარვეზები:
+1. **მუქი OS რეჟიმის ბაგი:** `prefers-color-scheme: dark`-ზე `html.dark` ირთვებოდა — shadcn token-ები მუქდებოდა, ბრენდის ფერები ღია რჩებოდა → „გასვლა“/„ძებნა“ და outline ღილაკები მუქ ფონზე მუქი ტექსტით (ყველა მომხმარებელი, ვისაც ტელეფონზე მუქი რეჟიმია). დიზაინი მხოლოდ ღიაა → აპლიკაცია ღია თემაზე დაფიქსირდა; უმოქმედო „Appearance“ პარამეტრი მოიხსნა. ხელახალი შემოწმება: dark-MQ-ზე `html.dark` აღარ არის, ღილაკები თეთრი/მუქი ტექსტით.
+2. footer-ის ბმულები (ტელეფონი, ელფოსტა, მიღება, დოკუმენტები, ჟურნალი, syslab) მობილურზე 16–20px სიმაღლის იყო → 44px.
+3. hero-ს გარეშე CMS გვერდებს (`/contact`) `h1` არ ჰქონდა → სათაური screen reader-ისთვის.
+4. პარამეტრების მენიუ ინგლისურად იყო (Profile/Security/Settings) → ქართულად.
+
+ცნობილი/არაკრიტიკული: შესვლის გვერდის ტექსტური ბმულები (წინადადების შიგნით, WCAG 2.5.8 inline გამონაკლისი); headless Chrome-ს ქართული ICU არ აქვს, ამიტომ screenshot-ში თარიღი ინგლისურია — კოდი ყველგან `ka-GE`-ს იყენებს. Production-ზე იგივე სკრიპტი `QA_BASE=https://aisi.edu.ge` deploy-ის შემდეგ.

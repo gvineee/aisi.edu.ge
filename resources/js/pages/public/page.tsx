@@ -128,7 +128,13 @@ export default function CmsPage({
 
     return (
         <PublicLayout>
-            <Head title={preview ? `[წინასწარი ნახვა] ${page.seoTitle ?? page.title}` : (page.seoTitle ?? page.title)}>
+            <Head
+                title={
+                    preview
+                        ? `[წინასწარი ნახვა] ${page.seoTitle ?? page.title}`
+                        : (page.seoTitle ?? page.title)
+                }
+            >
                 {page.seoDescription && (
                     <meta name="description" content={page.seoDescription} />
                 )}
@@ -143,6 +149,11 @@ export default function CmsPage({
                     წინასწარი ნახვა — ეს გვერდი ჯერ არ არის საჯაროდ
                     გამოქვეყნებული.
                 </div>
+            )}
+
+            {/* Every page needs one h1; hero-less CMS pages get the title for assistive tech. */}
+            {!page.blocks.some((block) => block.type === 'hero') && (
+                <h1 className="sr-only">{page.title}</h1>
             )}
 
             {page.blocks.map((block, index) => {
@@ -461,7 +472,10 @@ export default function CmsPage({
                                         aria-hidden="true"
                                     >
                                         <div className="mb-5 flex items-center justify-between">
-                                            <Logo brand={brand} size="compact" />
+                                            <Logo
+                                                brand={brand}
+                                                size="compact"
+                                            />
                                             <span
                                                 className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
                                                 style={{
@@ -528,9 +542,7 @@ export default function CmsPage({
                                         ? block.body
                                         : [block.body]
                                     ).map((paragraph, paragraphIndex) => (
-                                        <p key={paragraphIndex}>
-                                            {paragraph}
-                                        </p>
+                                        <p key={paragraphIndex}>{paragraph}</p>
                                     ))}
                                 </div>
                             </section>
@@ -633,8 +645,7 @@ export default function CmsPage({
                                         {featuredTeachers.length > 0 && (
                                             <Link
                                                 href={
-                                                    block.ctaHref ??
-                                                    '/teachers'
+                                                    block.ctaHref ?? '/teachers'
                                                 }
                                                 className="inline-flex items-center gap-1 font-semibold"
                                                 style={{ color: primary }}
@@ -653,45 +664,41 @@ export default function CmsPage({
                                         </p>
                                     ) : (
                                         <div className="-mx-6 flex snap-x gap-6 overflow-x-auto px-6 pb-2">
-                                            {featuredTeachers.map(
-                                                (teacher) => (
-                                                    <Link
-                                                        key={teacher.slug}
-                                                        href={`/teachers/${teacher.slug}`}
-                                                        className="w-40 shrink-0 snap-start text-center"
-                                                    >
-                                                        {teacher.photoUrl ? (
-                                                            <img
-                                                                src={
-                                                                    teacher.photoUrl
-                                                                }
-                                                                alt={
-                                                                    teacher.name
-                                                                }
-                                                                className="mx-auto mb-3 h-24 w-24 rounded-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <span
-                                                                className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full text-xl font-semibold"
-                                                                style={{
-                                                                    backgroundColor: `${accent}1a`,
-                                                                    color: accent,
-                                                                }}
-                                                            >
-                                                                {teacher.name.charAt(
-                                                                    0,
-                                                                )}
-                                                            </span>
-                                                        )}
-                                                        <p className="text-sm font-semibold">
-                                                            {teacher.name}
-                                                        </p>
-                                                        <p className="text-xs text-slate-500">
-                                                            {teacher.subject}
-                                                        </p>
-                                                    </Link>
-                                                ),
-                                            )}
+                                            {featuredTeachers.map((teacher) => (
+                                                <Link
+                                                    key={teacher.slug}
+                                                    href={`/teachers/${teacher.slug}`}
+                                                    className="w-40 shrink-0 snap-start text-center"
+                                                >
+                                                    {teacher.photoUrl ? (
+                                                        <img
+                                                            src={
+                                                                teacher.photoUrl
+                                                            }
+                                                            alt={teacher.name}
+                                                            className="mx-auto mb-3 h-24 w-24 rounded-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <span
+                                                            className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full text-xl font-semibold"
+                                                            style={{
+                                                                backgroundColor: `${accent}1a`,
+                                                                color: accent,
+                                                            }}
+                                                        >
+                                                            {teacher.name.charAt(
+                                                                0,
+                                                            )}
+                                                        </span>
+                                                    )}
+                                                    <p className="text-sm font-semibold">
+                                                        {teacher.name}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500">
+                                                        {teacher.subject}
+                                                    </p>
+                                                </Link>
+                                            ))}
                                         </div>
                                     )}
                                 </div>

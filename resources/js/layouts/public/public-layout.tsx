@@ -56,9 +56,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             <Logo brand={brand} />
                         </Link>
 
-                        <nav
-                            className="hidden min-w-0 flex-1 gap-3 overflow-x-auto [scrollbar-width:none] xl:gap-8 lg:flex [&::-webkit-scrollbar]:hidden"
-                        >
+                        <nav className="hidden min-w-0 flex-1 [scrollbar-width:none] gap-3 overflow-x-auto lg:flex xl:gap-8 [&::-webkit-scrollbar]:hidden">
                             {nav.map((item) => (
                                 <Link
                                     key={item.href}
@@ -135,12 +133,16 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             {brand?.contact.phone && (
                                 <a
                                     href={`tel:${brand.contact.phone.replace(/\s+/g, '')}`}
+                                    className="inline-flex min-h-11 items-center"
                                 >
                                     {brand.contact.phone}
                                 </a>
                             )}
                             {brand?.contact.email && (
-                                <a href={`mailto:${brand.contact.email}`}>
+                                <a
+                                    href={`mailto:${brand.contact.email}`}
+                                    className="inline-flex min-h-11 items-center"
+                                >
                                     {brand.contact.email}
                                 </a>
                             )}
@@ -150,13 +152,16 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                         </div>
                     </div>
                     <div className="mx-auto max-w-6xl px-6">
-                        <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-200 py-4 text-xs text-[var(--brand-muted)]">
-                            <Link href="/admissions" className="hover:underline">
+                        <div className="flex flex-wrap gap-x-6 gap-y-0 border-t border-slate-200 py-2 text-xs text-[var(--brand-muted)]">
+                            <Link
+                                href="/admissions"
+                                className="inline-flex min-h-11 items-center hover:underline"
+                            >
                                 მიღება
                             </Link>
                             <Link
                                 href="/official-documents"
-                                className="hover:underline"
+                                className="inline-flex min-h-11 items-center hover:underline"
                             >
                                 დოკუმენტები
                             </Link>
@@ -164,7 +169,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                                 href="https://aisi.edupage.org"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:underline"
+                                className="inline-flex min-h-11 items-center hover:underline"
                             >
                                 ელექტრონული ჟურნალი
                             </a>
@@ -177,7 +182,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                                 href="https://syslab.ge"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="font-semibold underline-offset-2 hover:underline"
+                                className="inline-flex min-h-11 items-center font-semibold underline-offset-2 hover:underline"
                             >
                                 syslab.ge
                             </a>

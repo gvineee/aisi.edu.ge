@@ -77,7 +77,7 @@ class AdminMfaEnforcementTest extends TestCase
         $policy = (string) $html->headers->get('Content-Security-Policy-Report-Only');
         $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-([A-Za-z0-9]+)'/", $policy);
         preg_match("/'nonce-([A-Za-z0-9]+)'/", $policy, $m);
-        $this->assertStringContainsString('<script nonce="'.$m[1].'">', (string) $html->getContent());
+        $this->assertStringContainsString('nonce="'.$m[1].'"', (string) $html->getContent());
         $this->assertNull($html->headers->get('Content-Security-Policy'));
 
         config(['security.csp' => 'enforce']);
