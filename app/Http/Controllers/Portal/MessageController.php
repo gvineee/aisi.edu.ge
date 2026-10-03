@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Domain\Academics\Models\SchoolClass;
+use App\Domain\Communications\Actions\CreateClassBroadcast;
 use App\Domain\Communications\Actions\MarkConversationRead;
 use App\Domain\Communications\Actions\ResolveMessageableUsers;
 use App\Domain\Communications\Actions\SendMessage;
@@ -10,6 +12,7 @@ use App\Domain\Communications\Models\ActionRequest;
 use App\Domain\Communications\Models\Conversation;
 use App\Domain\Communications\Models\ConversationParticipant;
 use App\Domain\Communications\Models\Message;
+use App\Domain\Communications\Models\MessageBroadcast;
 use App\Domain\Communications\Models\MessageDelivery;
 use App\Domain\Communications\Models\NotificationPreference;
 use App\Domain\Tenancy\CurrentTenant;
@@ -101,6 +104,23 @@ class MessageController extends Controller
         $sendMessage->handle($tenant->id, $conversation, $request->user(), $request->string('body')->toString());
 
         return redirect()->route('messages.show', $conversation);
+    }
+
+    public function broadcast(Request $request, CurrentTenant $currentTenant, CreateClassBroadcast $action): RedirectResponse
+    {
+        $tenant = $currentTenant->get();
+        $data = $request->validate([
+            'school_class_id' => ['required', 'integer'],
+            'subject' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $class = SchoolClass::query()->where('tenant_id', $tenant->id)->whereKey((int) $data['school_class_id'])->first();
+        abort_if($class === null, 404);
+
+        $broadcast = $action->handle($tenant->id, $request->user(), $class, $data['subject'], $data['body']);
+
+        return back()->with('toast', ['type' => 'success', 'message' => "განცხადება იგზავნება {$broadcast->recipients_count} ოჯახთან."]);
     }
 
     public function archive(Request $request, CurrentTenant $currentTenant, Conversation $conversation): RedirectResponse
@@ -243,6 +263,18 @@ class MessageController extends Controller
             ])->values(),
             'filters' => ['archived' => $showArchived, 'q' => (string) $request->string('q')],
             'emailNotifications' => NotificationPreference::emailEnabled($tenant->id, $user->id),
+            'broadcastClasses' => app(CreateClassBroadcast::class)->classesFor($tenant->id, $user)
+                ->map(fn (SchoolClass $class) => ['id' => $class->id, 'name' => $class->name])->values(),
+            'recentBroadcasts' => MessageBroadcast::query()->where('tenant_id', $tenant->id)->where('sender_id', $user->id)->with('schoolClass')
+                ->latest('id')->limit(5)->get()->map(fn (MessageBroadcast $b) => [
+                    'id' => $b->id,
+                    'subject' => $b->subject,
+                    'className' => $b->schoolClass->name ?? null,
+                    'status' => $b->status,
+                    'recipients' => $b->recipients_count,
+                    'delivered' => $b->delivered_count,
+                    'createdAt' => $b->created_at?->toIso8601String(),
+                ])->values(),
         ]);
     }
 

@@ -482,3 +482,11 @@ composer run dev                            # server + queue + vite ერთა
 - `config/security.php` → `ADMIN_MFA_REQUIRED` (default `true`; ტესტებში `false`, იძულება ცალკე `AdminMfaEnforcementTest`-ით მოწმდება).
 - **Production-ის გავლენა deploy-ის შემდეგ:** ერთადერთი production ადმინი პორტალში შესვლისას ჯერ ავთენტიკატორ-აპით 2FA-ს ჩართვას მოითხოვს. საგანგებოდ `ADMIN_MFA_REQUIRED=false` + `config:cache` დროებით გამორთავს (დოკუმენტირებული გამონაკლისი).
 - სრული suite **310/310 passed**; Pint/PHPStan სუფთა.
+
+### 2026-10-03 — კლასის განცხადება ოჯახებს (§4)
+
+- `message_broadcasts` + `message_broadcast_recipients` (snapshot): მიმღებები სერვერზე წყდება გაგზავნისას — კლასის აქტიური მოსწავლეების აქტიური guardian link-ები `can_receive_notifications`-ით და აქტიური guardian წევრობით; ორი შვილის მშობელი ერთხელ იღებს.
+- გაგზავნის უფლება: კლასზე მინიჭებული/დამრიგებელი მასწავლებელი ან admin/director/academic_manager; სხვა — 403.
+- `DeliverMessageBroadcast` job (afterCommit, 3 ცდა, backoff 60/300/900): თითო ოჯახს ცალკე პირადი საუბარი (მშობლები ერთმანეთს ვერ ხედავენ); recipient row lock + delivered-ის გამოტოვება → retry ორჯერ არ აგზავნის; წევრობადაკარგული მშობელი არ იღებს (`membership_inactive`); ერთი შეცდომა სხვებს არ აჩერებს (`partial`). Opt-in ელფოსტა იგივე `SendMessageEmailNotification`-ით; queue-დან ბმული tenant-ის primary domain-ზე იგება.
+- UI: „კლასის განცხადება“ dialog + „ჩემი განცხადებები“ (delivered/recipients).
+- ტესტი `ClassBroadcastTest`; სრული suite **311/311 passed**; Pint/PHPStan/types/build სუფთა.

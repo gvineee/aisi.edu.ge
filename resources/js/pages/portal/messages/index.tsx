@@ -5,6 +5,7 @@ import {
     ArrowLeft,
     BellRing,
     CheckCheck,
+    Megaphone,
     MessageSquareText,
     Plus,
     Send,
@@ -62,6 +63,23 @@ type Props = {
     messageableUsers: MessageableUser[];
     filters: { archived: boolean; q: string };
     emailNotifications: boolean;
+    broadcastClasses: { id: number; name: string }[];
+    recentBroadcasts: {
+        id: number;
+        subject: string;
+        className: string | null;
+        status: string;
+        recipients: number;
+        delivered: number;
+        createdAt: string | null;
+    }[];
+};
+
+const BROADCAST_STATUS: Record<string, string> = {
+    queued: 'რიგშია',
+    sending: 'იგზავნება',
+    sent: 'გაიგზავნა',
+    partial: 'ნაწილობრივ გაიგზავნა',
 };
 
 function formatTimestamp(value: string | null): string {
@@ -81,8 +99,11 @@ export default function MessagesIndex({
     messageableUsers,
     filters,
     emailNotifications,
+    broadcastClasses,
+    recentBroadcasts,
 }: Props) {
     const [composeOpen, setComposeOpen] = useState(false);
+    const [broadcastOpen, setBroadcastOpen] = useState(false);
     const [recipientId, setRecipientId] = useState<number | ''>('');
     const [subject, setSubject] = useState('');
     const [composeBody, setComposeBody] = useState('');
@@ -145,10 +166,114 @@ export default function MessagesIndex({
 
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl">შეტყობინებები</h1>
-                <Button onClick={() => setComposeOpen(true)}>
-                    <Plus size={18} /> ახალი შეტყობინება
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                    {broadcastClasses.length > 0 && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setBroadcastOpen(true)}
+                        >
+                            <Megaphone size={18} /> კლასის განცხადება
+                        </Button>
+                    )}
+                    <Button onClick={() => setComposeOpen(true)}>
+                        <Plus size={18} /> ახალი შეტყობინება
+                    </Button>
+                </div>
             </div>
+
+            <Dialog open={broadcastOpen} onOpenChange={setBroadcastOpen}>
+                <DialogContent>
+                    <DialogTitle>კლასის განცხადება ოჯახებს</DialogTitle>
+                    <DialogDescription>
+                        თითო ოჯახი მიიღებს ცალკე, პირად საუბარს — მშობლები
+                        ერთმანეთს ვერ ხედავენ. მიმღებები განისაზღვრება გაგზავნის
+                        მომენტში.
+                    </DialogDescription>
+                    <form
+                        className="space-y-3"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            router.post(
+                                '/portal/messages-broadcasts',
+                                new FormData(event.currentTarget),
+                                {
+                                    preserveScroll: true,
+                                    onSuccess: () => setBroadcastOpen(false),
+                                    onError: (errors) =>
+                                        toast.error(
+                                            Object.values(errors)[0] ??
+                                                'ვერ გაიგზავნა.',
+                                        ),
+                                },
+                            );
+                        }}
+                    >
+                        <div>
+                            <Label htmlFor="broadcast-class">კლასი</Label>
+                            <select
+                                id="broadcast-class"
+                                name="school_class_id"
+                                required
+                                className="mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                            >
+                                {broadcastClasses.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <Label htmlFor="broadcast-subject">თემა</Label>
+                            <input
+                                id="broadcast-subject"
+                                name="subject"
+                                required
+                                maxLength={255}
+                                className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="broadcast-body">ტექსტი</Label>
+                            <textarea
+                                id="broadcast-body"
+                                name="body"
+                                required
+                                maxLength={5000}
+                                className="mt-1 min-h-32 w-full rounded-md border border-slate-300 p-3 text-sm"
+                            />
+                        </div>
+                        <Button type="submit">
+                            <Send size={16} /> გაგზავნა
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {recentBroadcasts.length > 0 && (
+                <details className="mb-4 rounded-xl bg-white p-4 text-sm ring-1 ring-slate-200">
+                    <summary className="min-h-8 cursor-pointer font-medium">
+                        ჩემი განცხადებები
+                    </summary>
+                    <ul className="mt-2 divide-y divide-slate-100">
+                        {recentBroadcasts.map((b) => (
+                            <li
+                                key={b.id}
+                                className="flex flex-wrap justify-between gap-2 py-2"
+                            >
+                                <span>
+                                    {b.subject}
+                                    {b.className ? ` · ${b.className}` : ''}
+                                </span>
+                                <span className="text-slate-500">
+                                    {BROADCAST_STATUS[b.status] ?? b.status} ·{' '}
+                                    {b.delivered}/{b.recipients} ოჯახი
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </details>
+            )}
 
             <div className="mb-4 flex flex-wrap items-center gap-3">
                 <form

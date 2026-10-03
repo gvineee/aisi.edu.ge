@@ -9,6 +9,7 @@ use App\Domain\Communications\Models\Message;
 use App\Domain\Communications\Models\MessageDelivery;
 use App\Domain\Communications\Models\NotificationPreference;
 use App\Domain\Tenancy\Models\Tenant;
+use App\Domain\Tenancy\Models\TenantDomain;
 use App\Jobs\SendMessageEmailNotification;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -79,7 +80,7 @@ class SendMessage
                     $email->status = 'queued';
                     $email->save();
 
-                    SendMessageEmailNotification::dispatch($email->id, $schoolName, $conversation->subject, route('messages.show', $conversation));
+                    SendMessageEmailNotification::dispatch($email->id, $schoolName, $conversation->subject, $this->conversationUrl($tenantId, $conversation));
                 }
             }
 
@@ -94,5 +95,23 @@ class SendMessage
 
             return $message;
         });
+    }
+
+    /**
+     * Inside a web request the current host is the school's; a queued
+     * job (e.g. a class announcement) has no request, so the link is built
+     * on the tenant's primary domain instead of APP_URL.
+     */
+    private function conversationUrl(int $tenantId, Conversation $conversation): string
+    {
+        $path = route('messages.show', $conversation, false);
+
+        if (! app()->runningInConsole() || app()->runningUnitTests()) {
+            return url($path);
+        }
+
+        $domain = TenantDomain::query()->where('tenant_id', $tenantId)->where('is_primary', true)->value('domain');
+
+        return $domain === null ? url($path) : "https://{$domain}{$path}";
     }
 }
