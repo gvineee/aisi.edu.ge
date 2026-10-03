@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAdminMfa;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsurePlatformOperator;
 use App\Http\Middleware\HandleAppearance;
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             NoIndexPrivateAreas::class,
+            EnsureAdminMfa::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -475,3 +475,10 @@ composer run dev                            # server + queue + vite ერთა
 - კლუბის საფასური: ფინანსების გვერდზე (staff + 2FA) „გამოუწერელი კლუბის საფასური“; ინვოისის ხაზი `source_type=club_enrollment`, `source_id` = ჩარიცხვა. ჩარიცხვის row lock + შემოწმება: ერთ ჩარიცხვაზე ერთი არა-void ინვოისი (ორმაგი დაწკაპება მეორეს არ ქმნის); void-ის შემდეგ ისევ ჩანს. ინვოისი ავტომატურად არ იწერება — საფასურის პერიოდულობა სკოლის დასადგენია.
 - შეხვედრის შეხსენება: `appointments:send-reminders` (hourly scheduler, `routes/console.php`), 24 სთ-ით ადრე მშობელსა და მასწავლებელს; `appointment_bookings.reminder_sent_at` პირობითი update-ით (ერთხელ); წერილში შენიშვნის ტექსტი არ არის. **Production-ზე საჭიროა cron: `* * * * * php artisan schedule:run`** და queue worker.
 - ტესტები: `ClubFeeInvoicingTest`, `AppointmentReminderTest`; სრული suite **309/309 passed, 2605 assertions**; Pint/PHPStan/types:check/build სუფთა.
+
+### 2026-10-03 — ადმინისტრატორის MFA-ს იძულება (CLAUDE.md #4)
+
+- `EnsureAdminMfa` (web group): აქტიური `admin` წევრობის მქონე მომხმარებელი 2FA-ს დადასტურების გარეშე `/portal*`, `/dashboard`, `/lessons/*`-ზე გადამისამართდება `/settings/security`-ზე ჩასართავად. პარამეტრები, logout და საჯარო საიტი ხელმისაწვდომი რჩება — დაბლოკვა არ ხდება, ჩართვაა გზა. სხვა როლებს არ ეხება (finance/health/platform-ს საკუთარი შემოწმება აქვს).
+- `config/security.php` → `ADMIN_MFA_REQUIRED` (default `true`; ტესტებში `false`, იძულება ცალკე `AdminMfaEnforcementTest`-ით მოწმდება).
+- **Production-ის გავლენა deploy-ის შემდეგ:** ერთადერთი production ადმინი პორტალში შესვლისას ჯერ ავთენტიკატორ-აპით 2FA-ს ჩართვას მოითხოვს. საგანგებოდ `ADMIN_MFA_REQUIRED=false` + `config:cache` დროებით გამორთავს (დოკუმენტირებული გამონაკლისი).
+- სრული suite **310/310 passed**; Pint/PHPStan სუფთა.
