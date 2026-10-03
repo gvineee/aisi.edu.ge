@@ -496,3 +496,9 @@ composer run dev                            # server + queue + vite ერთა
 - `message_attachments`: private `local` disk (`messages/{tenant}/{message}/random`), PDF/PNG/JPEG/WebP ≤ 20MB (Form Request + `PortfolioFileStorage::assertAllowed`), sha256, `scan_status` → `ScanUploadedFile` job; ჩამოტვირთვა (`/portal/messages/{c}/attachments/{a}`) მხოლოდ იმავე tenant-ის საუბრის მონაწილეს და მხოლოდ `ScanStatus::servable`-ის შემდეგ (pending/infected → 423).
 - UI: პასუხის ფორმაში 📎 (44px), შეტყობინებაში ფაილის ბმული ან „მოწმდება“. ახალ საუბარზეც (API) მიიღება.
 - ტესტი `MessageAttachmentTest`; სრული suite **312/312 passed**; Pint/PHPStan/types/build სუფთა.
+
+### 2026-10-03 — ბრაუზერის QA-ს მცდელობა და დარჩენილი blocker-ები
+
+- Chrome extension დაკავშირებულია, მაგრამ ლოკალური სერვერი (`php artisan serve`, localhost/127.0.0.1:8000) ბრაუზერიდან **ERR_CONNECTION_REFUSED**-ს აბრუნებს (ამავე მანქანიდან `curl` → 200). დასკვნა: ბრაუზერი/გარემო ერთ ქსელს არ იზიარებს, ამიტომ 360/390/768/1440 ვიზუალური QA **არ ჩატარებულა** — §17-ის ეს პუნქტი ღიაა. ალტერნატივა: QA production/staging URL-ზე deploy-ის შემდეგ.
+- Production deploy ჯერ მომხმარებლის მხარეს რჩება (`4fdd202..HEAD`): ახალი migrations, `config/security.php`, scheduler cron და queue worker (იხ. `docs/deployment-and-rollback.md`). Deploy-ის შემდეგ admin/director/accountant-ს 2FA-ს ჩართვა მოეთხოვება.
+- სხვა ღია blocker-ები (გარე/სკოლის გადაწყვეტილება): ბანკის რეალური adapter + ბუღალტრის UAT, ClamAV, CSP nonce, server-side PDF (ქართული font), retention ვადები, რეალური საფასური/grading policy/კომპეტენციების შინაარსი, device/session list (Redis sessions).
