@@ -5,6 +5,7 @@ namespace Tests\Feature\PickupConsent;
 use App\Domain\Academics\Models\GuardianLink;
 use App\Domain\Academics\Models\Student;
 use App\Domain\Governance\Models\AuditEvent;
+use App\Domain\PickupConsent\Actions\RemoveAuthorizedPickup;
 use App\Domain\PickupConsent\Models\AuthorizedPickup;
 use App\Domain\PickupConsent\Models\ConsentForm;
 use App\Domain\PickupConsent\Models\ConsentResponse;
@@ -127,6 +128,26 @@ class PickupCodesAndConsentHistoryTest extends TestCase
         $this->actingAs($f['otherGuardian'])->post("/portal/pickup/codes/{$model->id}/cancel")->assertForbidden();
         $this->actingAs($f['guardian'])->post("/portal/pickup/codes/{$model->id}/cancel")->assertRedirect();
         $this->actingAs($f['teacher'])->post('/portal/pickup-desk/verify', ['code' => $cancelled])->assertSessionHasErrors('code');
+
+        $this->assertSame(0, PickupEvent::query()->count());
+    }
+
+    public function test_codes_stop_working_when_the_authority_behind_them_is_revoked(): void
+    {
+        $f = $this->fixtures();
+
+        // The named person is removed after the code was issued.
+        $forPerson = $this->issue($f, $f['person']->id);
+        app(RemoveAuthorizedPickup::class)->handle($f['person']->fresh(), $f['guardian']);
+        $this->assertNotNull(PickupCode::query()->where('code_hash', PickupCode::hash($forPerson))->value('cancelled_at'));
+        $this->actingAs($f['teacher'])->post('/portal/pickup-desk/verify', ['code' => $forPerson])->assertSessionHasErrors('code');
+
+        // The issuing guardian loses the pickup right after issuing.
+        $ownCode = $this->issue($f);
+        GuardianLink::query()->where('user_id', $f['guardian']->id)->update(['can_pickup' => false]);
+        $this->actingAs($f['teacher'])->post('/portal/pickup-desk/verify', ['code' => $ownCode])->assertSessionHasErrors('code');
+        $this->assertNotNull(PickupCode::query()->where('code_hash', PickupCode::hash($ownCode))->value('cancelled_at'));
+        $this->assertTrue(AuditEvent::query()->where('action', 'pickup_code.rejected_revoked')->exists());
 
         $this->assertSame(0, PickupEvent::query()->count());
     }

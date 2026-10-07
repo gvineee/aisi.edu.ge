@@ -64,5 +64,18 @@ class ClubFeeInvoicingTest extends TestCase
         $invoice = Invoice::query()->firstOrFail();
         $this->actingAs($accountant)->post("/portal/finance/invoices/{$invoice->id}/void", ['reason' => 'შეცდომით'])->assertSessionHasNoErrors();
         $this->actingAs($accountant)->get('/portal/finance')->assertInertia(fn (Assert $page) => $page->has('staff.billableClubFees', 1));
+
+        // Billed again, then the child leaves and rejoins later (same row):
+        // the new enrollment is billable once more.
+        $this->actingAs($accountant)->post("/portal/finance/clubs/{$club->id}/invoice", ['student_id' => $child->id, 'due_on' => $due])->assertRedirect();
+        $this->actingAs($accountant)->get('/portal/finance')->assertInertia(fn (Assert $page) => $page->has('staff.billableClubFees', 0));
+        $this->travel(1)->minutes();
+        $enrollment->status = 'cancelled';
+        $enrollment->save();
+        $this->travel(1)->minutes();
+        $enrollment->status = ClubEnrollment::STATUS_ENROLLED;
+        $enrollment->save();
+        $this->actingAs($accountant)->get('/portal/finance')->assertInertia(fn (Assert $page) => $page->has('staff.billableClubFees', 1));
+        $this->actingAs($accountant)->post("/portal/finance/clubs/{$club->id}/invoice", ['student_id' => $child->id, 'due_on' => now('Asia/Tbilisi')->addWeek()->toDateString()])->assertSessionHasNoErrors();
     }
 }

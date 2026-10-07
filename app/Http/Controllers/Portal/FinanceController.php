@@ -140,7 +140,7 @@ class FinanceController extends Controller
                 ->where('student_id', $request->integer('student_id'))->where('status', ClubEnrollment::STATUS_ENROLLED)
                 ->lockForUpdate()->firstOrFail();
 
-            if ($this->enrollmentInvoiced($tenant->id, $enrollment->id)) {
+            if ($this->enrollmentInvoiced($tenant->id, $enrollment)) {
                 throw ValidationException::withMessages(['student_id' => 'ამ ჩარიცხვაზე ინვოისი უკვე გამოწერილია.']);
             }
 
@@ -318,13 +318,18 @@ class FinanceController extends Controller
      */
     private function billableClubFees(int $tenantId): array
     {
-        $invoiced = InvoiceItem::query()->where('tenant_id', $tenantId)->where('source_type', self::SOURCE_CLUB_ENROLLMENT)
-            ->whereHas('invoice', fn ($query) => $query->where('status', '!=', Invoice::STATUS_VOID))->pluck('source_id');
-
-        return ClubEnrollment::query()->where('tenant_id', $tenantId)->where('status', ClubEnrollment::STATUS_ENROLLED)
+        $enrollments = ClubEnrollment::query()->where('tenant_id', $tenantId)->where('status', ClubEnrollment::STATUS_ENROLLED)
             ->whereHas('club', fn ($query) => $query->where('fee_minor', '>', 0))
-            ->whereNotIn('id', $invoiced)
-            ->with('club', 'student')->orderBy('id')->limit(200)->get()
+            ->with('club', 'student')->orderBy('id')->limit(200)->get();
+
+        // Latest non-void invoice line per enrollment row.
+        $lastBilled = InvoiceItem::query()->where('tenant_id', $tenantId)->where('source_type', self::SOURCE_CLUB_ENROLLMENT)
+            ->whereIn('source_id', $enrollments->pluck('id'))
+            ->whereHas('invoice', fn ($query) => $query->where('status', '!=', Invoice::STATUS_VOID))
+            ->get()->groupBy('source_id')->map(fn ($lines) => $lines->max('created_at'));
+
+        return $enrollments
+            ->reject(fn (ClubEnrollment $e) => $this->billedSince($lastBilled->get($e->id), $e))
             ->map(fn (ClubEnrollment $e) => [
                 'clubId' => $e->club_id,
                 'clubName' => $e->club->name,
@@ -334,10 +339,25 @@ class FinanceController extends Controller
             ])->values()->all();
     }
 
-    private function enrollmentInvoiced(int $tenantId, int $enrollmentId): bool
+    /**
+     * A child who leaves and rejoins reuses the same enrollment row, so only
+     * a line billed since the (re)enrollment counts.
+     */
+    private function enrollmentInvoiced(int $tenantId, ClubEnrollment $enrollment): bool
     {
-        return InvoiceItem::query()->where('tenant_id', $tenantId)->where('source_type', self::SOURCE_CLUB_ENROLLMENT)->where('source_id', $enrollmentId)
-            ->whereHas('invoice', fn ($query) => $query->where('status', '!=', Invoice::STATUS_VOID))->exists();
+        $last = InvoiceItem::query()->where('tenant_id', $tenantId)->where('source_type', self::SOURCE_CLUB_ENROLLMENT)->where('source_id', $enrollment->id)
+            ->whereHas('invoice', fn ($query) => $query->where('status', '!=', Invoice::STATUS_VOID))->max('created_at');
+
+        return $this->billedSince($last, $enrollment);
+    }
+
+    private function billedSince(mixed $lastBilledAt, ClubEnrollment $enrollment): bool
+    {
+        if ($lastBilledAt === null) {
+            return false;
+        }
+
+        return $enrollment->updated_at === null || Carbon::parse($lastBilledAt)->gte($enrollment->updated_at);
     }
 
     private function isStaffRole(int $tenantId, User $user): bool

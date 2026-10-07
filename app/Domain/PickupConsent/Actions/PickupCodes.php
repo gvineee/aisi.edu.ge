@@ -2,11 +2,13 @@
 
 namespace App\Domain\PickupConsent\Actions;
 
+use App\Domain\Academics\Models\GuardianLink;
 use App\Domain\Academics\Models\Student;
 use App\Domain\Governance\AuditLogger;
 use App\Domain\PickupConsent\Models\AuthorizedPickup;
 use App\Domain\PickupConsent\Models\PickupCode;
 use App\Domain\PickupConsent\Models\PickupEvent;
+use App\Domain\Tenancy\Models\TenantMembership;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +69,26 @@ class PickupCodes
     }
 
     /**
+     * Whether the person and the issuing guardian's pickup right behind a
+     * code are still in force.
+     */
+    private function authorityStillValid(int $tenantId, PickupCode $pickupCode): bool
+    {
+        if ($pickupCode->authorized_pickup_id !== null) {
+            $personActive = AuthorizedPickup::query()->where('tenant_id', $tenantId)->whereKey($pickupCode->authorized_pickup_id)
+                ->where('student_id', $pickupCode->student_id)->where('is_active', true)->exists();
+
+            if (! $personActive) {
+                return false;
+            }
+        }
+
+        return GuardianLink::query()->where('tenant_id', $tenantId)->where('user_id', $pickupCode->issued_by)
+            ->where('student_id', $pickupCode->student_id)->where('is_active', true)->where('can_pickup', true)->exists()
+            && TenantMembership::userHasActiveRole($tenantId, $pickupCode->issued_by, TenantMembership::ROLE_GUARDIAN);
+    }
+
+    /**
      * Verifies and consumes a code in one atomic step. Returns only what
      * the staff member needs to release the child.
      *
@@ -76,19 +98,31 @@ class PickupCodes
     {
         $hash = PickupCode::hash($code);
 
-        return DB::transaction(function () use ($tenantId, $hash, $staff) {
+        // One generic message for unknown, used, cancelled, expired and
+        // revoked codes — no hint about which codes exist.
+        $invalid = ValidationException::withMessages(['code' => 'კოდი არასწორია, გამოყენებულია ან ვადაგასულია.']);
+
+        $result = DB::transaction(function () use ($tenantId, $hash, $staff, $invalid) {
             $pickupCode = PickupCode::query()
                 ->where('tenant_id', $tenantId)
                 ->where('code_hash', $hash)
                 ->lockForUpdate()
                 ->first();
 
-            // One generic message for unknown, used, cancelled and expired
-            // codes — no hint about which codes exist.
-            $invalid = ValidationException::withMessages(['code' => 'კოდი არასწორია, გამოყენებულია ან ვადაგასულია.']);
-
             if ($pickupCode === null || $pickupCode->consumed_at !== null || $pickupCode->cancelled_at !== null || $pickupCode->expires_at->isPast()) {
                 throw $invalid;
+            }
+
+            // Re-check the authority behind the code at release time: the
+            // named person must still be authorised, and the issuing
+            // guardian must still hold an active pickup-capable link and
+            // membership. A revoked authority cancels the code (committed,
+            // then rejected below with the same generic message).
+            if (! $this->authorityStillValid($tenantId, $pickupCode)) {
+                PickupCode::query()->whereKey($pickupCode->id)->whereNull('consumed_at')->update(['cancelled_at' => Carbon::now()]);
+                $this->auditLogger->record($tenantId, 'pickup_code.rejected_revoked', $pickupCode, $staff->id, ['student_id' => $pickupCode->student_id]);
+
+                return null;
             }
 
             $claimed = PickupCode::query()
@@ -132,6 +166,12 @@ class PickupCodes
                 'relationship' => $relationship,
             ];
         });
+
+        if ($result === null) {
+            throw $invalid;
+        }
+
+        return $result;
     }
 
     public function override(Student $student, User $staff, string $releasedTo, string $reason): PickupEvent

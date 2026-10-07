@@ -4,7 +4,9 @@ namespace App\Domain\PickupConsent\Actions;
 
 use App\Domain\Governance\AuditLogger;
 use App\Domain\PickupConsent\Models\AuthorizedPickup;
+use App\Domain\PickupConsent\Models\PickupCode;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 
 /**
  * Revokes a person's pickup authorization. Soft-revoke (is_active = false)
@@ -25,6 +27,10 @@ class RemoveAuthorizedPickup
 
         $pickup->is_active = false;
         $pickup->save();
+
+        // Codes already issued for this person stop working immediately.
+        PickupCode::query()->where('tenant_id', $pickup->tenant_id)->where('authorized_pickup_id', $pickup->id)
+            ->whereNull('consumed_at')->whereNull('cancelled_at')->update(['cancelled_at' => Carbon::now()]);
 
         $this->auditLogger->record($pickup->tenant_id, 'authorized_pickup.removed', $pickup, $guardian->id, [
             'student_id' => $pickup->student_id,

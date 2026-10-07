@@ -181,10 +181,18 @@ class ProcessPayments
         $payment->tenant_id = $intent->tenant_id;
         $payment->save();
 
-        $this->allocateLocked($payment, $invoice, min($payment->unallocated_minor, $invoice->outstandingMinor()), null);
+        // A payment for an invoice that was voided (or already settled) in
+        // the meantime is never applied to it: the money stays as account
+        // credit for the accountant to refund or reallocate.
+        $invoiceOpen = in_array($invoice->status, [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID], true);
 
-        $this->auditLogger->record($intent->tenant_id, 'payment.received', $payment, null, [
+        if ($invoiceOpen) {
+            $this->allocateLocked($payment, $invoice, min($payment->unallocated_minor, $invoice->outstandingMinor()), null);
+        }
+
+        $this->auditLogger->record($intent->tenant_id, $invoiceOpen ? 'payment.received' : 'payment.received_for_closed_invoice', $payment, null, [
             'invoice_id' => $invoice->id,
+            'invoice_status' => $invoice->status,
             'amount_minor' => $payment->amount_minor,
             'credit_minor' => $payment->unallocated_minor,
         ]);

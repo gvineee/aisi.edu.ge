@@ -10,6 +10,7 @@ use App\Domain\Finance\Models\PaymentIntent;
 use App\Domain\Finance\Models\ProviderWebhookEvent;
 use App\Domain\Finance\Models\Refund;
 use App\Domain\Finance\Providers\SandboxPaymentProvider;
+use App\Domain\Governance\Models\AuditEvent;
 use App\Domain\Tenancy\Models\FeatureEntitlement;
 use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantDomain;
@@ -156,6 +157,24 @@ class FinanceSandboxTest extends TestCase
 
         FeatureEntitlement::query()->where('feature', 'finance')->update(['is_enabled' => false]);
         $this->actingAs($f['payer'])->get('/portal/finance')->assertNotFound();
+    }
+
+    public function test_late_payment_for_a_voided_invoice_stays_credit_and_never_reopens_it(): void
+    {
+        $f = $this->fixtures();
+        $invoice = $this->issue($f);
+        $intent = $this->startIntent($f['payer'], $invoice);
+
+        $this->actingAs($f['accountant'])->post("/portal/finance/invoices/{$invoice->id}/void", ['reason' => 'გამოწერილია შეცდომით'])->assertSessionHasNoErrors();
+        $this->assertSame('void', $invoice->fresh()->status);
+
+        $this->actingAs($f['payer'])->post("/portal/finance/sandbox/{$intent->id}/simulate", ['outcome' => 'success'])->assertRedirect(route('finance.return', $intent));
+
+        $this->assertSame('void', $invoice->fresh()->status);
+        $this->assertSame(0, $invoice->fresh()->paid_minor);
+        $payment = Payment::query()->firstOrFail();
+        $this->assertSame(15000, $payment->unallocated_minor);
+        $this->assertTrue(AuditEvent::query()->where('action', 'payment.received_for_closed_invoice')->exists());
     }
 
     public function test_return_page_does_not_prove_payment_and_sandbox_success_pays_invoice(): void
