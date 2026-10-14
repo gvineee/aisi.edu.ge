@@ -107,5 +107,13 @@
 - 18 ახალი migration (grade scales → message attachments) რეალურ MySQL-ზე წარმატებით; `composer install` (dompdf), config/route/view cache, `queue:restart`, maintenance down/up.
 - Smoke (origin): საჯარო 10 გვერდი + `/login`, `/sitemap.xml`, `/robots.txt` → 200; `/dashboard`, `/platform-admin` → 302; საჯარო URL Cloudflare-ით → 200. Security headers და CSP report-only ჩანს. ლოგში ახალი შეცდომა არ არის.
 - Scheduler: `ais` მომხმარებლის crontab — `* * * * * umask 002 && cd … && php artisan schedule:run`.
-- **ღიაა:** queue worker — supervisor სერვერზე არ არის. `575a7fb` ამატებს `QUEUE_SCHEDULED_WORKER=true` რეჟიმს (scheduler ყოველ წუთში `queue:work --stop-when-empty`), მაგრამ production-ზე ჯერ არ არის ატვირთული/ჩართული. ასევე: nginx და Laravel ორივე აგზავნის `X-Frame-Options`/`Referrer-Policy`-ს (განსხვავებული მნიშვნელობით) — გასასუფთავებელია.
+- Queue worker: supervisor სერვერზე არ არის → `QUEUE_SCHEDULED_WORKER=true` (`.env`), scheduler ყოველ წუთში უშვებს `queue:work --stop-when-empty --max-time=50` (`575a7fb`). failed jobs: 0.
+- **ღიაა:** nginx და Laravel ორივე აგზავნის `X-Frame-Options`/`Referrer-Policy`-ს (განსხვავებული მნიშვნელობით) — გასასუფთავებელია.
 - Rollback: `files-20261014.tar.gz`-ის გახსნა + `db-20261014.sql.gz`-ის `clpctl db:import`, შემდეგ cache rebuild.
+
+## Deploy — 2026-10-14 (მე-2, `ddc18e3..08e5e0d`)
+
+- Backup: `_backups/files-20261014-2.tar.gz`, `_backups/env-20261014` (600).
+- migration `legacy_redirects`; `content:sync-redirects aisi --commit` → **30 redirect** (published import-ები; 44 გამოუქვეყნებელი/გამოტოვებული ჩანაწერი განზრახ 404-ზე რჩება) + ხელით `/online-library/ → /library`.
+- შემოწმებული live: ქართული percent-encoded, `/en/…`, `/ru/…` ძველი URL-ები → 301 ახალ სიახლეზე; `/wp-login.php` → 404; `/about` → 200, `canonical` + `hreflang` (`ka`, `x-default`) `https://aisi.edu.ge/...`-ზე.
+- ახალი გამოქვეყნებისას: `php artisan content:sync-redirects aisi --commit` (idempotent, manual-ს არ ცვლის); ცალკეული: `php artisan content:redirect aisi <ძველი> </ახალი>`.
