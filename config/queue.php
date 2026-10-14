@@ -126,4 +126,17 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scheduler-driven Worker
+    |--------------------------------------------------------------------------
+    |
+    | For hosts without supervisor (the CloudPanel site user has no root),
+    | the scheduler drains the queue every minute instead of a long-running
+    | queue:work process. Leave off where a real worker runs.
+    |
+    */
+
+    'scheduled_worker' => (bool) env('QUEUE_SCHEDULED_WORKER', false),
+
 ];
