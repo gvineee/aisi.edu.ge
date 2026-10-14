@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
+use App\Domain\Content\Models\Teacher;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Response;
@@ -27,7 +28,7 @@ class SitemapController extends Controller
             ->get(['slug', 'updated_at']);
 
         $pageUrls = $pages->map(fn (Page $page) => [
-            'loc' => $page->slug === 'home' ? url('/') : url('/'.$page->slug),
+            'loc' => $tenant->canonicalUrl($page->slug === 'home' ? '/' : '/'.$page->slug),
             'lastmod' => $page->updated_at?->toAtomString(),
         ]);
 
@@ -39,13 +40,27 @@ class SitemapController extends Controller
             ->get(['slug', 'updated_at']);
 
         $postUrls = $posts->map(fn (Post $post) => [
-            'loc' => url('/news/'.$post->slug),
+            'loc' => $tenant->canonicalUrl('/news/'.$post->slug),
             'lastmod' => $post->updated_at?->toAtomString(),
+        ]);
+
+        $teachers = Teacher::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', Teacher::STATUS_PUBLISHED)
+            ->orderBy('slug')
+            ->get(['slug', 'updated_at']);
+
+        $teacherUrls = $teachers->map(fn (Teacher $teacher) => [
+            'loc' => $tenant->canonicalUrl('/teachers/'.$teacher->slug),
+            'lastmod' => $teacher->updated_at?->toAtomString(),
         ]);
 
         $urls = $pageUrls
             ->concat($postUrls)
-            ->push(['loc' => url('/library'), 'lastmod' => null]);
+            ->push(['loc' => $tenant->canonicalUrl('/news'), 'lastmod' => null])
+            ->push(['loc' => $tenant->canonicalUrl('/library'), 'lastmod' => null])
+            ->push(['loc' => $tenant->canonicalUrl('/teachers'), 'lastmod' => null])
+            ->concat($teacherUrls);
 
         // The XML declaration is prepended here rather than living in the
         // Blade view: production runs with short_open_tag=On, where PHP lexes

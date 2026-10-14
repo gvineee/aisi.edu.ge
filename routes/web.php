@@ -434,3 +434,7 @@ require __DIR__.'/settings.php';
 Route::get('/{slug}', [PageController::class, 'show'])
     ->where('slug', '[a-z0-9-]+')
     ->name('page.show');
+
+// Unmatched URLs (e.g. percent-encoded Georgian WordPress slugs) still pass
+// through the web middleware, so RedirectLegacyUrls can 301 them.
+Route::fallback(fn () => abort(404));

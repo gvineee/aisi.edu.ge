@@ -242,4 +242,25 @@ class Tenant extends Model
             ->where('is_enabled', true)
             ->exists();
     }
+
+    /**
+     * Absolute URL on the school's primary verified domain, so a page reached
+     * through an alias (www., an old domain) still names one canonical URL.
+     * Falls back to the current request host when no primary is configured.
+     */
+    public function canonicalUrl(string $path): string
+    {
+        $primary = $this->domains()
+            ->where('is_primary', true)
+            // Same rule as TenantDomain::isPending(): never point at a domain
+            // that is still awaiting DNS verification.
+            ->where(fn ($query) => $query->whereNull('verification_token')->orWhereNotNull('verified_at'))
+            ->value('domain');
+
+        if (! is_string($primary) || $primary === request()->getHost()) {
+            return url($path);
+        }
+
+        return request()->getScheme().'://'.$primary.'/'.ltrim($path, '/');
+    }
 }
