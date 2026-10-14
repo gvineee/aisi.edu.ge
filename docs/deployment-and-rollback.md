@@ -100,3 +100,12 @@
 - **queue worker** (supervisor/CloudPanel): `php artisan queue:work --tries=3 --max-time=3600`; deploy-ის შემდეგ `php artisan queue:restart`. Queue-ზეა: ელფოსტის შეტყობინებები, კლასის განცხადებები (`DeliverMessageBroadcast`), ფაილის სკანირება, ჩანაცვლების/მოწვევის/შეხსენების წერილები.
 - **failed jobs:** `php artisan queue:failed` რეგულარულად; alert-ის აწყობა ღიაა (`docs/security-asvs-checklist.md`).
 - **MFA deploy-ის შემდეგ:** admin/director/accountant პორტალში შესვლისას 2FA-ს ჩართვას მოითხოვს (`ADMIN_MFA_REQUIRED`).
+
+## Deploy — 2026-10-14 (`4fdd202..ddc18e3`)
+
+- Backup: `/home/aisi/htdocs/_backups/` — `db-20261014.sql.gz` (59 ცხრილი, dump დასრულებული), `files-20261014.tar.gz` (გადაწერილი ფაილები), `robots-20261014.txt`. შენიშვნა: `clpctl db:export` მუშაობს `aisi` მომხმარებლით და `--file`-ს **აბსოლუტური** path სჭირდება.
+- 18 ახალი migration (grade scales → message attachments) რეალურ MySQL-ზე წარმატებით; `composer install` (dompdf), config/route/view cache, `queue:restart`, maintenance down/up.
+- Smoke (origin): საჯარო 10 გვერდი + `/login`, `/sitemap.xml`, `/robots.txt` → 200; `/dashboard`, `/platform-admin` → 302; საჯარო URL Cloudflare-ით → 200. Security headers და CSP report-only ჩანს. ლოგში ახალი შეცდომა არ არის.
+- Scheduler: `ais` მომხმარებლის crontab — `* * * * * umask 002 && cd … && php artisan schedule:run`.
+- **ღიაა:** queue worker — supervisor სერვერზე არ არის. `575a7fb` ამატებს `QUEUE_SCHEDULED_WORKER=true` რეჟიმს (scheduler ყოველ წუთში `queue:work --stop-when-empty`), მაგრამ production-ზე ჯერ არ არის ატვირთული/ჩართული. ასევე: nginx და Laravel ორივე აგზავნის `X-Frame-Options`/`Referrer-Policy`-ს (განსხვავებული მნიშვნელობით) — გასასუფთავებელია.
+- Rollback: `files-20261014.tar.gz`-ის გახსნა + `db-20261014.sql.gz`-ის `clpctl db:import`, შემდეგ cache rebuild.
