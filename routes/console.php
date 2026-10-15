@@ -11,6 +11,10 @@ Artisan::command('inspire', function () {
 // Requires the server cron: * * * * * php artisan schedule:run
 Schedule::command('appointments:send-reminders')->hourly()->withoutOverlapping();
 
+if (config('finance.auto_generate')) {
+    Schedule::command('finance:generate-fee-invoices')->dailyAt('07:00')->timezone('Asia/Tbilisi')->withoutOverlapping();
+}
+
 // No supervisor on the CloudPanel host: drain the queue from the scheduler.
 if (config('queue.scheduled_worker')) {
     Schedule::command('queue:work --stop-when-empty --tries=3 --max-time=50')

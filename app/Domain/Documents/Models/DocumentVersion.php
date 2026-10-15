@@ -3,6 +3,7 @@
 namespace App\Domain\Documents\Models;
 
 use App\Domain\Tenancy\Concerns\BelongsToTenant;
+use App\Domain\Uploads\ScanStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -35,9 +36,18 @@ class DocumentVersion extends Model
 
     public const SCAN_QUARANTINED = 'quarantined';
 
+    public const SCAN_PENDING = 'pending';
+
+    /**
+     * No scanning engine configured (NullFileScanner): servable only while
+     * the deployment explicitly allows unscanned files.
+     */
+    public const SCAN_SKIPPED = 'skipped';
+
     public function isUsable(): bool
     {
-        return $this->scan_state === self::SCAN_CLEAN;
+        return $this->scan_state === self::SCAN_CLEAN
+            || ($this->scan_state === self::SCAN_SKIPPED && ScanStatus::servable(ScanStatus::SKIPPED));
     }
 
     /**

@@ -17,12 +17,18 @@ use App\Http\Controllers\Portal\ConsentController;
 use App\Http\Controllers\Portal\CoverageController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
+use App\Http\Controllers\Portal\DocumentAccessGrantController;
 use App\Http\Controllers\Portal\DocumentApprovalController;
 use App\Http\Controllers\Portal\DocumentController;
+use App\Http\Controllers\Portal\DocumentLibraryController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\EnrollmentVerificationController;
+use App\Http\Controllers\Portal\FeePlanController;
+use App\Http\Controllers\Portal\FinanceBookkeepingController;
 use App\Http\Controllers\Portal\FinanceController;
+use App\Http\Controllers\Portal\FinanceReportController;
 use App\Http\Controllers\Portal\FinanceSandboxController;
+use App\Http\Controllers\Portal\FinanceSettingsController;
 use App\Http\Controllers\Portal\GradebookController;
 use App\Http\Controllers\Portal\HealthController;
 use App\Http\Controllers\Portal\LessonController;
@@ -165,7 +171,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('documents/director-worklist', DirectorDocumentWorklistController::class)->name('documents.director-worklist');
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
-    Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
+    // Workspaces, categories and access distribution (internal staff files).
+    Route::get('documents/settings', [DocumentLibraryController::class, 'index'])->name('documents.settings');
+    Route::post('documents/workspaces', [DocumentLibraryController::class, 'storeWorkspace'])->name('documents.workspaces.store');
+    Route::put('documents/workspaces/{documentWorkspace}', [DocumentLibraryController::class, 'updateWorkspace'])->name('documents.workspaces.update');
+    Route::post('documents/workspaces/{documentWorkspace}/archive', [DocumentLibraryController::class, 'archiveWorkspace'])->name('documents.workspaces.archive');
+    Route::post('documents/categories', [DocumentLibraryController::class, 'storeCategory'])->name('documents.categories.store');
+    Route::put('documents/categories/{documentCategory}', [DocumentLibraryController::class, 'updateCategory'])->name('documents.categories.update');
+    Route::post('documents/access-grants', [DocumentAccessGrantController::class, 'store'])->middleware('throttle:30,1')->name('documents.access-grants.store');
+    Route::delete('documents/access-grants/{documentAccessGrant}', [DocumentAccessGrantController::class, 'destroy'])->name('documents.access-grants.destroy');
+    Route::get('documents/{document}', [DocumentController::class, 'show'])->whereNumber('document')->name('documents.show');
+    Route::put('documents/{document}', [DocumentController::class, 'update'])->whereNumber('document')->name('documents.update');
+    Route::post('documents/{document}/archive', [DocumentController::class, 'archive'])->whereNumber('document')->name('documents.archive');
     Route::post('documents/{document}/versions', [DocumentVersionController::class, 'store'])->name('documents.versions.store');
     Route::get('documents/{document}/versions/{version}/download', [DocumentVersionController::class, 'download'])
         ->middleware('signed')
@@ -223,6 +240,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/academic-structure/school-classes', [AcademicStructureController::class, 'storeSchoolClass'])->name('academic-structure.school-classes.store');
     Route::post('portal/academic-structure/school-classes/{schoolClass}/homeroom', [AcademicStructureController::class, 'assignHomeroom'])->name('academic-structure.school-classes.homeroom');
     Route::post('portal/academic-structure/students', [AcademicStructureController::class, 'storeStudent'])->name('academic-structure.students.store');
+    Route::put('portal/academic-structure/students/{student}', [AcademicStructureController::class, 'updateStudent'])->name('academic-structure.students.update');
     // --- end Academic structure ---
 
     // --- Substitutions (admin/academic_manager/director) — the "teacher
@@ -392,6 +410,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('portal/finance/reconciliation', [FinanceController::class, 'reconciliation'])->name('finance.reconciliation');
         Route::post('portal/finance/clubs/{club}/invoice', [FinanceController::class, 'invoiceFromClub'])->name('finance.clubs.invoice');
 
+        // Bookkeeping without a bank API: manual payments, statements,
+        // fee plans/contracts, debtors, reminders, exports, PDFs.
+        Route::get('portal/finance/payments', [FinanceBookkeepingController::class, 'payments'])->name('finance.payments.index');
+        Route::post('portal/finance/payments', [FinanceBookkeepingController::class, 'storePayment'])->middleware('throttle:60,1')->name('finance.payments.store');
+        Route::post('portal/finance/payments/{payment}/reverse', [FinanceBookkeepingController::class, 'reverse'])->middleware('reauth')->name('finance.payments.reverse');
+        Route::post('portal/finance/payments/{payment}/manual-refund', [FinanceBookkeepingController::class, 'refundCredit'])->middleware('reauth')->name('finance.payments.manual-refund');
+        Route::get('portal/finance/payments/{payment}/receipt', [FinanceBookkeepingController::class, 'receiptPdf'])->middleware('throttle:30,1')->name('finance.payments.receipt');
+        Route::get('portal/finance/invoices/{invoice}/pdf', [FinanceBookkeepingController::class, 'invoicePdf'])->middleware('throttle:30,1')->name('finance.invoices.pdf');
+        Route::get('portal/finance/accounts/{student}', [FinanceBookkeepingController::class, 'statement'])->name('finance.accounts.show');
+        Route::get('portal/finance/exports/payments', [FinanceBookkeepingController::class, 'exportPayments'])->middleware('throttle:10,1')->name('finance.exports.payments');
+        Route::get('portal/finance/exports/invoices', [FinanceReportController::class, 'exportInvoices'])->middleware('throttle:10,1')->name('finance.exports.invoices');
+        Route::get('portal/finance/exports/debtors', [FinanceReportController::class, 'exportDebtors'])->middleware('throttle:10,1')->name('finance.exports.debtors');
+        Route::get('portal/finance/debtors', [FinanceReportController::class, 'debtors'])->name('finance.debtors');
+        Route::post('portal/finance/invoices/{invoice}/remind', [FinanceReportController::class, 'remind'])->middleware('throttle:30,1')->name('finance.invoices.remind');
+        Route::post('portal/finance/reminders/overdue', [FinanceReportController::class, 'remindOverdue'])->middleware('throttle:3,1')->name('finance.reminders.overdue');
+        Route::get('portal/finance/fee-plans', [FeePlanController::class, 'index'])->name('finance.fee-plans.index');
+        Route::post('portal/finance/fee-plans', [FeePlanController::class, 'store'])->name('finance.fee-plans.store');
+        Route::post('portal/finance/fee-plans/{feePlan}/toggle', [FeePlanController::class, 'toggle'])->name('finance.fee-plans.toggle');
+        Route::post('portal/finance/fee-plans/{feePlan}/contracts', [FeePlanController::class, 'storeContract'])->name('finance.fee-plans.contracts.store');
+        Route::post('portal/finance/fee-contracts/{contract}/end', [FeePlanController::class, 'endContract'])->name('finance.fee-contracts.end');
+        Route::post('portal/finance/fee-plans/generate', [FeePlanController::class, 'generate'])->middleware('throttle:10,1')->name('finance.fee-plans.generate');
+        Route::get('portal/finance/settings', [FinanceSettingsController::class, 'edit'])->name('finance.settings.edit');
+        Route::put('portal/finance/settings', [FinanceSettingsController::class, 'update'])->name('finance.settings.update');
+
         Route::get('portal/finance/sandbox/{intent}', [FinanceSandboxController::class, 'checkout'])->name('finance.sandbox.checkout');
         Route::post('portal/finance/sandbox/{intent}/simulate', [FinanceSandboxController::class, 'simulate'])->name('finance.sandbox.simulate');
         Route::post('portal/finance/sandbox/refunds/{refund}/confirm', [FinanceSandboxController::class, 'confirmRefund'])->name('finance.sandbox.refunds.confirm');
@@ -408,6 +450,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/members/invite', [MemberController::class, 'store'])->middleware('reauth')->name('members.invite');
     Route::post('portal/members/{membership}/revoke', [MemberController::class, 'revoke'])->middleware('reauth')->name('members.revoke');
     Route::delete('portal/members/invitations/{invitation}', [MemberController::class, 'cancelInvitation'])->name('members.invitations.cancel');
+    Route::post('portal/members/invitations/{invitation}/resend', [MemberController::class, 'resendInvitation'])->middleware('throttle:10,1')->name('members.invitations.resend');
+    Route::post('portal/members/{membership}/guardian-links', [MemberController::class, 'storeGuardianLink'])->middleware('reauth')->name('members.guardian-links.store');
+    Route::put('portal/members/guardian-links/{guardianLink}', [MemberController::class, 'updateGuardianLink'])->middleware('reauth')->name('members.guardian-links.update');
+    Route::post('portal/members/{membership}/teacher-assignments', [MemberController::class, 'storeTeacherAssignment'])->middleware('reauth')->name('members.teacher-assignments.store');
+    Route::delete('portal/members/teacher-assignments/{teacherAssignment}', [MemberController::class, 'destroyTeacherAssignment'])->middleware('reauth')->name('members.teacher-assignments.destroy');
     Route::post('portal/members/enrollment-requests/{enrollmentRequest}/decide', [MemberController::class, 'decideEnrollment'])->name('members.enrollment-requests.decide');
 });
 

@@ -6,6 +6,7 @@ use App\Domain\Academics\Actions\AssignHomeroomTeacher;
 use App\Domain\Academics\Actions\CreateAcademicYear;
 use App\Domain\Academics\Actions\CreateSchoolClass;
 use App\Domain\Academics\Actions\CreateStudent;
+use App\Domain\Academics\Actions\UpdateStudent;
 use App\Domain\Academics\Models\AcademicYear;
 use App\Domain\Academics\Models\SchoolClass;
 use App\Domain\Academics\Models\Student;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\StoreAcademicYearRequest;
 use App\Http\Requests\Portal\StoreSchoolClassRequest;
 use App\Http\Requests\Portal\StoreStudentRequest;
+use App\Http\Requests\Portal\UpdateStudentRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,7 +101,10 @@ class AcademicStructureController extends Controller
             'students' => $students->map(fn (Student $student) => [
                 'id' => $student->id,
                 'name' => $student->fullName(),
+                'firstName' => $student->first_name,
+                'lastName' => $student->last_name,
                 'nationalId' => $student->national_id,
+                'hasAccount' => $student->user_id !== null,
                 'schoolClassId' => $student->school_class_id,
                 'schoolClassName' => $student->schoolClass?->name,
                 'isActive' => $student->is_active,
@@ -169,6 +174,34 @@ class AcademicStructureController extends Controller
 
         return redirect()->route('academic-structure.index')->with('toast', [
             'type' => 'success', 'message' => 'მოსწავლე დაემატა.',
+        ]);
+    }
+
+    public function updateStudent(UpdateStudentRequest $request, CurrentTenant $currentTenant, Student $student, UpdateStudent $action): RedirectResponse
+    {
+        $tenant = $currentTenant->get();
+        abort_unless($student->tenant_id === $tenant->id, 404);
+        $actor = $request->user();
+        $this->authorizeAccess($tenant->id, $actor->id);
+
+        $schoolClass = SchoolClass::query()
+            ->where('tenant_id', $tenant->id)
+            ->find($request->integer('school_class_id'));
+
+        abort_if($schoolClass === null, 404);
+
+        $action->handle(
+            student: $student,
+            actor: $actor,
+            schoolClass: $schoolClass,
+            firstName: $request->string('first_name')->toString(),
+            lastName: $request->string('last_name')->toString(),
+            nationalId: $request->string('national_id')->toString() ?: null,
+            isActive: $request->boolean('is_active'),
+        );
+
+        return redirect()->route('academic-structure.index')->with('toast', [
+            'type' => 'success', 'message' => 'მოსწავლის მონაცემები შენახულია.',
         ]);
     }
 

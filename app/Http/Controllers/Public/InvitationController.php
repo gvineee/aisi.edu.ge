@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Domain\Tenancy\Actions\AcceptTenantInvitation;
 use App\Domain\Tenancy\Actions\InvitationAlreadyAcceptedException;
 use App\Domain\Tenancy\Actions\InvitationExpiredException;
+use App\Domain\Tenancy\Actions\StudentAccountConflictException;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantInvitation;
 use App\Domain\Tenancy\Models\TenantMembership;
@@ -91,6 +92,10 @@ class InvitationController extends Controller
             );
         } catch (InvitationAlreadyAcceptedException|InvitationExpiredException) {
             return redirect()->route('invitations.show', $token);
+        } catch (StudentAccountConflictException) {
+            return redirect()->route('invitations.show', $token)->withErrors([
+                'invitation' => 'ამ მოსწავლეს უკვე აქვს ანგარიში, ან ეს ელფოსტა სხვა მოსწავლეს უკავშირდება. მიმართეთ სკოლის ადმინისტრაციას.',
+            ]);
         }
 
         Auth::login($user);

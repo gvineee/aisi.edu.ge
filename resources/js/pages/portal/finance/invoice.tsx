@@ -1,19 +1,25 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download, Mail } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import SandboxBanner from '@/components/portal/sandbox-banner';
+import PaymentInstructions from '@/components/finance/payment-instructions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatDateTime, formatDay } from '@/lib/assessment';
+import { INVOICE_STATUS, type PaymentInfo } from '@/lib/finance';
 import { formatMoney, postWithToast } from '@/lib/operations';
 
 type Props = {
+    onlinePayments: boolean;
+    sandboxEnabled: boolean;
     isStaff: boolean;
+    paymentInfo: PaymentInfo;
     invoice: {
         id: number;
         number: string;
         status: string;
+        studentId: number;
         studentName: string | null;
         issuedOn: string;
         dueOn: string;
@@ -30,35 +36,45 @@ type Props = {
         }[];
         allocations: {
             paymentId: number;
+            receiptNumber: string | null;
             amountMinor: number;
+            reversed: boolean;
             createdAt: string | null;
         }[];
+        reminders: { sentAt: string; recipients: number }[];
     };
     payments: {
         id: number;
-        providerPaymentId: string;
+        receiptNumber: string;
+        methodLabel: string;
+        isManual: boolean;
+        reversed: boolean;
+        provider: string;
         amountMinor: number;
         creditMinor: number;
         refundedMinor: number;
         receivedAt: string;
-        refunds: { id: number; amountMinor: number; status: string }[];
+        refunds: { id: number; amountMinor: number; status: string; method: string | null }[];
     }[];
 };
 
-const STATUS: Record<string, string> = {
-    issued: 'გადასახდელი',
-    partially_paid: 'ნაწილობრივ გადახდილი',
-    paid: 'გადახდილი',
-    void: 'გაუქმებული',
-};
+const STATUS = INVOICE_STATUS;
 
 /**
  * One invoice: lines, what has been applied to it, and (for staff) the
- * account's payments with credit, refunds and the void action.
+ * account's payments with credit, refunds, reminders and the void action.
  */
-export default function FinanceInvoice({ isStaff, invoice, payments }: Props) {
+export default function FinanceInvoice({
+    onlinePayments,
+    sandboxEnabled,
+    isStaff,
+    paymentInfo,
+    invoice,
+    payments,
+}: Props) {
     const [voidReason, setVoidReason] = useState('');
     const money = (minor: number) => formatMoney(minor, invoice.currency);
+    const open = invoice.outstandingMinor > 0 && invoice.status !== 'void';
 
     return (
         <PortalLayout>
@@ -75,7 +91,55 @@ export default function FinanceInvoice({ isStaff, invoice, payments }: Props) {
                 {formatDay(invoice.issuedOn)} · ვადა {formatDay(invoice.dueOn)}{' '}
                 · {STATUS[invoice.status] ?? invoice.status}
             </p>
-            <SandboxBanner />
+            {onlinePayments && <SandboxBanner />}
+
+            <div className="mb-4 flex flex-wrap gap-2">
+                <a
+                    href={`/portal/finance/invoices/${invoice.id}/pdf`}
+                    className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-white px-4 text-sm ring-1 ring-slate-200 hover:bg-slate-50"
+                >
+                    <Download size={14} aria-hidden /> PDF
+                </a>
+                {isStaff && open && (
+                    <>
+                        <Link
+                            href={`/portal/finance/payments?student=${invoice.studentId}&invoice=${invoice.id}`}
+                            className="inline-flex min-h-11 items-center rounded-lg bg-slate-900 px-4 text-sm text-white hover:bg-slate-800"
+                        >
+                            გადახდის გატარება
+                        </Link>
+                        <Button
+                            variant="outline"
+                            onClick={() =>
+                                postWithToast(
+                                    `/portal/finance/invoices/${invoice.id}/remind`,
+                                    {},
+                                    'შეხსენება გაიგზავნა.',
+                                )
+                            }
+                        >
+                            <Mail size={16} /> შეხსენება მშობელს
+                        </Button>
+                    </>
+                )}
+                {isStaff && (
+                    <Link
+                        href={`/portal/finance/accounts/${invoice.studentId}`}
+                        className="inline-flex min-h-11 items-center rounded-lg bg-white px-4 text-sm ring-1 ring-slate-200 hover:bg-slate-50"
+                    >
+                        მოსწავლის ანგარიში
+                    </Link>
+                )}
+            </div>
+
+            {isStaff && invoice.reminders.length > 0 && (
+                <p className="mb-4 text-sm text-slate-500">
+                    შეხსენებები:{' '}
+                    {invoice.reminders
+                        .map((r) => `${formatDateTime(r.sentAt)} (${r.recipients})`)
+                        .join(', ')}
+                </p>
+            )}
 
             {invoice.voidReason && (
                 <p className="mb-4 rounded-lg bg-slate-100 p-3 text-sm">
@@ -159,7 +223,7 @@ export default function FinanceInvoice({ isStaff, invoice, payments }: Props) {
                 </table>
             </div>
 
-            {invoice.outstandingMinor > 0 && invoice.status !== 'void' && (
+            {open && onlinePayments && (
                 <Button
                     className="mb-6"
                     onClick={() =>
@@ -172,15 +236,26 @@ export default function FinanceInvoice({ isStaff, invoice, payments }: Props) {
                 </Button>
             )}
 
+            {open && !isStaff && !onlinePayments && (
+                <PaymentInstructions
+                    info={paymentInfo}
+                    purpose={`ინვოისი № ${invoice.number}, ${invoice.studentName ?? ''}`}
+                />
+            )}
+
             {invoice.allocations.length > 0 && (
                 <section className="mb-6">
                     <h2 className="mb-2 text-lg">ჩარიცხვები</h2>
                     <ul className="space-y-1 text-sm">
                         {invoice.allocations.map((a, i) => (
-                            <li key={i}>
-                                გადახდა #{a.paymentId} · {money(a.amountMinor)}{' '}
-                                ·{' '}
+                            <li
+                                key={i}
+                                className={a.reversed ? 'line-through opacity-60' : ''}
+                            >
+                                {a.receiptNumber ?? `#${a.paymentId}`} ·{' '}
+                                {money(a.amountMinor)} ·{' '}
                                 {a.createdAt ? formatDateTime(a.createdAt) : ''}
+                                {a.reversed && ' (გაუქმებული)'}
                             </li>
                         ))}
                     </ul>
@@ -206,12 +281,13 @@ export default function FinanceInvoice({ isStaff, invoice, payments }: Props) {
                                 key={p.id}
                                 className="space-y-2 rounded-xl bg-white p-4 text-sm ring-1 ring-slate-200"
                             >
-                                <p>
-                                    <strong>#{p.id}</strong> ·{' '}
-                                    {money(p.amountMinor)} ·{' '}
+                                <p className={p.reversed ? 'opacity-60' : ''}>
+                                    <strong>{p.receiptNumber}</strong> ·{' '}
+                                    {p.methodLabel} · {money(p.amountMinor)} ·{' '}
                                     {formatDateTime(p.receivedAt)} · კრედიტი{' '}
                                     {money(p.creditMinor)} · დაბრუნებული{' '}
                                     {money(p.refundedMinor)}
+                                    {p.reversed && ' · გაუქმებული'}
                                 </p>
                                 {p.refunds.map((r) => (
                                     <p
@@ -219,8 +295,12 @@ export default function FinanceInvoice({ isStaff, invoice, payments }: Props) {
                                         className="flex flex-wrap items-center gap-2 text-slate-600"
                                     >
                                         დაბრუნება {money(r.amountMinor)} ·{' '}
-                                        {r.status}
-                                        {r.status === 'requested' && (
+                                        {r.status === 'succeeded'
+                                            ? 'დასრულებული'
+                                            : r.status === 'failed'
+                                              ? 'ვერ შესრულდა'
+                                              : 'მოთხოვნილი'}
+                                        {r.status === 'requested' && sandboxEnabled && (
                                             <Button
                                                 size="sm"
                                                 variant="outline"
@@ -237,7 +317,7 @@ export default function FinanceInvoice({ isStaff, invoice, payments }: Props) {
                                         )}
                                     </p>
                                 ))}
-                                {p.creditMinor > 0 && (
+                                {p.creditMinor > 0 && !p.reversed && (
                                     <div className="flex flex-wrap gap-3">
                                         {invoice.outstandingMinor > 0 &&
                                             invoice.status !== 'void' && (
@@ -278,15 +358,29 @@ export default function FinanceInvoice({ isStaff, invoice, payments }: Props) {
                                             className="flex flex-wrap items-end gap-2"
                                             onSubmit={(e) => {
                                                 e.preventDefault();
+                                                // Manual payments are paid back by hand
+                                                // (bank transfer); provider payments
+                                                // go through the provider.
                                                 postWithToast(
-                                                    `/portal/finance/payments/${p.id}/refund`,
+                                                    p.isManual
+                                                        ? `/portal/finance/payments/${p.id}/manual-refund`
+                                                        : `/portal/finance/payments/${p.id}/refund`,
                                                     new FormData(
                                                         e.currentTarget,
                                                     ),
-                                                    'დაბრუნება მოთხოვნილია.',
+                                                    p.isManual
+                                                        ? 'დაბრუნება აღირიცხა.'
+                                                        : 'დაბრუნება მოთხოვნილია.',
                                                 );
                                             }}
                                         >
+                                            {p.isManual && (
+                                                <input
+                                                    type="hidden"
+                                                    name="method"
+                                                    value="bank_transfer"
+                                                />
+                                            )}
                                             <Input
                                                 aria-label="დასაბრუნებელი თანხა"
                                                 name="amount"

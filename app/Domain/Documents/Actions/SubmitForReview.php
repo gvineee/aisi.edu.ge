@@ -4,6 +4,7 @@ namespace App\Domain\Documents\Actions;
 
 use App\Domain\Documents\Models\ApprovalRequest;
 use App\Domain\Documents\Models\Document;
+use App\Domain\Documents\Models\DocumentVersion;
 use App\Domain\Governance\AuditLogger;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -18,11 +19,19 @@ class SubmitForReview
         return DB::transaction(function () use ($document, $initiator) {
             $document = Document::query()->where('id', $document->id)->lockForUpdate()->firstOrFail();
 
+            if (! $document->workspace->requiresApproval()) {
+                throw ValidationException::withMessages(['document' => 'ამ სივრცის ფაილებს დამტკიცება არ სჭირდება.']);
+            }
+
             if (! in_array($document->status, [Document::STATUS_DRAFT, Document::STATUS_CHANGES_REQUESTED], true)) {
                 throw ValidationException::withMessages(['document' => 'დოკუმენტი უკვე განხილვაშია ან დამტკიცებულია.']);
             }
 
             $version = $document->latestVersion;
+
+            if ($version !== null && $version->scan_state === DocumentVersion::SCAN_PENDING) {
+                throw ValidationException::withMessages(['document' => 'ფაილი ჯერ მოწმდება — სცადეთ ერთ წუთში.']);
+            }
 
             if ($version === null || ! $version->isUsable()) {
                 throw ValidationException::withMessages(['document' => 'აქტიური ვერსია ვერ მოიძებნა ან დაბლოკილია.']);

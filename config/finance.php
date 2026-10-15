@@ -8,6 +8,14 @@
 return [
     'currency' => 'GEL',
 
+    // Online card payment through a provider. Off until a real bank
+    // contract exists: families then pay by transfer/cash and the
+    // accountant records the payment by hand (no "pay" button is shown).
+    'online_payments' => (bool) env('FINANCE_ONLINE_PAYMENTS', false),
+
+    // Daily automatic invoicing from fee plans (scheduler).
+    'auto_generate' => (bool) env('FINANCE_AUTO_GENERATE', true),
+
     'providers' => [
         'sandbox' => [
             // Allows the "simulate payment" checkout screen. Keep false on any

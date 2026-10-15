@@ -1,11 +1,11 @@
-import { Head, router } from '@inertiajs/react';
-import { useState, type FormEvent } from 'react';
-import { CalendarRange, Plus } from 'lucide-react';
-import { toast } from 'sonner';
-import PortalLayout from '@/layouts/portal/portal-layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import * as AcademicStructureController from '@/actions/App/Http/Controllers/Portal/AcademicStructureController';
+import { Head, router } from "@inertiajs/react";
+import { useState, type FormEvent } from "react";
+import { CalendarRange, Plus } from "lucide-react";
+import { toast } from "sonner";
+import PortalLayout from "@/layouts/portal/portal-layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import * as AcademicStructureController from "@/actions/App/Http/Controllers/Portal/AcademicStructureController";
 
 type AcademicYear = {
     id: number;
@@ -29,7 +29,10 @@ type SchoolClassRow = {
 type StudentRow = {
     id: number;
     name: string;
+    firstName: string;
+    lastName: string;
     nationalId: string | null;
+    hasAccount: boolean;
     schoolClassId: number | null;
     schoolClassName: string | null;
     isActive: boolean;
@@ -58,6 +61,43 @@ export default function AcademicStructureIndex({
     const [showClassForm, setShowClassForm] = useState(false);
     const [showStudentForm, setShowStudentForm] = useState(false);
     const [sending, setSending] = useState(false);
+    const [editingStudent, setEditingStudent] = useState<number | null>(null);
+    const [studentFilter, setStudentFilter] = useState("");
+
+    const visibleStudents = students.filter(
+        (student) =>
+            studentFilter === "" ||
+            (studentFilter === "inactive"
+                ? !student.isActive
+                : String(student.schoolClassId) === studentFilter),
+    );
+
+    const submitStudentEdit = (
+        student: StudentRow,
+        event: FormEvent<HTMLFormElement>,
+    ) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        form.set("is_active", form.get("is_active") ? "1" : "0");
+        form.set("_method", "put");
+        setSending(true);
+        router.post(
+            AcademicStructureController.updateStudent.url(student.id),
+            form,
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success("მოსწავლის მონაცემები შენახულია.");
+                    setEditingStudent(null);
+                },
+                onError: (errors) =>
+                    toast.error(
+                        Object.values(errors)[0] ?? "შემოწმეთ ფორმის ველები.",
+                    ),
+                onFinish: () => setSending(false),
+            },
+        );
+    };
 
     const submitYear = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -65,11 +105,11 @@ export default function AcademicStructureIndex({
         setSending(true);
         router.post(AcademicStructureController.storeAcademicYear.url(), form, {
             onSuccess: () => {
-                toast.success('სასწავლო წელი დაემატა.');
+                toast.success("სასწავლო წელი დაემატა.");
                 setShowYearForm(false);
                 (event.target as HTMLFormElement).reset();
             },
-            onError: () => toast.error('შემოწმეთ ფორმის ველები.'),
+            onError: () => toast.error("შემოწმეთ ფორმის ველები."),
             onFinish: () => setSending(false),
         });
     };
@@ -80,11 +120,11 @@ export default function AcademicStructureIndex({
         setSending(true);
         router.post(AcademicStructureController.storeSchoolClass.url(), form, {
             onSuccess: () => {
-                toast.success('კლასი დაემატა.');
+                toast.success("კლასი დაემატა.");
                 setShowClassForm(false);
                 (event.target as HTMLFormElement).reset();
             },
-            onError: () => toast.error('შემოწმეთ ფორმის ველები.'),
+            onError: () => toast.error("შემოწმეთ ფორმის ველები."),
             onFinish: () => setSending(false),
         });
     };
@@ -95,11 +135,11 @@ export default function AcademicStructureIndex({
         setSending(true);
         router.post(AcademicStructureController.storeStudent.url(), form, {
             onSuccess: () => {
-                toast.success('მოსწავლე დაემატა.');
+                toast.success("მოსწავლე დაემატა.");
                 setShowStudentForm(false);
                 (event.target as HTMLFormElement).reset();
             },
-            onError: () => toast.error('შემოწმეთ ფორმის ველები.'),
+            onError: () => toast.error("შემოწმეთ ფორმის ველები."),
             onFinish: () => setSending(false),
         });
     };
@@ -194,7 +234,7 @@ export default function AcademicStructureIndex({
                                         )}
                                     </p>
                                     <p className="text-sm text-slate-500">
-                                        {year.startsOn} – {year.endsOn} ·{' '}
+                                        {year.startsOn} – {year.endsOn} ·{" "}
                                         {year.schoolClassesCount} კლასი
                                     </p>
                                 </div>
@@ -276,7 +316,7 @@ export default function AcademicStructureIndex({
                                         {schoolClass.name}
                                     </p>
                                     <p className="text-sm text-slate-500">
-                                        {schoolClass.academicYearName} ·{' '}
+                                        {schoolClass.academicYearName} ·{" "}
                                         {schoolClass.studentsCount} მოსწავლე
                                     </p>
                                 </div>
@@ -287,7 +327,7 @@ export default function AcademicStructureIndex({
                                     <select
                                         className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
                                         value={
-                                            schoolClass.homeroomTeacherId ?? ''
+                                            schoolClass.homeroomTeacherId ?? ""
                                         }
                                         onChange={(event) =>
                                             router.post(
@@ -300,11 +340,11 @@ export default function AcademicStructureIndex({
                                                     preserveScroll: true,
                                                     onSuccess: () =>
                                                         toast.success(
-                                                            'დამრიგებელი შენახულია.',
+                                                            "დამრიგებელი შენახულია.",
                                                         ),
                                                     onError: () =>
                                                         toast.error(
-                                                            'ვერ შეინახა.',
+                                                            "ვერ შეინახა.",
                                                         ),
                                                 },
                                             )
@@ -367,7 +407,7 @@ export default function AcademicStructureIndex({
                                         key={schoolClass.id}
                                         value={schoolClass.id}
                                     >
-                                        {schoolClass.name} ·{' '}
+                                        {schoolClass.name} ·{" "}
                                         {schoolClass.academicYearName}
                                     </option>
                                 ))}
@@ -399,30 +439,223 @@ export default function AcademicStructureIndex({
                     </form>
                 )}
 
-                {students.length === 0 ? (
+                {students.length > 0 && (
+                    <div className="mb-3 sm:w-72">
+                        <label
+                            htmlFor="student-filter"
+                            className="mb-1 block text-sm font-medium"
+                        >
+                            ფილტრი
+                        </label>
+                        <select
+                            id="student-filter"
+                            value={studentFilter}
+                            onChange={(event) =>
+                                setStudentFilter(event.target.value)
+                            }
+                            className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                        >
+                            <option value="">ყველა მოსწავლე</option>
+                            {schoolClasses.map((schoolClass) => (
+                                <option
+                                    key={schoolClass.id}
+                                    value={schoolClass.id}
+                                >
+                                    {schoolClass.name} ·{" "}
+                                    {schoolClass.academicYearName}
+                                </option>
+                            ))}
+                            <option value="inactive">არააქტიური</option>
+                        </select>
+                    </div>
+                )}
+
+                {visibleStudents.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center">
                         <p className="font-medium">
-                            მოსწავლე ჯერ არ არის დამატებული.
+                            {students.length === 0
+                                ? "მოსწავლე ჯერ არ არის დამატებული."
+                                : "ამ ფილტრით მოსწავლე ვერ მოიძებნა."}
                         </p>
                     </div>
                 ) : (
                     <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
-                        {students.map((student) => (
-                            <li
-                                key={student.id}
-                                className="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                                <div>
-                                    <p className="font-medium">
-                                        {student.name}
-                                    </p>
-                                    <p className="text-sm text-slate-500">
-                                        {student.schoolClassName ??
-                                            'კლასის გარეშე'}
-                                        {student.nationalId &&
-                                            ` · ${student.nationalId}`}
-                                    </p>
+                        {visibleStudents.map((student) => (
+                            <li key={student.id} className="p-4">
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="font-medium">
+                                            {student.name}
+                                            {!student.isActive && (
+                                                <span className="ml-2 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                                                    არააქტიური
+                                                </span>
+                                            )}
+                                        </p>
+                                        <p className="text-sm text-slate-500">
+                                            {student.schoolClassName ??
+                                                "კლასის გარეშე"}
+                                            {student.nationalId &&
+                                                ` · ${student.nationalId}`}
+                                            {student.hasAccount
+                                                ? " · პორტალის ანგარიშით"
+                                                : " · ანგარიშის გარეშე"}
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="min-h-11"
+                                        aria-expanded={
+                                            editingStudent === student.id
+                                        }
+                                        onClick={() =>
+                                            setEditingStudent(
+                                                editingStudent === student.id
+                                                    ? null
+                                                    : student.id,
+                                            )
+                                        }
+                                    >
+                                        რედაქტირება
+                                    </Button>
                                 </div>
+
+                                {editingStudent === student.id && (
+                                    <form
+                                        onSubmit={(event) =>
+                                            submitStudentEdit(student, event)
+                                        }
+                                        className="mt-4 space-y-4 rounded-lg border border-slate-200 p-4"
+                                    >
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label
+                                                    htmlFor={`st-first-${student.id}`}
+                                                    className="mb-1 block text-sm font-medium"
+                                                >
+                                                    სახელი
+                                                </label>
+                                                <Input
+                                                    id={`st-first-${student.id}`}
+                                                    name="first_name"
+                                                    defaultValue={
+                                                        student.firstName
+                                                    }
+                                                    required
+                                                    className="h-11"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    htmlFor={`st-last-${student.id}`}
+                                                    className="mb-1 block text-sm font-medium"
+                                                >
+                                                    გვარი
+                                                </label>
+                                                <Input
+                                                    id={`st-last-${student.id}`}
+                                                    name="last_name"
+                                                    defaultValue={
+                                                        student.lastName
+                                                    }
+                                                    required
+                                                    className="h-11"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    htmlFor={`st-nid-${student.id}`}
+                                                    className="mb-1 block text-sm font-medium"
+                                                >
+                                                    პირადი ნომერი
+                                                </label>
+                                                <Input
+                                                    id={`st-nid-${student.id}`}
+                                                    name="national_id"
+                                                    defaultValue={
+                                                        student.nationalId ?? ""
+                                                    }
+                                                    className="h-11"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    htmlFor={`st-class-${student.id}`}
+                                                    className="mb-1 block text-sm font-medium"
+                                                >
+                                                    კლასი (გადაყვანა)
+                                                </label>
+                                                <select
+                                                    id={`st-class-${student.id}`}
+                                                    name="school_class_id"
+                                                    required
+                                                    defaultValue={
+                                                        student.schoolClassId ??
+                                                        ""
+                                                    }
+                                                    className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                                >
+                                                    <option value="">
+                                                        აირჩიეთ კლასი
+                                                    </option>
+                                                    {schoolClasses.map(
+                                                        (schoolClass) => (
+                                                            <option
+                                                                key={
+                                                                    schoolClass.id
+                                                                }
+                                                                value={
+                                                                    schoolClass.id
+                                                                }
+                                                            >
+                                                                {
+                                                                    schoolClass.name
+                                                                }{" "}
+                                                                ·{" "}
+                                                                {
+                                                                    schoolClass.academicYearName
+                                                                }
+                                                            </option>
+                                                        ),
+                                                    )}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <label className="flex min-h-11 items-center gap-2 text-sm">
+                                            <input
+                                                type="checkbox"
+                                                name="is_active"
+                                                value="1"
+                                                defaultChecked={
+                                                    student.isActive
+                                                }
+                                                className="h-4 w-4"
+                                            />
+                                            აქტიური მოსწავლე (მოხსნისას მოსწავლე
+                                            სიებიდან ქრება, ისტორია ინახება)
+                                        </label>
+                                        <div className="flex flex-wrap gap-2">
+                                            <Button
+                                                type="submit"
+                                                disabled={sending}
+                                                className="min-h-11"
+                                            >
+                                                შენახვა
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="min-h-11"
+                                                onClick={() =>
+                                                    setEditingStudent(null)
+                                                }
+                                            >
+                                                გაუქმება
+                                            </Button>
+                                        </div>
+                                    </form>
+                                )}
                             </li>
                         ))}
                     </ul>

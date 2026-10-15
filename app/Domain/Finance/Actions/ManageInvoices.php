@@ -123,7 +123,7 @@ class ManageInvoices
                 return;
             }
 
-            if ($locked->paid_minor > 0 || $locked->allocations()->exists()) {
+            if ($locked->paid_minor > 0 || $locked->allocations()->whereNull('reversed_at')->exists()) {
                 throw ValidationException::withMessages(['reason' => 'გადახდილი ინვოისი ვერ გაუქმდება — საჭიროა კორექტირება ბუღალტერთან.']);
             }
 

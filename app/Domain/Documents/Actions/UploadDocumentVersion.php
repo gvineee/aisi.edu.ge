@@ -3,6 +3,7 @@
 namespace App\Domain\Documents\Actions;
 
 use App\Domain\Documents\DocumentFileStorage;
+use App\Domain\Documents\Jobs\ScanDocumentVersion;
 use App\Domain\Documents\Models\ApprovalRequest;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\DocumentVersion;
@@ -16,6 +17,9 @@ use Illuminate\Support\Facades\DB;
  * `published_version_id` — an already-approved published version stays
  * exactly as readers currently see it (spec §4: "დამტკიცებული v1-ის
  * შემდეგ v2 მონახაზის არსებობა მკითხველს v2-ს არ აჩვენებს").
+ *
+ * In a workspace that does not require approval there is no review step:
+ * the new upload simply becomes the current (published) version.
  *
  * If a pending approval request exists for the current latest version
  * (i.e. someone is mid-review), uploading a new version supersedes that
@@ -35,6 +39,7 @@ class UploadDocumentVersion
 
         return DB::transaction(function () use ($document, $author, $file) {
             $document = Document::query()->where('id', $document->id)->lockForUpdate()->firstOrFail();
+            $requiresApproval = $document->workspace->requiresApproval();
 
             if ($document->latest_version_id !== null) {
                 ApprovalRequest::query()
@@ -58,14 +63,23 @@ class UploadDocumentVersion
                 'mime' => $stored['mime'],
                 'size' => $stored['size'],
                 'author_id' => $author->id,
-                'scan_state' => DocumentVersion::SCAN_CLEAN,
+                'scan_state' => DocumentVersion::SCAN_PENDING,
             ]);
             $version->tenant_id = $document->tenant_id;
             $version->save();
 
             $document->latest_version_id = $version->id;
-            $document->status = Document::STATUS_DRAFT;
+
+            if ($requiresApproval) {
+                $document->status = Document::STATUS_DRAFT;
+            } else {
+                $document->status = Document::STATUS_ACTIVE;
+                $document->published_version_id = $version->id;
+            }
+
             $document->save();
+
+            ScanDocumentVersion::dispatch($document->tenant_id, $version->id);
 
             $this->auditLogger->record($document->tenant_id, 'document.version_uploaded', $document, $author->id, [
                 'version_id' => $version->id,

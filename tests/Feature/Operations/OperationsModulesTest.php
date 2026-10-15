@@ -162,7 +162,13 @@ class OperationsModulesTest extends TestCase
     public function test_meals_versioning_allergen_projection_and_opt_out_cutoff(): void
     {
         $f = $this->fixtures();
-        $day = Carbon::now('Asia/Tbilisi')->addDays(2)->toDateString();
+        // Two or more days ahead (before the opt-out cutoff) and on a school
+        // day: the weekly view lists Monday–Friday only.
+        $date = Carbon::now('Asia/Tbilisi')->addDays(2);
+        while ($date->isWeekend()) {
+            $date->addDay();
+        }
+        $day = $date->toDateString();
 
         $this->actingAs($f['manager'])->post('/portal/meals/menus', ['served_on' => $day, 'items' => [
             ['course' => 'სუპი', 'name' => 'ბოსტნეულის სუპი', 'allergens' => ['celery']],

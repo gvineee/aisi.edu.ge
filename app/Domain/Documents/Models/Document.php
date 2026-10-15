@@ -19,16 +19,22 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $tenant_id
  * @property int $workspace_id
+ * @property int|null $category_id
  * @property int $owner_id
  * @property int|null $responsible_id
  * @property string $type
  * @property string $title
+ * @property string|null $description
+ * @property Carbon|null $document_date
+ * @property Carbon|null $expires_on
+ * @property array<int, string>|null $tags
+ * @property string|null $visibility
  * @property int|null $latest_version_id
  * @property int|null $published_version_id
  * @property string $status
  * @property Carbon|null $archived_at
  */
-#[Fillable(['workspace_id', 'owner_id', 'responsible_id', 'type', 'title'])]
+#[Fillable(['workspace_id', 'category_id', 'owner_id', 'responsible_id', 'type', 'title', 'description', 'document_date', 'expires_on', 'tags'])]
 class Document extends Model
 {
     use BelongsToTenant;
@@ -41,11 +47,37 @@ class Document extends Model
 
     public const STATUS_APPROVED = 'approved';
 
+    /**
+     * A file in a workspace that does not require approval: every upload is
+     * immediately the current (published) version.
+     */
+    public const STATUS_ACTIVE = 'active';
+
+    public const VISIBILITY_WORKSPACE = 'workspace';
+
+    public const VISIBILITY_RESTRICTED = 'restricted';
+
     protected function casts(): array
     {
         return [
             'archived_at' => 'datetime',
+            'document_date' => 'date',
+            'expires_on' => 'date',
+            'tags' => 'array',
         ];
+    }
+
+    public function isRestricted(): bool
+    {
+        return $this->visibility === self::VISIBILITY_RESTRICTED;
+    }
+
+    /**
+     * @return BelongsTo<DocumentCategory, $this>
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(DocumentCategory::class, 'category_id');
     }
 
     /**

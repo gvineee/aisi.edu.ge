@@ -1,11 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, type FormEvent } from 'react';
-import { Plus, Receipt } from 'lucide-react';
+import { Download, Plus, Receipt, Search } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import SandboxBanner from '@/components/portal/sandbox-banner';
+import FinanceNav from '@/components/finance/finance-nav';
+import PaymentInstructions from '@/components/finance/payment-instructions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatDay } from '@/lib/assessment';
+import { INVOICE_STATUS, MONEY_PATTERN, type PaymentInfo } from '@/lib/finance';
 import { formatMoney, postWithToast } from '@/lib/operations';
 
 type InvoiceRow = {
@@ -22,9 +25,18 @@ type InvoiceRow = {
 };
 
 type Props = {
-    sandbox: boolean;
+    onlinePayments: boolean;
     needsMfa: boolean;
+    paymentInfo: PaymentInfo;
     staff: {
+        filters: { status: string | null; q: string };
+        summary: {
+            outstandingMinor: number;
+            overdueMinor: number;
+            collectedThisMonthMinor: number;
+            openInvoices: number;
+        };
+        hasPaymentInfo: boolean;
         invoices: InvoiceRow[];
         students: { id: number; name: string }[];
         billableClubFees: {
@@ -39,16 +51,36 @@ type Props = {
         id: number;
         name: string;
         creditMinor: number;
+        outstandingMinor: number;
+        overdueMinor: number;
         invoices: InvoiceRow[];
+        payments: {
+            id: number;
+            receiptNumber: string;
+            receivedOn: string;
+            methodLabel: string;
+            amountMinor: number;
+            currency: string;
+        }[];
     }[];
 };
 
-const STATUS_LABELS: Record<string, string> = {
-    issued: 'გადასახდელი',
-    partially_paid: 'ნაწილობრივ გადახდილი',
-    paid: 'გადახდილი',
-    void: 'გაუქმებული',
-};
+const FILTERS: { value: string; label: string }[] = [
+    { value: '', label: 'ყველა' },
+    { value: 'overdue', label: 'ვადაგადაცილებული' },
+    { value: 'issued', label: 'გადასახდელი' },
+    { value: 'partially_paid', label: 'ნაწილობრივ' },
+    { value: 'paid', label: 'გადახდილი' },
+    { value: 'void', label: 'გაუქმებული' },
+];
+
+function isOverdue(inv: InvoiceRow): boolean {
+    const today = new Date().toISOString().slice(0, 10);
+
+    return (
+        inv.outstandingMinor > 0 && inv.status !== 'void' && inv.dueOn < today
+    );
+}
 
 function InvoiceList({
     invoices,
@@ -80,8 +112,13 @@ function InvoiceList({
                             : ''}{' '}
                         · ვადა {formatDay(inv.dueOn)}
                         <span className="block text-slate-500">
-                            {STATUS_LABELS[inv.status] ?? inv.status} ·{' '}
-                            {formatMoney(inv.paidMinor, inv.currency)} /{' '}
+                            {INVOICE_STATUS[inv.status] ?? inv.status}
+                            {isOverdue(inv) && (
+                                <span className="ml-1 font-medium text-red-700">
+                                    · ვადაგადაცილებული
+                                </span>
+                            )}{' '}
+                            · {formatMoney(inv.paidMinor, inv.currency)} /{' '}
                             {formatMoney(inv.totalMinor, inv.currency)}
                         </span>
                     </Link>
@@ -109,16 +146,44 @@ function InvoiceList({
     );
 }
 
+function Stat({
+    label,
+    value,
+    tone = 'default',
+}: {
+    label: string;
+    value: string;
+    tone?: 'default' | 'warn';
+}) {
+    return (
+        <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
+            <p className="text-xs text-slate-500">{label}</p>
+            <p
+                className={`mt-1 text-xl font-semibold ${tone === 'warn' ? 'text-red-700' : ''}`}
+            >
+                {value}
+            </p>
+        </div>
+    );
+}
+
 /**
- * Finance overview. Guardians see only children whose link includes the
- * financial permission; staff need 2FA. Amounts are integer tetri,
- * displayed as GEL.
+ * Finance overview. Staff (2FA) get the invoice register and the
+ * bookkeeping sections; guardians see each child's balance, invoices,
+ * payments and how to pay. Amounts are integer tetri shown as GEL.
  */
-export default function FinanceIndex({ needsMfa, staff, children }: Props) {
+export default function FinanceIndex({
+    onlinePayments,
+    needsMfa,
+    paymentInfo,
+    staff,
+    children,
+}: Props) {
     const [showForm, setShowForm] = useState(false);
     const [items, setItems] = useState([
         { description: '', quantity: '1', unit: '' },
     ]);
+    const [search, setSearch] = useState(staff?.filters.q ?? '');
 
     const issue = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -128,11 +193,26 @@ export default function FinanceIndex({ needsMfa, staff, children }: Props) {
             {
                 student_id: form.get('student_id'),
                 due_on: form.get('due_on'),
-                items,
+                items: items.map((item) => ({
+                    ...item,
+                    unit: item.unit.replace(',', '.'),
+                })),
             },
             'ინვოისი გამოიწერა.',
         );
     };
+
+    const filter = (status: string | null, q: string) =>
+        router.get(
+            '/portal/finance',
+            { ...(status ? { status } : {}), ...(q ? { q } : {}) },
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+
+    const updateItem = (index: number, key: 'description' | 'quantity' | 'unit', value: string) =>
+        setItems((all) =>
+            all.map((x, j) => (j === index ? { ...x, [key]: value } : x)),
+        );
 
     return (
         <PortalLayout>
@@ -142,10 +222,10 @@ export default function FinanceIndex({ needsMfa, staff, children }: Props) {
                 {staff && (
                     <div className="flex flex-wrap gap-2">
                         <Link
-                            href="/portal/finance/reconciliation"
-                            className="inline-flex min-h-11 items-center rounded-lg bg-white px-4 text-sm ring-1 ring-slate-200 hover:bg-slate-50"
+                            href="/portal/finance/payments"
+                            className="inline-flex min-h-11 items-center rounded-lg bg-slate-900 px-4 text-sm text-white hover:bg-slate-800"
                         >
-                            შეჯერება
+                            გადახდის გატარება
                         </Link>
                         <Button
                             variant="outline"
@@ -157,7 +237,8 @@ export default function FinanceIndex({ needsMfa, staff, children }: Props) {
                     </div>
                 )}
             </div>
-            <SandboxBanner />
+            {staff && <FinanceNav current="/portal/finance" />}
+            {onlinePayments && <SandboxBanner />}
 
             {needsMfa && (
                 <p
@@ -173,11 +254,54 @@ export default function FinanceIndex({ needsMfa, staff, children }: Props) {
                 </p>
             )}
 
+            {staff && (
+                <>
+                    <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                        <Stat
+                            label="ღია დავალიანება"
+                            value={formatMoney(staff.summary.outstandingMinor)}
+                        />
+                        <Stat
+                            label="ვადაგადაცილებული"
+                            value={formatMoney(staff.summary.overdueMinor)}
+                            tone={
+                                staff.summary.overdueMinor > 0
+                                    ? 'warn'
+                                    : 'default'
+                            }
+                        />
+                        <Stat
+                            label="მიღებული ამ თვეში"
+                            value={formatMoney(
+                                staff.summary.collectedThisMonthMinor,
+                            )}
+                        />
+                        <Stat
+                            label="ღია ინვოისები"
+                            value={String(staff.summary.openInvoices)}
+                        />
+                    </div>
+                    {!staff.hasPaymentInfo && (
+                        <p className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            მშობლებს გადახდის რეკვიზიტები ჯერ არ უჩანთ —{' '}
+                            <Link
+                                href="/portal/finance/settings"
+                                className="underline"
+                            >
+                                შეავსეთ რეკვიზიტები
+                            </Link>
+                            .
+                        </p>
+                    )}
+                </>
+            )}
+
             {staff && showForm && (
                 <form
                     onSubmit={issue}
                     className="mb-6 space-y-3 rounded-xl bg-white p-5 ring-1 ring-slate-200"
                 >
+                    <h2 className="text-lg">ახალი ინვოისი</h2>
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div>
                             <label
@@ -221,63 +345,34 @@ export default function FinanceIndex({ needsMfa, staff, children }: Props) {
                         {items.map((item, i) => (
                             <div
                                 key={i}
-                                className="grid grid-cols-[1fr_5rem_7rem] gap-2"
+                                className="grid grid-cols-[1fr_4.5rem_6.5rem] gap-2"
                             >
                                 <Input
-                                    aria-label="აღწერა"
+                                    aria-label={`აღწერა ${i + 1}`}
                                     value={item.description}
                                     required
                                     onChange={(e) =>
-                                        setItems((all) =>
-                                            all.map((x, j) =>
-                                                j === i
-                                                    ? {
-                                                          ...x,
-                                                          description:
-                                                              e.target.value,
-                                                      }
-                                                    : x,
-                                            ),
-                                        )
+                                        updateItem(i, 'description', e.target.value)
                                     }
                                     placeholder="აღწერა"
                                 />
                                 <Input
-                                    aria-label="რაოდენობა"
+                                    aria-label={`რაოდენობა ${i + 1}`}
                                     type="number"
                                     min={1}
                                     value={item.quantity}
                                     onChange={(e) =>
-                                        setItems((all) =>
-                                            all.map((x, j) =>
-                                                j === i
-                                                    ? {
-                                                          ...x,
-                                                          quantity:
-                                                              e.target.value,
-                                                      }
-                                                    : x,
-                                            ),
-                                        )
+                                        updateItem(i, 'quantity', e.target.value)
                                     }
                                 />
                                 <Input
-                                    aria-label="ერთეულის ფასი"
+                                    aria-label={`ერთეულის ფასი ${i + 1}`}
                                     inputMode="decimal"
-                                    pattern="\d+(\.\d{1,2})?"
+                                    pattern={MONEY_PATTERN}
                                     required
                                     value={item.unit}
                                     onChange={(e) =>
-                                        setItems((all) =>
-                                            all.map((x, j) =>
-                                                j === i
-                                                    ? {
-                                                          ...x,
-                                                          unit: e.target.value,
-                                                      }
-                                                    : x,
-                                            ),
-                                        )
+                                        updateItem(i, 'unit', e.target.value)
                                     }
                                     placeholder="0.00"
                                 />
@@ -301,26 +396,94 @@ export default function FinanceIndex({ needsMfa, staff, children }: Props) {
                             + პოზიცია
                         </Button>
                     </fieldset>
+                    <p className="text-xs text-slate-500">
+                        მშობელს, რომელსაც ფინანსებზე წვდომა და შეტყობინებები
+                        აქვს, ელფოსტით ეცნობება.
+                    </p>
                     <Button type="submit">გამოწერა</Button>
                 </form>
+            )}
+
+            {children.length > 0 && (
+                <PaymentInstructions info={paymentInfo} />
             )}
 
             {children.map((child) => (
                 <section
                     key={child.id}
                     className="mb-6 rounded-xl bg-white p-5 ring-1 ring-slate-200"
+                    aria-labelledby={`child-${child.id}`}
                 >
-                    <h2 className="text-lg">{child.name}</h2>
-                    {child.creditMinor > 0 && (
-                        <p className="text-sm text-emerald-800">
-                            ანგარიშის კრედიტი: {formatMoney(child.creditMinor)}
-                        </p>
-                    )}
+                    <h2 id={`child-${child.id}`} className="text-lg">
+                        {child.name}
+                    </h2>
+                    <dl className="my-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                        <div>
+                            <dt className="text-slate-500">გადასახდელი</dt>
+                            <dd className="text-lg font-semibold">
+                                {formatMoney(child.outstandingMinor)}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-slate-500">ვადაგადაცილებული</dt>
+                            <dd
+                                className={`text-lg font-semibold ${child.overdueMinor > 0 ? 'text-red-700' : ''}`}
+                            >
+                                {formatMoney(child.overdueMinor)}
+                            </dd>
+                        </div>
+                        {child.creditMinor > 0 && (
+                            <div>
+                                <dt className="text-slate-500">
+                                    ზედმეტად გადახდილი (კრედიტი)
+                                </dt>
+                                <dd className="text-lg font-semibold text-emerald-800">
+                                    {formatMoney(child.creditMinor)}
+                                </dd>
+                            </div>
+                        )}
+                    </dl>
+                    <h3 className="mt-4 text-base font-medium">ინვოისები</h3>
                     <InvoiceList
                         invoices={child.invoices}
                         showStudent={false}
-                        payable
+                        payable={onlinePayments}
                     />
+                    <h3 className="mt-4 text-base font-medium">
+                        მიღებული გადახდები
+                    </h3>
+                    {child.payments.length === 0 ? (
+                        <p className="text-sm text-slate-500">
+                            გადახდა ჯერ არ აღრიცხულა.
+                        </p>
+                    ) : (
+                        <ul className="divide-y divide-slate-100 text-sm">
+                            {child.payments.map((p) => (
+                                <li
+                                    key={p.id}
+                                    className="flex flex-wrap items-center justify-between gap-2 py-2"
+                                >
+                                    <span>
+                                        {formatDay(p.receivedOn)} ·{' '}
+                                        {p.methodLabel} ·{' '}
+                                        <strong>
+                                            {formatMoney(
+                                                p.amountMinor,
+                                                p.currency,
+                                            )}
+                                        </strong>
+                                    </span>
+                                    <a
+                                        href={`/portal/finance/payments/${p.id}/receipt`}
+                                        className="inline-flex min-h-11 items-center gap-1 text-slate-700 underline-offset-4 hover:underline"
+                                    >
+                                        <Download size={14} aria-hidden />{' '}
+                                        ქვითარი {p.receiptNumber}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </section>
             ))}
 
@@ -392,12 +555,61 @@ export default function FinanceIndex({ needsMfa, staff, children }: Props) {
                     className="rounded-xl bg-white p-5 ring-1 ring-slate-200"
                     aria-labelledby="all-invoices"
                 >
-                    <h2
-                        id="all-invoices"
-                        className="mb-2 flex items-center gap-2 text-lg"
-                    >
-                        <Receipt size={18} aria-hidden /> ინვოისები
-                    </h2>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <h2
+                            id="all-invoices"
+                            className="flex items-center gap-2 text-lg"
+                        >
+                            <Receipt size={18} aria-hidden /> ინვოისები
+                        </h2>
+                        <a
+                            href="/portal/finance/exports/invoices"
+                            className="inline-flex min-h-11 items-center gap-1 text-sm text-slate-700 underline-offset-4 hover:underline"
+                        >
+                            <Download size={14} aria-hidden /> Excel (ამ თვის)
+                        </a>
+                    </div>
+                    <div className="mb-3 flex flex-wrap gap-2">
+                        <label htmlFor="inv-filter" className="sr-only">
+                            სტატუსი
+                        </label>
+                        <select
+                            id="inv-filter"
+                            value={staff.filters.status ?? ''}
+                            onChange={(e) =>
+                                filter(e.target.value || null, search)
+                            }
+                            className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                        >
+                            {FILTERS.map((f) => (
+                                <option key={f.value} value={f.value}>
+                                    {f.label}
+                                </option>
+                            ))}
+                        </select>
+                        <form
+                            role="search"
+                            className="flex min-w-0 flex-1 gap-2"
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                filter(staff.filters.status, search);
+                            }}
+                        >
+                            <label htmlFor="inv-search" className="sr-only">
+                                ძებნა ნომრით ან მოსწავლით
+                            </label>
+                            <Input
+                                id="inv-search"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="ნომერი ან მოსწავლე"
+                                className="min-w-0 flex-1"
+                            />
+                            <Button type="submit" variant="outline" aria-label="ძებნა">
+                                <Search size={16} />
+                            </Button>
+                        </form>
+                    </div>
                     <InvoiceList
                         invoices={staff.invoices}
                         showStudent

@@ -11,6 +11,7 @@ use App\Domain\Documents\Models\ApprovalRequest;
 use App\Domain\Portal\Actions\BuildDailyActionFeed;
 use App\Domain\Portfolio\Models\PortfolioItem;
 use App\Domain\Tenancy\CurrentTenant;
+use App\Domain\Tenancy\Models\FeatureEntitlement;
 use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Domain\Tenancy\PortalContext;
@@ -19,6 +20,7 @@ use App\Domain\Timetable\Models\Lesson;
 use App\Domain\Timetable\Models\SubstitutionAssignment;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -39,7 +41,7 @@ class DashboardController extends Controller
         PortalContext $portalContext,
         ResolveDailyLessons $resolveDailyLessons,
         BuildDailyActionFeed $buildDailyActionFeed,
-    ): Response {
+    ): Response|RedirectResponse {
         $tenant = $currentTenant->get();
         $user = $request->user();
         $today = Carbon::now($tenant->timezone);
@@ -59,6 +61,12 @@ class DashboardController extends Controller
             TenantMembership::ROLE_STUDENT => $this->renderStudent($tenant, $user, $today, $resolveDailyLessons, $actionItems, $recentNews),
             TenantMembership::ROLE_DIRECTOR => $this->renderDirector($tenant, $actionItems, $recentNews),
             TenantMembership::ROLE_ADMIN => $this->renderAdmin($tenant, $actionItems, $recentNews),
+            // Roles without a dashboard of their own start on their work screen.
+            TenantMembership::ROLE_ACCOUNTANT => FeatureEntitlement::isEnabled($tenant->id, FeatureEntitlement::FEATURE_FINANCE)
+                ? redirect()->route('finance.index')
+                : Inertia::render('portal/no-role', ['name' => $user->name]),
+            TenantMembership::ROLE_ACADEMIC_MANAGER => redirect()->route('academic-structure.index'),
+            TenantMembership::ROLE_EDITOR => redirect()->route('cms.pages.index'),
             default => Inertia::render('portal/no-role', ['name' => $user->name]),
         };
     }

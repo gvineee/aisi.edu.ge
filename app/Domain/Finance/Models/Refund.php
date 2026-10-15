@@ -19,8 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $provider_refund_id
  * @property string $status
  * @property int $requested_by
+ * @property string|null $method set for a refund paid out by hand (cash / transfer)
  */
-#[Fillable(['payment_id', 'amount_minor', 'currency', 'reason', 'provider_refund_id', 'status', 'requested_by'])]
+#[Fillable(['payment_id', 'amount_minor', 'currency', 'reason', 'provider_refund_id', 'status', 'requested_by', 'method'])]
 class Refund extends Model
 {
     use BelongsToTenant;

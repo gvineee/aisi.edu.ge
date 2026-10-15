@@ -45,6 +45,21 @@ class Invoice extends Model
         return max(0, $this->total_minor - $this->paid_minor);
     }
 
+    public function isOpen(): bool
+    {
+        return in_array($this->status, [self::STATUS_ISSUED, self::STATUS_PARTIALLY_PAID], true);
+    }
+
+    /** Status implied by paid_minor; never used for a void invoice. */
+    public function statusFromPaid(): string
+    {
+        return match (true) {
+            $this->paid_minor <= 0 => self::STATUS_ISSUED,
+            $this->paid_minor < $this->total_minor => self::STATUS_PARTIALLY_PAID,
+            default => self::STATUS_PAID,
+        };
+    }
+
     protected function casts(): array
     {
         return [

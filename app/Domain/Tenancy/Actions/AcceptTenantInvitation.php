@@ -3,6 +3,7 @@
 namespace App\Domain\Tenancy\Actions;
 
 use App\Domain\Academics\Models\GuardianLink;
+use App\Domain\Academics\Models\Student;
 use App\Domain\Academics\Models\TeacherAssignment;
 use App\Domain\Governance\AuditLogger;
 use App\Domain\Tenancy\Models\TenantInvitation;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  * Accepts a TenantInvitation: atomically creates the invitee's User (only
  * if none exists yet for that email), a TenantMembership for the invited
  * role, and — for a guardian or teacher invite — the matching GuardianLink
- * or TeacherAssignment. Row-locked so a token can never be accepted twice
+ * or TeacherAssignment; for a student invite, the roster row's user_id. Row-locked so a token can never be accepted twice
  * (same pattern as Documents' DecideApproval / Portfolio's
  * DecidePortfolioItem).
  *
@@ -85,6 +86,10 @@ class AcceptTenantInvitation
                 $this->applyTeacherAssignment($locked, $user);
             }
 
+            if ($locked->role === TenantMembership::ROLE_STUDENT && $locked->student_id !== null) {
+                $this->applyStudentAccount($locked, $user);
+            }
+
             $locked->accepted_at = Carbon::now();
             $locked->save();
 
@@ -116,6 +121,45 @@ class AcceptTenantInvitation
         $link->can_receive_notifications = $invitation->can_receive_notifications;
         $link->is_active = true;
         $link->save();
+    }
+
+    /**
+     * Binds the roster row to the accepting account. A student row belongs
+     * to at most one account and an account to at most one student per
+     * school (unique tenant_id+user_id); either conflict aborts the whole
+     * acceptance instead of silently re-pointing someone else's record.
+     */
+    private function applyStudentAccount(TenantInvitation $invitation, User $user): void
+    {
+        $student = Student::query()
+            ->where('tenant_id', $invitation->tenant_id)
+            ->whereKey($invitation->student_id)
+            ->lockForUpdate()
+            ->first();
+
+        if ($student === null) {
+            throw new StudentAccountConflictException("Student {$invitation->student_id} no longer exists.");
+        }
+
+        if ($student->user_id === $user->id) {
+            return;
+        }
+
+        $otherStudentLinked = Student::query()
+            ->where('tenant_id', $invitation->tenant_id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if ($student->user_id !== null || $otherStudentLinked) {
+            throw new StudentAccountConflictException("Student {$student->id} or user {$user->id} is already linked.");
+        }
+
+        $student->user_id = $user->id;
+        $student->save();
+
+        $this->auditLogger->record($invitation->tenant_id, 'student.account_linked', $student, $user->id, [
+            'invitation_id' => $invitation->id,
+        ]);
     }
 
     private function applyTeacherAssignment(TenantInvitation $invitation, User $user): void

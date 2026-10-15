@@ -1,17 +1,17 @@
-import { Head, router } from '@inertiajs/react';
-import { useState, type FormEvent } from 'react';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import * as InvitationController from '@/actions/App/Http/Controllers/Public/InvitationController';
+import { Head, router } from "@inertiajs/react";
+import { useState, type FormEvent } from "react";
+import InputError from "@/components/input-error";
+import PasswordInput from "@/components/password-input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import * as InvitationController from "@/actions/App/Http/Controllers/Public/InvitationController";
 
 type Props =
-    | { status: 'accepted' | 'expired' }
+    | { status: "accepted" | "expired" }
     | {
-          status: 'valid';
+          status: "valid";
           token: string;
           email: string;
           roleLabel: string;
@@ -20,16 +20,17 @@ type Props =
           passwordRules: string;
       };
 
-const STATUS_MESSAGES: Record<'accepted' | 'expired', string> = {
-    accepted: 'ეს მოწვევა უკვე გამოყენებულია.',
-    expired: 'ამ მოწვევის ვადა ამოიწურა. მიმართეთ ადმინისტრაციას ახალი მოწვევისთვის.',
+const STATUS_MESSAGES: Record<"accepted" | "expired", string> = {
+    accepted: "ეს მოწვევა უკვე გამოყენებულია.",
+    expired:
+        "ამ მოწვევის ვადა ამოიწურა. მიმართეთ ადმინისტრაციას ახალი მოწვევისთვის.",
 };
 
 export default function AcceptInvitation(props: Props) {
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    if (props.status !== 'valid') {
+    if (props.status !== "valid") {
         return (
             <>
                 <Head title="მოწვევა" />
@@ -122,6 +123,8 @@ export default function AcceptInvitation(props: Props) {
                     </>
                 )}
 
+                <InputError message={errors.invitation} />
+
                 <Button type="submit" className="w-full" disabled={processing}>
                     {processing && <Spinner />}
                     მოწვევის მიღება
@@ -132,6 +135,6 @@ export default function AcceptInvitation(props: Props) {
 }
 
 AcceptInvitation.layout = {
-    title: 'მოწვევის მიღება',
-    description: '',
+    title: "მოწვევის მიღება",
+    description: "",
 };

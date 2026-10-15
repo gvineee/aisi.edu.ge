@@ -265,7 +265,7 @@ class ProcessPayments
                 throw ValidationException::withMessages(['invoice_id' => 'ინვოისი ღია არ არის.']);
             }
 
-            if ($amountMinor < 1 || $amountMinor > $lockedPayment->unallocated_minor || $amountMinor > $lockedInvoice->outstandingMinor()) {
+            if ($lockedPayment->isReversed() || $amountMinor < 1 || $amountMinor > $lockedPayment->unallocated_minor || $amountMinor > $lockedInvoice->outstandingMinor()) {
                 throw ValidationException::withMessages(['amount' => 'თანხა აღემატება ხელმისაწვდომ კრედიტს ან ინვოისის დავალიანებას.']);
             }
 
@@ -317,7 +317,11 @@ class ProcessPayments
         });
     }
 
-    private function allocateLocked(Payment $payment, Invoice $invoice, int $amountMinor, ?int $actorId): void
+    /**
+     * Callers must already hold row locks on both the payment and the
+     * invoice inside their transaction.
+     */
+    public function allocateLocked(Payment $payment, Invoice $invoice, int $amountMinor, ?int $actorId): void
     {
         if ($amountMinor <= 0) {
             return;
@@ -331,7 +335,7 @@ class ProcessPayments
         $payment->save();
 
         $invoice->paid_minor += $amountMinor;
-        $invoice->status = $invoice->paid_minor >= $invoice->total_minor ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIALLY_PAID;
+        $invoice->status = $invoice->statusFromPaid();
         $invoice->save();
     }
 

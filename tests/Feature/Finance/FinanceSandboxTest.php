@@ -34,6 +34,15 @@ class FinanceSandboxTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Online checkout is off by default (no bank contract); these tests
+        // exercise the sandbox provider path explicitly.
+        config(['finance.online_payments' => true]);
+    }
+
     /**
      * @return array<string, mixed>
      */

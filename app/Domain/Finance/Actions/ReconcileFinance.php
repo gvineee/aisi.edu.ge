@@ -10,9 +10,10 @@ use App\Domain\Finance\Models\ProviderWebhookEvent;
 
 /**
  * Consistency report for the accountant: every payment must equal what was
- * allocated + what is still credit + what was refunded; every invoice's
- * paid total must equal its allocations; webhooks that were not processed
- * cleanly, and succeeded intents without a payment, are listed.
+ * allocated + what is still credit + what was refunded + what was reversed
+ * (a wrongly entered manual payment); every invoice's paid total must equal
+ * its active allocations; webhooks that were not processed cleanly, and
+ * succeeded intents without a payment, are listed.
  */
 class ReconcileFinance
 {
@@ -21,14 +22,14 @@ class ReconcileFinance
      */
     public function handle(int $tenantId): array
     {
-        $allocatedByPayment = PaymentAllocation::query()->where('tenant_id', $tenantId)
+        $allocatedByPayment = PaymentAllocation::query()->where('tenant_id', $tenantId)->active()
             ->selectRaw('payment_id, sum(amount_minor) as aggregate')->groupBy('payment_id')->pluck('aggregate', 'payment_id');
-        $allocatedByInvoice = PaymentAllocation::query()->where('tenant_id', $tenantId)
+        $allocatedByInvoice = PaymentAllocation::query()->where('tenant_id', $tenantId)->active()
             ->selectRaw('invoice_id, sum(amount_minor) as aggregate')->groupBy('invoice_id')->pluck('aggregate', 'invoice_id');
 
         $payments = Payment::query()->where('tenant_id', $tenantId)->get();
         $paymentIssues = $payments
-            ->filter(fn (Payment $p) => $p->amount_minor !== (int) ($allocatedByPayment[$p->id] ?? 0) + $p->unallocated_minor + $p->refunded_minor)
+            ->filter(fn (Payment $p) => $p->amount_minor !== (int) ($allocatedByPayment[$p->id] ?? 0) + $p->unallocated_minor + $p->refunded_minor + $p->reversed_minor)
             ->map(fn (Payment $p) => ['paymentId' => $p->id, 'providerPaymentId' => $p->provider_payment_id])
             ->values();
 
@@ -62,6 +63,7 @@ class ReconcileFinance
                 'allocatedMinor' => (int) $allocatedByPayment->sum(),
                 'creditMinor' => (int) $payments->sum('unallocated_minor'),
                 'refundedMinor' => (int) $payments->sum('refunded_minor'),
+                'reversedMinor' => (int) $payments->sum('reversed_minor'),
                 'outstandingMinor' => (int) Invoice::query()->where('tenant_id', $tenantId)->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID])->get()->sum(fn (Invoice $i) => $i->outstandingMinor()),
             ],
             'paymentIssues' => $paymentIssues,

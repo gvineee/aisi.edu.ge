@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle2, TriangleAlert } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import SandboxBanner from '@/components/portal/sandbox-banner';
+import FinanceNav from '@/components/finance/finance-nav';
 import { formatDateTime } from '@/lib/assessment';
 import { formatMoney } from '@/lib/operations';
 
@@ -11,6 +12,7 @@ type Props = {
         allocatedMinor: number;
         creditMinor: number;
         refundedMinor: number;
+        reversedMinor: number;
         outstandingMinor: number;
     };
     paymentIssues: { paymentId: number; providerPaymentId: string }[];
@@ -25,6 +27,7 @@ type Props = {
         receivedAt: string;
     }[];
     balanced: boolean;
+    onlinePayments: boolean;
 };
 
 /** Accountant consistency report over payments, allocations and webhooks. */
@@ -36,12 +39,14 @@ export default function FinanceReconciliation({
     eventOutcomes,
     attentionEvents,
     balanced,
+    onlinePayments,
 }: Props) {
     const rows: [string, number][] = [
         ['მიღებული გადახდები', totals.paymentsMinor],
         ['ინვოისებზე ჩარიცხული', totals.allocatedMinor],
         ['ანგარიშების კრედიტი', totals.creditMinor],
         ['დაბრუნებული', totals.refundedMinor],
+        ['გაუქმებული გატარებები', totals.reversedMinor],
         ['ღია დავალიანება', totals.outstandingMinor],
     ];
 
@@ -55,7 +60,8 @@ export default function FinanceReconciliation({
                 <ArrowLeft size={16} /> ფინანსები
             </Link>
             <h1 className="mb-4 text-2xl">შეჯერება</h1>
-            <SandboxBanner />
+            <FinanceNav current="/portal/finance/reconciliation" />
+            {onlinePayments && <SandboxBanner />}
 
             <p
                 role="status"
@@ -71,7 +77,7 @@ export default function FinanceReconciliation({
                     : 'აღმოჩენილია შეუსაბამობა — იხილეთ ქვემოთ.'}
             </p>
 
-            <dl className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <dl className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                 {rows.map(([label, value]) => (
                     <div
                         key={label}

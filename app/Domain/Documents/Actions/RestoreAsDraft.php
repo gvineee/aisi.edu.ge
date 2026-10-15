@@ -14,7 +14,8 @@ use RuntimeException;
 /**
  * Restoring an old version creates a brand-new draft version copied from
  * it — it never rewrites history and never automatically re-approves
- * anything (spec §4). The restored bytes get a fresh ordinal/version row,
+ * anything (spec §4). In a workspace without approval the restored copy
+ * becomes the current version straight away, as any upload there would. The restored bytes get a fresh ordinal/version row,
  * exactly like a fresh upload would.
  */
 class RestoreAsDraft
@@ -55,13 +56,20 @@ class RestoreAsDraft
                 'mime' => $copied['mime'],
                 'size' => $copied['size'],
                 'author_id' => $actor->id,
-                'scan_state' => DocumentVersion::SCAN_CLEAN,
+                // Same bytes as an already-scanned version.
+                'scan_state' => $fromVersion->scan_state,
             ]);
             $version->tenant_id = $document->tenant_id;
             $version->save();
 
             $document->latest_version_id = $version->id;
-            $document->status = Document::STATUS_DRAFT;
+
+            if ($document->workspace->requiresApproval()) {
+                $document->status = Document::STATUS_DRAFT;
+            } else {
+                $document->status = Document::STATUS_ACTIVE;
+                $document->published_version_id = $version->id;
+            }
             $document->save();
 
             $this->auditLogger->record($document->tenant_id, 'document.restored_as_draft', $document, $actor->id, [

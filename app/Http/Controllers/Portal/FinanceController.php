@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Portal;
 use App\Domain\Academics\Models\GuardianLink;
 use App\Domain\Academics\Models\Student;
 use App\Domain\Finance\Actions\ManageInvoices;
+use App\Domain\Finance\Actions\NotifyInvoiceGuardians;
 use App\Domain\Finance\Actions\ProcessPayments;
 use App\Domain\Finance\Actions\ReconcileFinance;
+use App\Domain\Finance\FinanceReports;
 use App\Domain\Finance\Models\BillingAccount;
+use App\Domain\Finance\Models\FinanceSetting;
 use App\Domain\Finance\Models\Invoice;
 use App\Domain\Finance\Models\InvoiceItem;
+use App\Domain\Finance\Models\InvoiceReminder;
 use App\Domain\Finance\Models\Payment;
 use App\Domain\Finance\Models\PaymentAllocation;
 use App\Domain\Finance\Models\PaymentIntent;
@@ -32,8 +36,10 @@ use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
- * "ფინანსები" (CLAUDE-PLATFORM-MODULES §12) — SANDBOX ONLY until a real
- * provider contract, credentials and accountant UAT exist.
+ * "ფინანსები" (CLAUDE-PLATFORM-MODULES §12). Payments are recorded by the
+ * accountant (FinanceBookkeepingController); online checkout exists only
+ * as a sandbox behind `finance.online_payments` until a real provider
+ * contract and credentials exist. Not production-ready before accountant UAT.
  *
  * Finance staff (accountant/director/admin) need confirmed 2FA for every
  * screen (CLAUDE.md #4). Guardians see only accounts of children whose
@@ -62,12 +68,32 @@ class FinanceController extends Controller
 
         $staffView = null;
 
+        $today = Carbon::now('Asia/Tbilisi');
+
         if ($isStaff && $user->two_factor_confirmed_at !== null) {
+            $status = in_array($request->query('status'), [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID, Invoice::STATUS_PAID, Invoice::STATUS_VOID, 'overdue'], true)
+                ? (string) $request->query('status') : null;
+            $search = mb_substr(trim((string) $request->query('q', '')), 0, 60);
+
             $invoices = Invoice::query()->where('tenant_id', $tenant->id)
-                ->when($request->filled('status'), fn ($query) => $query->where('status', (string) $request->string('status')))
+                ->when($status === 'overdue', fn ($query) => $query->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID])->where('due_on', '<', $today->toDateString()))
+                ->when($status !== null && $status !== 'overdue', fn ($query) => $query->where('status', $status))
+                ->when($search !== '', fn ($query) => $query->where(fn ($q) => $q->where('number', 'like', "%{$search}%")
+                    ->orWhereHas('account.student', fn ($s) => $s->where('first_name', 'like', "%{$search}%")->orWhere('last_name', 'like', "%{$search}%"))))
                 ->with('account.student')->latest('id')->limit(200)->get();
 
+            $open = Invoice::query()->where('tenant_id', $tenant->id)->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID])->get();
+
             $staffView = [
+                'filters' => ['status' => $status, 'q' => $search],
+                'summary' => [
+                    'outstandingMinor' => (int) $open->sum(fn (Invoice $i) => $i->outstandingMinor()),
+                    'overdueMinor' => (int) $open->filter(fn (Invoice $i) => $i->due_on->toDateString() < $today->toDateString())->sum(fn (Invoice $i) => $i->outstandingMinor()),
+                    'collectedThisMonthMinor' => (int) Payment::query()->where('tenant_id', $tenant->id)->whereNull('reversed_at')
+                        ->where('received_at', '>=', $today->copy()->startOfMonth()->utc())->sum('amount_minor'),
+                    'openInvoices' => $open->count(),
+                ],
+                'hasPaymentInfo' => FinanceSetting::forTenant($tenant->id) !== null,
                 'invoices' => $invoices->map(fn (Invoice $invoice) => $this->invoiceRow($invoice))->values(),
                 'students' => Student::query()->where('tenant_id', $tenant->id)->where('is_active', true)->orderBy('last_name')->get()
                     ->map(fn (Student $s) => ['id' => $s->id, 'name' => $s->fullName()])->values(),
@@ -76,24 +102,39 @@ class FinanceController extends Controller
         }
 
         return Inertia::render('portal/finance/index', [
-            'sandbox' => true,
+            'onlinePayments' => (bool) config('finance.online_payments'),
             'needsMfa' => $isStaff && $user->two_factor_confirmed_at === null,
             'staff' => $staffView,
-            'children' => $children->map(function (Student $child) use ($tenant) {
+            'paymentInfo' => $children->isNotEmpty() ? FinanceSetting::forTenant($tenant->id)?->toPublicArray() : null,
+            'children' => $children->map(function (Student $child) use ($tenant, $today) {
                 $account = BillingAccount::query()->where('tenant_id', $tenant->id)->where('student_id', $child->id)->first();
+                $invoices = $account === null ? collect() : Invoice::query()->where('tenant_id', $tenant->id)->where('billing_account_id', $account->id)
+                    ->where('status', '!=', Invoice::STATUS_VOID)->latest('due_on')->latest('id')->get();
+                $payments = $account === null ? collect() : Payment::query()->where('tenant_id', $tenant->id)->where('billing_account_id', $account->id)
+                    ->whereNull('reversed_at')->latest('received_at')->limit(50)->get();
+                $open = $invoices->filter(fn (Invoice $i) => $i->isOpen());
 
                 return [
                     'id' => $child->id,
                     'name' => $child->fullName(),
-                    'creditMinor' => $account === null ? 0 : (int) Payment::query()->where('tenant_id', $tenant->id)->where('billing_account_id', $account->id)->sum('unallocated_minor'),
-                    'invoices' => $account === null ? [] : Invoice::query()->where('tenant_id', $tenant->id)->where('billing_account_id', $account->id)
-                        ->where('status', '!=', Invoice::STATUS_VOID)->latest('id')->get()->map(fn (Invoice $invoice) => $this->invoiceRow($invoice))->values()->all(),
+                    'creditMinor' => (int) $payments->sum('unallocated_minor'),
+                    'outstandingMinor' => (int) $open->sum(fn (Invoice $i) => $i->outstandingMinor()),
+                    'overdueMinor' => (int) $open->filter(fn (Invoice $i) => $i->due_on->toDateString() < $today->toDateString())->sum(fn (Invoice $i) => $i->outstandingMinor()),
+                    'invoices' => $invoices->map(fn (Invoice $invoice) => $this->invoiceRow($invoice))->values()->all(),
+                    'payments' => $payments->map(fn (Payment $p) => [
+                        'id' => $p->id,
+                        'receiptNumber' => $p->receiptNumber(),
+                        'receivedOn' => $p->received_at->copy()->setTimezone('Asia/Tbilisi')->toDateString(),
+                        'methodLabel' => FinanceReports::methodLabel($p->method, $p->provider),
+                        'amountMinor' => $p->amount_minor,
+                        'currency' => $p->currency,
+                    ])->values()->all(),
                 ];
             })->values(),
         ]);
     }
 
-    public function storeInvoice(Request $request, CurrentTenant $currentTenant, ManageInvoices $invoices): RedirectResponse
+    public function storeInvoice(Request $request, CurrentTenant $currentTenant, ManageInvoices $invoices, NotifyInvoiceGuardians $notifier): RedirectResponse
     {
         $tenant = $currentTenant->get();
         $this->authorizeStaff($tenant->id, $request->user());
@@ -119,11 +160,12 @@ class FinanceController extends Controller
             Carbon::parse($data['due_on'], 'Asia/Tbilisi'),
             $request->user(),
         );
+        $notifier->issued($invoice);
 
         return redirect()->route('finance.invoices.show', $invoice);
     }
 
-    public function invoiceFromClub(Request $request, CurrentTenant $currentTenant, Club $club, ManageInvoices $invoices): RedirectResponse
+    public function invoiceFromClub(Request $request, CurrentTenant $currentTenant, Club $club, ManageInvoices $invoices, NotifyInvoiceGuardians $notifier): RedirectResponse
     {
         $tenant = $currentTenant->get();
         abort_unless($club->tenant_id === $tenant->id, 404);
@@ -152,6 +194,7 @@ class FinanceController extends Controller
                 'source_id' => $enrollment->id,
             ]], Carbon::parse((string) $request->string('due_on'), 'Asia/Tbilisi'), $request->user());
         });
+        $notifier->issued($invoice);
 
         return redirect()->route('finance.invoices.show', $invoice);
     }
@@ -168,26 +211,42 @@ class FinanceController extends Controller
 
         $allocations = PaymentAllocation::query()->where('tenant_id', $tenant->id)->where('invoice_id', $invoice->id)->get();
         $payments = Payment::query()->where('tenant_id', $tenant->id)->where('billing_account_id', $invoice->billing_account_id)->latest('id')->get();
+        $receipts = $payments->keyBy('id');
 
         return Inertia::render('portal/finance/invoice', [
-            'sandbox' => true,
+            'onlinePayments' => (bool) config('finance.online_payments'),
+            'sandboxEnabled' => (bool) config('finance.providers.sandbox.enabled'),
             'isStaff' => $isStaff,
+            'paymentInfo' => $isStaff ? null : FinanceSetting::forTenant($tenant->id)?->toPublicArray(),
             'invoice' => $this->invoiceRow($invoice) + [
+                'studentId' => $invoice->account->student_id,
                 'items' => $invoice->items->map(fn (InvoiceItem $item) => [
                     'description' => $item->description, 'quantity' => $item->quantity, 'unitMinor' => $item->unit_minor, 'amountMinor' => $item->amount_minor,
                 ])->values(),
                 'voidReason' => $invoice->void_reason,
-                'allocations' => $allocations->map(fn (PaymentAllocation $a) => ['paymentId' => $a->payment_id, 'amountMinor' => $a->amount_minor, 'createdAt' => $a->created_at?->toIso8601String()])->values(),
+                'allocations' => $allocations->map(fn (PaymentAllocation $a) => [
+                    'paymentId' => $a->payment_id,
+                    'receiptNumber' => $receipts->get($a->payment_id)?->receiptNumber(),
+                    'amountMinor' => $a->amount_minor,
+                    'reversed' => $a->reversed_at !== null,
+                    'createdAt' => $a->created_at?->toIso8601String(),
+                ])->values(),
+                'reminders' => $isStaff ? InvoiceReminder::query()->where('tenant_id', $tenant->id)->where('invoice_id', $invoice->id)->latest('sent_at')->get()
+                    ->map(fn (InvoiceReminder $r) => ['sentAt' => $r->sent_at->toIso8601String(), 'recipients' => $r->recipients])->values() : [],
             ],
             'payments' => $isStaff ? $payments->map(fn (Payment $p) => [
                 'id' => $p->id,
-                'providerPaymentId' => $p->provider_payment_id,
+                'receiptNumber' => $p->receiptNumber(),
+                'methodLabel' => FinanceReports::methodLabel($p->method, $p->provider),
+                'isManual' => $p->isManual(),
+                'reversed' => $p->isReversed(),
+                'provider' => $p->provider,
                 'amountMinor' => $p->amount_minor,
                 'creditMinor' => $p->unallocated_minor,
                 'refundedMinor' => $p->refunded_minor,
                 'receivedAt' => $p->received_at->toIso8601String(),
                 'refunds' => Refund::query()->where('tenant_id', $p->tenant_id)->where('payment_id', $p->id)->get()
-                    ->map(fn (Refund $r) => ['id' => $r->id, 'amountMinor' => $r->amount_minor, 'status' => $r->status])->values()->all(),
+                    ->map(fn (Refund $r) => ['id' => $r->id, 'amountMinor' => $r->amount_minor, 'status' => $r->status, 'method' => $r->method])->values()->all(),
             ])->values() : [],
         ]);
     }
@@ -207,6 +266,9 @@ class FinanceController extends Controller
     public function pay(Request $request, CurrentTenant $currentTenant, Invoice $invoice, ProcessPayments $payments, ProviderRegistry $providers): HttpResponse
     {
         $tenant = $currentTenant->get();
+        // No online checkout without a real bank contract (or the sandbox
+        // in a non-production environment explicitly switched on).
+        abort_unless((bool) config('finance.online_payments'), 404);
         abort_unless($invoice->tenant_id === $tenant->id, 404);
         $user = $request->user();
         $invoice->loadMissing('account');
@@ -264,7 +326,7 @@ class FinanceController extends Controller
         $tenant = $currentTenant->get();
         $this->authorizeStaff($tenant->id, $request->user());
 
-        return Inertia::render('portal/finance/reconciliation', $reconcile->handle($tenant->id) + ['sandbox' => true]);
+        return Inertia::render('portal/finance/reconciliation', $reconcile->handle($tenant->id) + ['onlinePayments' => (bool) config('finance.online_payments')]);
     }
 
     /**
