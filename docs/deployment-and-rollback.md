@@ -117,3 +117,12 @@
 - migration `legacy_redirects`; `content:sync-redirects aisi --commit` → **30 redirect** (published import-ები; 44 გამოუქვეყნებელი/გამოტოვებული ჩანაწერი განზრახ 404-ზე რჩება) + ხელით `/online-library/ → /library`.
 - შემოწმებული live: ქართული percent-encoded, `/en/…`, `/ru/…` ძველი URL-ები → 301 ახალ სიახლეზე; `/wp-login.php` → 404; `/about` → 200, `canonical` + `hreflang` (`ka`, `x-default`) `https://aisi.edu.ge/...`-ზე.
 - ახალი გამოქვეყნებისას: `php artisan content:sync-redirects aisi --commit` (idempotent, manual-ს არ ცვლის); ცალკეული: `php artisan content:redirect aisi <ძველი> </ახალი>`.
+
+## Deploy — 2026-10-18 (`08e5e0d..9fd45f9`, `bash deploy/deploy.sh`)
+
+- შინაარსი: ხალხის ხელით მართვა, ბუღალტერია ბანკის API-ის გარეშე (`FINANCE_ONLINE_PAYMENTS=false`), შიდა დოკუმენტები; დოკუმენტის წვდომის გაცემა/გაუქმება ახლა `reauth`-ს მოითხოვს.
+- Backup: `_backups/db-20261018-135449.sql.gz` (65 KB), `files-20261018-135449.tar.gz`, `env-20261018-135449` (600).
+- `php artisan down` → unpack → `composer install` (ცვლილება არ ყოფილა) → 2 migration რეალურ MySQL-ზე (batch 15) → config/route/view cache → `queue:restart` → `up`.
+- Smoke: საჯარო გვერდები, `/sitemap.xml`, `/robots.txt`, `/login` → 200; `/documents`, `/portal/finance`, `/portal/members` (სტუმარი) → 302. scheduler-ში ჩანს `finance:generate-fee-invoices` (03:00 UTC = 07:00 თბილისი) და `appointments:send-reminders`. failed jobs: 0; ლოგში ახალი შეცდომა არ არის. 2026-10-14 16:56-ის `legacy_redirects` შეცდომები იმ deploy-ის migration-მდე წამებიდანაა; ახლა ამას maintenance mode უშლის ხელს.
+- Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import`; cache rebuild; `up`.
+- **ღიაა:** ფინანსები production-ready არ არის ბუღალტრის UAT-მდე; სკოლის რეკვიზიტები (`finance_settings`) ცარიელია; nginx-ის დუბლირებული `X-Frame-Options`/`Referrer-Policy`.

@@ -40,7 +40,7 @@
 - migration-ები გაეშვა ლოკალურ PostgreSQL-ზეც. PHPStan 0 შეცდომა, Pint, `types:check`, `build` სუფთა.
 - გასწორდა თარიღზე დამოკიდებული `OperationsModulesTest` (+2 დღე შაბათზე მოდიოდა).
 
-**ღიაა:** ბუღალტრის UAT (ფინანსები production-ready არ არის მის გარეშე); სკოლის რეალური რეკვიზიტები და საფასური; ბანკის API; credit note (უკვე გადახდილი ინვოისის კორექტირება); დოკუმენტის წვდომის გაცემაზე `reauth` არ არის.
+**ღიაა:** ბუღალტრის UAT (ფინანსები production-ready არ არის მის გარეშე); სკოლის რეალური რეკვიზიტები და საფასური; ბანკის API; credit note (უკვე გადახდილი ინვოისის კორექტირება). (დოკუმენტის წვდომის გაცემაზე `reauth` დაემატა 2026-10-18; production-ზე დეპლოირებულია იმავე დღეს — `docs/deployment-and-rollback.md`.)
 
 ### 2026-10-03 (გაგრძელება, მე-2) — ფაზა E: white-label platform administration (§14) — `verified_local`
 
