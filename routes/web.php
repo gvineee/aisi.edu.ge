@@ -178,8 +178,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('documents/workspaces/{documentWorkspace}/archive', [DocumentLibraryController::class, 'archiveWorkspace'])->name('documents.workspaces.archive');
     Route::post('documents/categories', [DocumentLibraryController::class, 'storeCategory'])->name('documents.categories.store');
     Route::put('documents/categories/{documentCategory}', [DocumentLibraryController::class, 'updateCategory'])->name('documents.categories.update');
-    Route::post('documents/access-grants', [DocumentAccessGrantController::class, 'store'])->middleware('throttle:30,1')->name('documents.access-grants.store');
-    Route::delete('documents/access-grants/{documentAccessGrant}', [DocumentAccessGrantController::class, 'destroy'])->name('documents.access-grants.destroy');
+    Route::post('documents/access-grants', [DocumentAccessGrantController::class, 'store'])->middleware(['throttle:30,1', 'reauth'])->name('documents.access-grants.store');
+    Route::delete('documents/access-grants/{documentAccessGrant}', [DocumentAccessGrantController::class, 'destroy'])->middleware('reauth')->name('documents.access-grants.destroy');
     Route::get('documents/{document}', [DocumentController::class, 'show'])->whereNumber('document')->name('documents.show');
     Route::put('documents/{document}', [DocumentController::class, 'update'])->whereNumber('document')->name('documents.update');
     Route::post('documents/{document}/archive', [DocumentController::class, 'archive'])->whereNumber('document')->name('documents.archive');

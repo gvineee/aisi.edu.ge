@@ -154,6 +154,25 @@ class InternalDocumentsTest extends TestCase
         $this->assertContains('შრომითი ხელშეკრულება', $this->listedTitles($this->director));
     }
 
+    public function test_granting_document_access_needs_a_recent_password_confirmation(): void
+    {
+        config(['security.privileged_reauth' => true]);
+        $grant = ['resource_type' => 'workspace', 'resource_id' => $this->contracts->id,
+            'role' => TenantMembership::ROLE_ACCOUNTANT, 'permission' => 'view'];
+
+        $this->actingAs($this->director)->post('/documents/access-grants', $grant)
+            ->assertRedirect(route('password.confirm'));
+        $this->assertDatabaseMissing('document_access_grants', ['role' => TenantMembership::ROLE_ACCOUNTANT]);
+
+        $this->actingAs($this->director)->withSession(['auth.password_confirmed_at' => time()])
+            ->post('/documents/access-grants', $grant)->assertSessionHasNoErrors();
+        $created = DocumentAccessGrant::query()->where('role', TenantMembership::ROLE_ACCOUNTANT)->firstOrFail();
+
+        $this->actingAs($this->director)->withSession(['auth.password_confirmed_at' => 0])
+            ->delete("/documents/access-grants/{$created->id}")->assertRedirect(route('password.confirm'));
+        $this->assertModelExists($created);
+    }
+
     public function test_a_role_grant_opens_the_contracts_workspace_to_the_accountants_and_downloads_are_audited(): void
     {
         $contract = $this->document($this->contracts, $this->director, 'მომწოდებლის ხელშეკრულება');
