@@ -10,6 +10,7 @@ use App\Domain\Finance\Actions\ProcessPayments;
 use App\Domain\Finance\Actions\ReconcileFinance;
 use App\Domain\Finance\FinanceReports;
 use App\Domain\Finance\Models\BillingAccount;
+use App\Domain\Finance\Models\CreditNote;
 use App\Domain\Finance\Models\FinanceSetting;
 use App\Domain\Finance\Models\Invoice;
 use App\Domain\Finance\Models\InvoiceItem;
@@ -71,7 +72,7 @@ class FinanceController extends Controller
         $today = Carbon::now('Asia/Tbilisi');
 
         if ($isStaff && $user->two_factor_confirmed_at !== null) {
-            $status = in_array($request->query('status'), [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID, Invoice::STATUS_PAID, Invoice::STATUS_VOID, 'overdue'], true)
+            $status = in_array($request->query('status'), [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID, Invoice::STATUS_PAID, Invoice::STATUS_CREDITED, Invoice::STATUS_VOID, 'overdue'], true)
                 ? (string) $request->query('status') : null;
             $search = mb_substr(trim((string) $request->query('q', '')), 0, 60);
 
@@ -224,6 +225,15 @@ class FinanceController extends Controller
                     'description' => $item->description, 'quantity' => $item->quantity, 'unitMinor' => $item->unit_minor, 'amountMinor' => $item->amount_minor,
                 ])->values(),
                 'voidReason' => $invoice->void_reason,
+                'creditNotes' => CreditNote::query()->where('tenant_id', $tenant->id)->where('invoice_id', $invoice->id)->orderBy('id')->get()
+                    ->map(fn (CreditNote $c) => [
+                        'id' => $c->id,
+                        'number' => $c->number,
+                        'issuedOn' => $c->issued_on->toDateString(),
+                        'amountMinor' => $c->amount_minor,
+                        'releasedMinor' => $c->released_minor,
+                        'reason' => $c->reason,
+                    ])->values(),
                 'allocations' => $allocations->map(fn (PaymentAllocation $a) => [
                     'paymentId' => $a->payment_id,
                     'receiptNumber' => $receipts->get($a->payment_id)?->receiptNumber(),
@@ -353,6 +363,7 @@ class FinanceController extends Controller
             'dueOn' => $invoice->due_on->toDateString(),
             'currency' => $invoice->currency,
             'totalMinor' => $invoice->total_minor,
+            'creditedMinor' => $invoice->credited_minor,
             'paidMinor' => $invoice->paid_minor,
             'outstandingMinor' => $invoice->outstandingMinor(),
         ];

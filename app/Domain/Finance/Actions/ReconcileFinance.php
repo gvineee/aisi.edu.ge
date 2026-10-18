@@ -2,6 +2,7 @@
 
 namespace App\Domain\Finance\Actions;
 
+use App\Domain\Finance\Models\CreditNote;
 use App\Domain\Finance\Models\Invoice;
 use App\Domain\Finance\Models\Payment;
 use App\Domain\Finance\Models\PaymentAllocation;
@@ -12,7 +13,8 @@ use App\Domain\Finance\Models\ProviderWebhookEvent;
  * Consistency report for the accountant: every payment must equal what was
  * allocated + what is still credit + what was refunded + what was reversed
  * (a wrongly entered manual payment); every invoice's paid total must equal
- * its active allocations; webhooks that were not processed cleanly, and
+ * its active allocations, its credited total its credit notes, and it may
+ * never be paid above what it asks for after credit notes; webhooks that were not processed cleanly, and
  * succeeded intents without a payment, are listed.
  */
 class ReconcileFinance
@@ -27,6 +29,9 @@ class ReconcileFinance
         $allocatedByInvoice = PaymentAllocation::query()->where('tenant_id', $tenantId)->active()
             ->selectRaw('invoice_id, sum(amount_minor) as aggregate')->groupBy('invoice_id')->pluck('aggregate', 'invoice_id');
 
+        $creditedByInvoice = CreditNote::query()->where('tenant_id', $tenantId)
+            ->selectRaw('invoice_id, sum(amount_minor) as aggregate')->groupBy('invoice_id')->pluck('aggregate', 'invoice_id');
+
         $payments = Payment::query()->where('tenant_id', $tenantId)->get();
         $paymentIssues = $payments
             ->filter(fn (Payment $p) => $p->amount_minor !== (int) ($allocatedByPayment[$p->id] ?? 0) + $p->unallocated_minor + $p->refunded_minor + $p->reversed_minor)
@@ -34,7 +39,10 @@ class ReconcileFinance
             ->values();
 
         $invoiceIssues = Invoice::query()->where('tenant_id', $tenantId)->get()
-            ->filter(fn (Invoice $i) => $i->paid_minor !== (int) ($allocatedByInvoice[$i->id] ?? 0))
+            ->filter(fn (Invoice $i) => $i->paid_minor !== (int) ($allocatedByInvoice[$i->id] ?? 0)
+                || $i->credited_minor !== (int) ($creditedByInvoice[$i->id] ?? 0)
+                || $i->credited_minor > $i->total_minor
+                || $i->paid_minor > $i->netMinor())
             ->map(fn (Invoice $i) => ['invoiceId' => $i->id, 'number' => $i->number])
             ->values();
 
@@ -64,6 +72,7 @@ class ReconcileFinance
                 'creditMinor' => (int) $payments->sum('unallocated_minor'),
                 'refundedMinor' => (int) $payments->sum('refunded_minor'),
                 'reversedMinor' => (int) $payments->sum('reversed_minor'),
+                'creditedMinor' => (int) $creditedByInvoice->sum(),
                 'outstandingMinor' => (int) Invoice::query()->where('tenant_id', $tenantId)->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID])->get()->sum(fn (Invoice $i) => $i->outstandingMinor()),
             ],
             'paymentIssues' => $paymentIssues,

@@ -417,6 +417,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('portal/finance/payments/{payment}/reverse', [FinanceBookkeepingController::class, 'reverse'])->middleware('reauth')->name('finance.payments.reverse');
         Route::post('portal/finance/payments/{payment}/manual-refund', [FinanceBookkeepingController::class, 'refundCredit'])->middleware('reauth')->name('finance.payments.manual-refund');
         Route::get('portal/finance/payments/{payment}/receipt', [FinanceBookkeepingController::class, 'receiptPdf'])->middleware('throttle:30,1')->name('finance.payments.receipt');
+        Route::post('portal/finance/invoices/{invoice}/credit-notes', [FinanceBookkeepingController::class, 'storeCreditNote'])->middleware(['throttle:30,1', 'reauth'])->name('finance.invoices.credit-notes.store');
+        Route::get('portal/finance/credit-notes/{creditNote}/pdf', [FinanceBookkeepingController::class, 'creditNotePdf'])->middleware('throttle:30,1')->name('finance.credit-notes.pdf');
         Route::get('portal/finance/invoices/{invoice}/pdf', [FinanceBookkeepingController::class, 'invoicePdf'])->middleware('throttle:30,1')->name('finance.invoices.pdf');
         Route::get('portal/finance/accounts/{student}', [FinanceBookkeepingController::class, 'statement'])->name('finance.accounts.show');
         Route::get('portal/finance/exports/payments', [FinanceBookkeepingController::class, 'exportPayments'])->middleware('throttle:10,1')->name('finance.exports.payments');

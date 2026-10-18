@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\File;
 class FinancePdf
 {
     /**
-     * @param  'pdf.invoice'|'pdf.receipt'  $view
+     * @param  'pdf.invoice'|'pdf.receipt'|'pdf.credit-note'  $view
      * @param  array<string, mixed>  $data
      */
     public function render(string $view, array $data): string

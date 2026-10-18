@@ -90,7 +90,7 @@ class FinanceReportController extends Controller
         $audit->record($tenant->id, 'finance.exported', $tenant, $request->user()->id, ['report' => 'invoices', 'from' => $from->toDateString(), 'to' => $to->toDateString(), 'rows' => $rows->count()]);
 
         return CsvDownload::make("invoices-{$from->toDateString()}-{$to->toDateString()}.csv",
-            ['ნომერი', 'გამოწერა', 'ვადა', 'მოსწავლე', 'კლასი', 'სულ', 'გადახდილი', 'დარჩენილი', 'სტატუსი', 'ვალუტა'],
+            ['ნომერი', 'გამოწერა', 'ვადა', 'მოსწავლე', 'კლასი', 'სულ', 'საკრედიტო ნოტა', 'გადახდილი', 'დარჩენილი', 'სტატუსი', 'ვალუტა'],
             $rows->map(fn (Invoice $i) => [
                 $i->number,
                 $i->issued_on->toDateString(),
@@ -98,6 +98,7 @@ class FinanceReportController extends Controller
                 $i->account?->student?->fullName(),
                 $i->account?->student?->schoolClass?->name,
                 FinanceReports::money($i->total_minor),
+                FinanceReports::money($i->credited_minor),
                 FinanceReports::money($i->paid_minor),
                 FinanceReports::money($i->status === Invoice::STATUS_VOID ? 0 : $i->outstandingMinor()),
                 FinanceReports::STATUS_LABELS[$i->status] ?? $i->status,

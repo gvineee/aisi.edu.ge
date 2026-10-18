@@ -1,13 +1,18 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
 import { ArrowLeft, Download, Mail } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import SandboxBanner from '@/components/portal/sandbox-banner';
 import PaymentInstructions from '@/components/finance/payment-instructions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatDateTime, formatDay } from '@/lib/assessment';
-import { INVOICE_STATUS, type PaymentInfo } from '@/lib/finance';
+import { firstError, formatDateTime, formatDay } from '@/lib/assessment';
+import {
+    INVOICE_STATUS,
+    newSubmissionKey,
+    type PaymentInfo,
+} from '@/lib/finance';
 import { formatMoney, postWithToast } from '@/lib/operations';
 
 type Props = {
@@ -25,9 +30,18 @@ type Props = {
         dueOn: string;
         currency: string;
         totalMinor: number;
+        creditedMinor: number;
         paidMinor: number;
         outstandingMinor: number;
         voidReason: string | null;
+        creditNotes: {
+            id: number;
+            number: string;
+            issuedOn: string;
+            amountMinor: number;
+            releasedMinor: number;
+            reason: string;
+        }[];
         items: {
             description: string;
             quantity: number;
@@ -54,15 +68,21 @@ type Props = {
         creditMinor: number;
         refundedMinor: number;
         receivedAt: string;
-        refunds: { id: number; amountMinor: number; status: string; method: string | null }[];
+        refunds: {
+            id: number;
+            amountMinor: number;
+            status: string;
+            method: string | null;
+        }[];
     }[];
 };
 
 const STATUS = INVOICE_STATUS;
 
 /**
- * One invoice: lines, what has been applied to it, and (for staff) the
- * account's payments with credit, refunds, reminders and the void action.
+ * One invoice: lines, credit notes, what has been applied to it, and (for
+ * staff) the account's payments with credit, refunds, reminders, the
+ * credit note form and the void action.
  */
 export default function FinanceInvoice({
     onlinePayments,
@@ -73,23 +93,60 @@ export default function FinanceInvoice({
     payments,
 }: Props) {
     const [voidReason, setVoidReason] = useState('');
+    const [creditKey, setCreditKey] = useState(newSubmissionKey);
+    const [creditProcessing, setCreditProcessing] = useState(false);
     const money = (minor: number) => formatMoney(minor, invoice.currency);
     const open = invoice.outstandingMinor > 0 && invoice.status !== 'void';
+    const creditable =
+        invoice.status !== 'void' &&
+        invoice.totalMinor - invoice.creditedMinor > 0;
+
+    const issueCreditNote = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const data = new FormData(form);
+        data.set('idempotency_key', creditKey);
+
+        router.post(
+            `/portal/finance/invoices/${invoice.id}/credit-notes`,
+            data as never,
+            {
+                preserveScroll: true,
+                onStart: () => setCreditProcessing(true),
+                onFinish: () => setCreditProcessing(false),
+                onSuccess: () => {
+                    toast.success(
+                        'áƒ¡áƒáƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ áƒœáƒáƒ¢áƒ áƒ’áƒáƒ›áƒáƒ˜áƒ¬áƒ”áƒ áƒ.',
+                    );
+                    form.reset();
+                    setCreditKey(newSubmissionKey());
+                },
+                onError: (errors) =>
+                    toast.error(
+                        firstError(errors) ??
+                            'áƒ•áƒ”áƒ  áƒ’áƒáƒ›áƒáƒ˜áƒ¬áƒ”áƒ áƒ.',
+                    ),
+            },
+        );
+    };
 
     return (
         <PortalLayout>
-            <Head title={`ინვოისი № ${invoice.number}`} />
+            <Head title={`áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ˜ â„– ${invoice.number}`} />
             <Link
                 href="/portal/finance"
                 className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
             >
-                <ArrowLeft size={16} /> ფინანსები
+                <ArrowLeft size={16} /> áƒ¤áƒ˜áƒœáƒáƒœáƒ¡áƒ”áƒ‘áƒ˜
             </Link>
-            <h1 className="mb-1 text-2xl">ინვოისი № {invoice.number}</h1>
+            <h1 className="mb-1 text-2xl">
+                áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ˜ â„– {invoice.number}
+            </h1>
             <p className="mb-4 text-sm text-slate-500">
-                {invoice.studentName} · გამოწერილია{' '}
-                {formatDay(invoice.issuedOn)} · ვადა {formatDay(invoice.dueOn)}{' '}
-                · {STATUS[invoice.status] ?? invoice.status}
+                {invoice.studentName} Â· áƒ’áƒáƒ›áƒáƒ¬áƒ”áƒ áƒ˜áƒšáƒ˜áƒ{' '}
+                {formatDay(invoice.issuedOn)} Â· áƒ•áƒáƒ“áƒ{' '}
+                {formatDay(invoice.dueOn)} Â·{' '}
+                {STATUS[invoice.status] ?? invoice.status}
             </p>
             {onlinePayments && <SandboxBanner />}
 
@@ -106,7 +163,7 @@ export default function FinanceInvoice({
                             href={`/portal/finance/payments?student=${invoice.studentId}&invoice=${invoice.id}`}
                             className="inline-flex min-h-11 items-center rounded-lg bg-slate-900 px-4 text-sm text-white hover:bg-slate-800"
                         >
-                            გადახდის გატარება
+                            áƒ’áƒáƒ“áƒáƒ®áƒ“áƒ˜áƒ¡ áƒ’áƒáƒ¢áƒáƒ áƒ”áƒ‘áƒ
                         </Link>
                         <Button
                             variant="outline"
@@ -114,11 +171,12 @@ export default function FinanceInvoice({
                                 postWithToast(
                                     `/portal/finance/invoices/${invoice.id}/remind`,
                                     {},
-                                    'შეხსენება გაიგზავნა.',
+                                    'áƒ¨áƒ”áƒ®áƒ¡áƒ”áƒœáƒ”áƒ‘áƒ áƒ’áƒáƒ˜áƒ’áƒ–áƒáƒ•áƒœáƒ.',
                                 )
                             }
                         >
-                            <Mail size={16} /> შეხსენება მშობელს
+                            <Mail size={16} /> áƒ¨áƒ”áƒ®áƒ¡áƒ”áƒœáƒ”áƒ‘áƒ
+                            áƒ›áƒ¨áƒáƒ‘áƒ”áƒšáƒ¡
                         </Button>
                     </>
                 )}
@@ -127,42 +185,48 @@ export default function FinanceInvoice({
                         href={`/portal/finance/accounts/${invoice.studentId}`}
                         className="inline-flex min-h-11 items-center rounded-lg bg-white px-4 text-sm ring-1 ring-slate-200 hover:bg-slate-50"
                     >
-                        მოსწავლის ანგარიში
+                        áƒ›áƒáƒ¡áƒ¬áƒáƒ•áƒšáƒ˜áƒ¡ áƒáƒœáƒ’áƒáƒ áƒ˜áƒ¨áƒ˜
                     </Link>
                 )}
             </div>
 
             {isStaff && invoice.reminders.length > 0 && (
                 <p className="mb-4 text-sm text-slate-500">
-                    შეხსენებები:{' '}
+                    áƒ¨áƒ”áƒ®áƒ¡áƒ”áƒœáƒ”áƒ‘áƒ”áƒ‘áƒ˜:{' '}
                     {invoice.reminders
-                        .map((r) => `${formatDateTime(r.sentAt)} (${r.recipients})`)
+                        .map(
+                            (r) =>
+                                `${formatDateTime(r.sentAt)} (${r.recipients})`,
+                        )
                         .join(', ')}
                 </p>
             )}
 
             {invoice.voidReason && (
                 <p className="mb-4 rounded-lg bg-slate-100 p-3 text-sm">
-                    გაუქმების მიზეზი: {invoice.voidReason}
+                    áƒ’áƒáƒ£áƒ¥áƒ›áƒ”áƒ‘áƒ˜áƒ¡ áƒ›áƒ˜áƒ–áƒ”áƒ–áƒ˜:{' '}
+                    {invoice.voidReason}
                 </p>
             )}
 
             <div className="mb-6 overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200">
                 <table className="w-full min-w-[480px] text-sm">
-                    <caption className="sr-only">ინვოისის პოზიციები</caption>
+                    <caption className="sr-only">
+                        áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ˜áƒ¡ áƒžáƒáƒ–áƒ˜áƒªáƒ˜áƒ”áƒ‘áƒ˜
+                    </caption>
                     <thead>
                         <tr className="border-b border-slate-200 text-left">
                             <th scope="col" className="p-3">
-                                აღწერა
+                                áƒáƒ¦áƒ¬áƒ”áƒ áƒ
                             </th>
                             <th scope="col" className="p-3 text-right">
-                                რაოდ.
+                                áƒ áƒáƒáƒ“.
                             </th>
                             <th scope="col" className="p-3 text-right">
-                                ფასი
+                                áƒ¤áƒáƒ¡áƒ˜
                             </th>
                             <th scope="col" className="p-3 text-right">
-                                ჯამი
+                                áƒ¯áƒáƒ›áƒ˜
                             </th>
                         </tr>
                     </thead>
@@ -189,19 +253,34 @@ export default function FinanceInvoice({
                                 colSpan={3}
                                 className="p-3 text-right"
                             >
-                                სულ
+                                áƒ¡áƒ£áƒš
                             </th>
                             <td className="p-3 text-right font-semibold">
                                 {money(invoice.totalMinor)}
                             </td>
                         </tr>
+                        {invoice.creditedMinor > 0 && (
+                            <tr>
+                                <th
+                                    scope="row"
+                                    colSpan={3}
+                                    className="p-3 text-right"
+                                >
+                                    áƒ¡áƒáƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ áƒœáƒáƒ¢áƒ˜áƒ—
+                                    áƒ¨áƒ”áƒ›áƒªáƒ˜áƒ áƒ”áƒ‘áƒ
+                                </th>
+                                <td className="p-3 text-right">
+                                    âˆ’{money(invoice.creditedMinor)}
+                                </td>
+                            </tr>
+                        )}
                         <tr>
                             <th
                                 scope="row"
                                 colSpan={3}
                                 className="p-3 text-right"
                             >
-                                გადახდილი
+                                áƒ’áƒáƒ“áƒáƒ®áƒ“áƒ˜áƒšáƒ˜
                             </th>
                             <td className="p-3 text-right">
                                 {money(invoice.paidMinor)}
@@ -213,7 +292,7 @@ export default function FinanceInvoice({
                                 colSpan={3}
                                 className="p-3 text-right"
                             >
-                                დარჩენილი
+                                áƒ“áƒáƒ áƒ©áƒ”áƒœáƒ˜áƒšáƒ˜
                             </th>
                             <td className="p-3 text-right font-semibold">
                                 {money(invoice.outstandingMinor)}
@@ -232,30 +311,68 @@ export default function FinanceInvoice({
                         )
                     }
                 >
-                    გადახდა {money(invoice.outstandingMinor)}
+                    áƒ’áƒáƒ“áƒáƒ®áƒ“áƒ {money(invoice.outstandingMinor)}
                 </Button>
             )}
 
             {open && !isStaff && !onlinePayments && (
                 <PaymentInstructions
                     info={paymentInfo}
-                    purpose={`ინვოისი № ${invoice.number}, ${invoice.studentName ?? ''}`}
+                    purpose={`áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ˜ â„– ${invoice.number}, ${invoice.studentName ?? ''}`}
                 />
+            )}
+
+            {invoice.creditNotes.length > 0 && (
+                <section className="mb-6" aria-labelledby="credit-notes">
+                    <h2 id="credit-notes" className="mb-2 text-lg">
+                        áƒ¡áƒáƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ áƒœáƒáƒ¢áƒ”áƒ‘áƒ˜
+                    </h2>
+                    <ul className="space-y-2 text-sm">
+                        {invoice.creditNotes.map((c) => (
+                            <li
+                                key={c.id}
+                                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 ring-1 ring-slate-200"
+                            >
+                                <span>
+                                    <strong>â„– {c.number}</strong> Â·{' '}
+                                    {formatDay(c.issuedOn)} Â· âˆ’
+                                    {money(c.amountMinor)}
+                                    <span className="block text-slate-600">
+                                        {c.reason}
+                                        {c.releasedMinor > 0 &&
+                                            ` Â· ${money(c.releasedMinor)} áƒ’áƒáƒ“áƒáƒ•áƒ˜áƒ“áƒ áƒáƒœáƒ’áƒáƒ áƒ˜áƒ¨áƒ˜áƒ¡ áƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ–áƒ”`}
+                                    </span>
+                                </span>
+                                <a
+                                    href={`/portal/finance/credit-notes/${c.id}/pdf`}
+                                    className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-white px-3 ring-1 ring-slate-200 hover:bg-slate-50"
+                                >
+                                    <Download size={14} aria-hidden /> PDF
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
             )}
 
             {invoice.allocations.length > 0 && (
                 <section className="mb-6">
-                    <h2 className="mb-2 text-lg">ჩარიცხვები</h2>
+                    <h2 className="mb-2 text-lg">
+                        áƒ©áƒáƒ áƒ˜áƒªáƒ®áƒ•áƒ”áƒ‘áƒ˜
+                    </h2>
                     <ul className="space-y-1 text-sm">
                         {invoice.allocations.map((a, i) => (
                             <li
                                 key={i}
-                                className={a.reversed ? 'line-through opacity-60' : ''}
+                                className={
+                                    a.reversed ? 'line-through opacity-60' : ''
+                                }
                             >
-                                {a.receiptNumber ?? `#${a.paymentId}`} ·{' '}
-                                {money(a.amountMinor)} ·{' '}
+                                {a.receiptNumber ?? `#${a.paymentId}`} Â·{' '}
+                                {money(a.amountMinor)} Â·{' '}
                                 {a.createdAt ? formatDateTime(a.createdAt) : ''}
-                                {a.reversed && ' (გაუქმებული)'}
+                                {a.reversed &&
+                                    ' (áƒ’áƒáƒ£áƒ¥áƒ›áƒ”áƒ‘áƒ£áƒšáƒ˜)'}
                             </li>
                         ))}
                     </ul>
@@ -269,11 +386,13 @@ export default function FinanceInvoice({
                         aria-labelledby="account-payments"
                     >
                         <h2 id="account-payments" className="text-lg">
-                            ანგარიშის გადახდები
+                            áƒáƒœáƒ’áƒáƒ áƒ˜áƒ¨áƒ˜áƒ¡
+                            áƒ’áƒáƒ“áƒáƒ®áƒ“áƒ”áƒ‘áƒ˜
                         </h2>
                         {payments.length === 0 && (
                             <p className="text-sm text-slate-500">
-                                გადახდა ჯერ არ მიღებულა.
+                                áƒ’áƒáƒ“áƒáƒ®áƒ“áƒ áƒ¯áƒ”áƒ  áƒáƒ 
+                                áƒ›áƒ˜áƒ¦áƒ”áƒ‘áƒ£áƒšáƒ.
                             </p>
                         )}
                         {payments.map((p) => (
@@ -282,39 +401,44 @@ export default function FinanceInvoice({
                                 className="space-y-2 rounded-xl bg-white p-4 text-sm ring-1 ring-slate-200"
                             >
                                 <p className={p.reversed ? 'opacity-60' : ''}>
-                                    <strong>{p.receiptNumber}</strong> ·{' '}
-                                    {p.methodLabel} · {money(p.amountMinor)} ·{' '}
-                                    {formatDateTime(p.receivedAt)} · კრედიტი{' '}
-                                    {money(p.creditMinor)} · დაბრუნებული{' '}
+                                    <strong>{p.receiptNumber}</strong> Â·{' '}
+                                    {p.methodLabel} Â· {money(p.amountMinor)} Â·{' '}
+                                    {formatDateTime(p.receivedAt)} Â·
+                                    áƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ˜ {money(p.creditMinor)}{' '}
+                                    Â· áƒ“áƒáƒ‘áƒ áƒ£áƒœáƒ”áƒ‘áƒ£áƒšáƒ˜{' '}
                                     {money(p.refundedMinor)}
-                                    {p.reversed && ' · გაუქმებული'}
+                                    {p.reversed &&
+                                        ' Â· áƒ’áƒáƒ£áƒ¥áƒ›áƒ”áƒ‘áƒ£áƒšáƒ˜'}
                                 </p>
                                 {p.refunds.map((r) => (
                                     <p
                                         key={r.id}
                                         className="flex flex-wrap items-center gap-2 text-slate-600"
                                     >
-                                        დაბრუნება {money(r.amountMinor)} ·{' '}
+                                        áƒ“áƒáƒ‘áƒ áƒ£áƒœáƒ”áƒ‘áƒ{' '}
+                                        {money(r.amountMinor)} Â·{' '}
                                         {r.status === 'succeeded'
-                                            ? 'დასრულებული'
+                                            ? 'áƒ“áƒáƒ¡áƒ áƒ£áƒšáƒ”áƒ‘áƒ£áƒšáƒ˜'
                                             : r.status === 'failed'
-                                              ? 'ვერ შესრულდა'
-                                              : 'მოთხოვნილი'}
-                                        {r.status === 'requested' && sandboxEnabled && (
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() =>
-                                                    postWithToast(
-                                                        `/portal/finance/sandbox/refunds/${r.id}/confirm`,
-                                                        {},
-                                                        'Sandbox: დაბრუნება დადასტურდა.',
-                                                    )
-                                                }
-                                            >
-                                                Sandbox: დადასტურება
-                                            </Button>
-                                        )}
+                                              ? 'áƒ•áƒ”áƒ  áƒ¨áƒ”áƒ¡áƒ áƒ£áƒšáƒ“áƒ'
+                                              : 'áƒ›áƒáƒ—áƒ®áƒáƒ•áƒœáƒ˜áƒšáƒ˜'}
+                                        {r.status === 'requested' &&
+                                            sandboxEnabled && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() =>
+                                                        postWithToast(
+                                                            `/portal/finance/sandbox/refunds/${r.id}/confirm`,
+                                                            {},
+                                                            'Sandbox: áƒ“áƒáƒ‘áƒ áƒ£áƒœáƒ”áƒ‘áƒ áƒ“áƒáƒ“áƒáƒ¡áƒ¢áƒ£áƒ áƒ“áƒ.',
+                                                        )
+                                                    }
+                                                >
+                                                    Sandbox:
+                                                    áƒ“áƒáƒ“áƒáƒ¡áƒ¢áƒ£áƒ áƒ”áƒ‘áƒ
+                                                </Button>
+                                            )}
                                     </p>
                                 ))}
                                 {p.creditMinor > 0 && !p.reversed && (
@@ -334,12 +458,12 @@ export default function FinanceInvoice({
                                                                     e.currentTarget,
                                                                 ).get('amount'),
                                                             },
-                                                            'კრედიტი ჩაირიცხა.',
+                                                            'áƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ˜ áƒ©áƒáƒ˜áƒ áƒ˜áƒªáƒ®áƒ.',
                                                         );
                                                     }}
                                                 >
                                                     <Input
-                                                        aria-label="ჩასარიცხი თანხა"
+                                                        aria-label="áƒ©áƒáƒ¡áƒáƒ áƒ˜áƒªáƒ®áƒ˜ áƒ—áƒáƒœáƒ®áƒ"
                                                         name="amount"
                                                         inputMode="decimal"
                                                         required
@@ -350,7 +474,8 @@ export default function FinanceInvoice({
                                                         size="sm"
                                                         type="submit"
                                                     >
-                                                        კრედიტის ჩარიცხვა
+                                                        áƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ˜áƒ¡
+                                                        áƒ©áƒáƒ áƒ˜áƒªáƒ®áƒ•áƒ
                                                     </Button>
                                                 </form>
                                             )}
@@ -369,8 +494,8 @@ export default function FinanceInvoice({
                                                         e.currentTarget,
                                                     ),
                                                     p.isManual
-                                                        ? 'დაბრუნება აღირიცხა.'
-                                                        : 'დაბრუნება მოთხოვნილია.',
+                                                        ? 'áƒ“áƒáƒ‘áƒ áƒ£áƒœáƒ”áƒ‘áƒ áƒáƒ¦áƒ˜áƒ áƒ˜áƒªáƒ®áƒ.'
+                                                        : 'áƒ“áƒáƒ‘áƒ áƒ£áƒœáƒ”áƒ‘áƒ áƒ›áƒáƒ—áƒ®áƒáƒ•áƒœáƒ˜áƒšáƒ˜áƒ.',
                                                 );
                                             }}
                                         >
@@ -382,7 +507,7 @@ export default function FinanceInvoice({
                                                 />
                                             )}
                                             <Input
-                                                aria-label="დასაბრუნებელი თანხა"
+                                                aria-label="áƒ“áƒáƒ¡áƒáƒ‘áƒ áƒ£áƒœáƒ”áƒ‘áƒ”áƒšáƒ˜ áƒ—áƒáƒœáƒ®áƒ"
                                                 name="amount"
                                                 inputMode="decimal"
                                                 required
@@ -390,18 +515,18 @@ export default function FinanceInvoice({
                                                 placeholder="0.00"
                                             />
                                             <Input
-                                                aria-label="მიზეზი"
+                                                aria-label="áƒ›áƒ˜áƒ–áƒ”áƒ–áƒ˜"
                                                 name="reason"
                                                 required
                                                 minLength={5}
-                                                placeholder="მიზეზი"
+                                                placeholder="áƒ›áƒ˜áƒ–áƒ”áƒ–áƒ˜"
                                             />
                                             <Button
                                                 size="sm"
                                                 variant="outline"
                                                 type="submit"
                                             >
-                                                დაბრუნება
+                                                áƒ“áƒáƒ‘áƒ áƒ£áƒœáƒ”áƒ‘áƒ
                                             </Button>
                                         </form>
                                     </div>
@@ -410,40 +535,118 @@ export default function FinanceInvoice({
                         ))}
                     </section>
 
-                    {invoice.status !== 'void' && invoice.paidMinor === 0 && (
+                    {creditable && (
                         <form
-                            className="flex flex-wrap items-end gap-2"
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                postWithToast(
-                                    `/portal/finance/invoices/${invoice.id}/void`,
-                                    { reason: voidReason },
-                                    'ინვოისი გაუქმდა.',
-                                );
-                            }}
+                            className="mb-6 space-y-2 rounded-xl bg-white p-4 ring-1 ring-slate-200"
+                            onSubmit={issueCreditNote}
+                            aria-labelledby="credit-note-form"
                         >
-                            <div className="min-w-[220px] flex-1">
-                                <label
-                                    htmlFor="void-reason"
-                                    className="mb-1 block text-sm font-medium"
+                            <h2 id="credit-note-form" className="text-lg">
+                                áƒ¡áƒáƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ áƒœáƒáƒ¢áƒ
+                                (áƒ™áƒáƒ áƒ”áƒ¥áƒ¢áƒ˜áƒ áƒ”áƒ‘áƒ)
+                            </h2>
+                            <p className="text-sm text-slate-600">
+                                áƒáƒ›áƒªáƒ˜áƒ áƒ”áƒ‘áƒ¡
+                                áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ˜áƒ¡ áƒ—áƒáƒœáƒ®áƒáƒ¡.
+                                áƒ—áƒ£ áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ–áƒ” áƒáƒ®áƒáƒš
+                                áƒ¯áƒáƒ›áƒ–áƒ” áƒ›áƒ”áƒ¢áƒ˜áƒ
+                                áƒ’áƒáƒ“áƒáƒ®áƒ“áƒ˜áƒšáƒ˜,
+                                áƒ¡áƒ®áƒ•áƒáƒáƒ‘áƒ
+                                áƒáƒœáƒ’áƒáƒ áƒ˜áƒ¨áƒ˜áƒ¡
+                                áƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ–áƒ” áƒ’áƒáƒ“áƒáƒ•áƒ â€”
+                                áƒ¨áƒ”áƒ›áƒ“áƒ”áƒ’ áƒ¨áƒ”áƒ’áƒ˜áƒ«áƒšáƒ˜áƒáƒ—
+                                áƒ“áƒáƒ£áƒ‘áƒ áƒ£áƒœáƒáƒ— áƒáƒœ áƒ¡áƒ®áƒ•áƒ
+                                áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ–áƒ”
+                                áƒ©áƒáƒ áƒ˜áƒªáƒ®áƒáƒ—.
+                                áƒ¡áƒáƒ™áƒ áƒ”áƒ“áƒ˜áƒ¢áƒ áƒœáƒáƒ¢áƒ áƒáƒ 
+                                áƒ˜áƒ¨áƒšáƒ”áƒ‘áƒ.
+                            </p>
+                            <div className="flex flex-wrap items-end gap-2">
+                                <div>
+                                    <label
+                                        htmlFor="credit-amount"
+                                        className="mb-1 block text-sm font-medium"
+                                    >
+                                        áƒ—áƒáƒœáƒ®áƒ (áƒ›áƒáƒ¥áƒ¡.{' '}
+                                        {money(
+                                            invoice.totalMinor -
+                                                invoice.creditedMinor,
+                                        )}
+                                        )
+                                    </label>
+                                    <Input
+                                        id="credit-amount"
+                                        name="amount"
+                                        inputMode="decimal"
+                                        required
+                                        className="w-32"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <div className="min-w-[220px] flex-1">
+                                    <label
+                                        htmlFor="credit-reason"
+                                        className="mb-1 block text-sm font-medium"
+                                    >
+                                        áƒ¡áƒáƒ¤áƒ£áƒ«áƒ•áƒ”áƒšáƒ˜
+                                    </label>
+                                    <Input
+                                        id="credit-reason"
+                                        name="reason"
+                                        required
+                                        minLength={5}
+                                        maxLength={500}
+                                    />
+                                </div>
+                                <Button
+                                    type="submit"
+                                    variant="outline"
+                                    disabled={creditProcessing}
                                 >
-                                    გაუქმების მიზეზი
-                                </label>
-                                <Input
-                                    id="void-reason"
-                                    value={voidReason}
-                                    onChange={(e) =>
-                                        setVoidReason(e.target.value)
-                                    }
-                                    required
-                                    minLength={5}
-                                />
+                                    áƒ’áƒáƒ›áƒáƒ¬áƒ”áƒ áƒ
+                                </Button>
                             </div>
-                            <Button type="submit" variant="destructive">
-                                ინვოისის გაუქმება
-                            </Button>
                         </form>
                     )}
+
+                    {invoice.status !== 'void' &&
+                        invoice.paidMinor === 0 &&
+                        invoice.creditedMinor === 0 && (
+                            <form
+                                className="flex flex-wrap items-end gap-2"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    postWithToast(
+                                        `/portal/finance/invoices/${invoice.id}/void`,
+                                        { reason: voidReason },
+                                        'áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ˜ áƒ’áƒáƒ£áƒ¥áƒ›áƒ“áƒ.',
+                                    );
+                                }}
+                            >
+                                <div className="min-w-[220px] flex-1">
+                                    <label
+                                        htmlFor="void-reason"
+                                        className="mb-1 block text-sm font-medium"
+                                    >
+                                        áƒ’áƒáƒ£áƒ¥áƒ›áƒ”áƒ‘áƒ˜áƒ¡
+                                        áƒ›áƒ˜áƒ–áƒ”áƒ–áƒ˜
+                                    </label>
+                                    <Input
+                                        id="void-reason"
+                                        value={voidReason}
+                                        onChange={(e) =>
+                                            setVoidReason(e.target.value)
+                                        }
+                                        required
+                                        minLength={5}
+                                    />
+                                </div>
+                                <Button type="submit" variant="destructive">
+                                    áƒ˜áƒœáƒ•áƒáƒ˜áƒ¡áƒ˜áƒ¡
+                                    áƒ’áƒáƒ£áƒ¥áƒ›áƒ”áƒ‘áƒ
+                                </Button>
+                            </form>
+                        )}
                 </>
             )}
         </PortalLayout>

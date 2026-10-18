@@ -13,6 +13,7 @@ type Props = {
         creditMinor: number;
         refundedMinor: number;
         reversedMinor: number;
+        creditedMinor: number;
         outstandingMinor: number;
     };
     paymentIssues: { paymentId: number; providerPaymentId: string }[];
@@ -47,6 +48,7 @@ export default function FinanceReconciliation({
         ['ანგარიშების კრედიტი', totals.creditMinor],
         ['დაბრუნებული', totals.refundedMinor],
         ['გაუქმებული გატარებები', totals.reversedMinor],
+        ['საკრედიტო ნოტებით შემცირებული', totals.creditedMinor],
         ['ღია დავალიანება', totals.outstandingMinor],
     ];
 

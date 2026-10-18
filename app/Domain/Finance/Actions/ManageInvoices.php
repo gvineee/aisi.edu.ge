@@ -73,6 +73,7 @@ class ManageInvoices
                 'currency' => $account->currency,
                 'total_minor' => 0,
                 'paid_minor' => 0,
+                'credited_minor' => 0,
                 'created_by' => $actor->id,
             ]);
             $invoice->tenant_id = $account->tenant_id;
@@ -124,7 +125,11 @@ class ManageInvoices
             }
 
             if ($locked->paid_minor > 0 || $locked->allocations()->whereNull('reversed_at')->exists()) {
-                throw ValidationException::withMessages(['reason' => 'გადახდილი ინვოისი ვერ გაუქმდება — საჭიროა კორექტირება ბუღალტერთან.']);
+                throw ValidationException::withMessages(['reason' => 'გადახდილი ინვოისი ვერ გაუქმდება — გამოწერეთ საკრედიტო ნოტა.']);
+            }
+
+            if ($locked->credited_minor > 0) {
+                throw ValidationException::withMessages(['reason' => 'ინვოისზე საკრედიტო ნოტა უკვე გამოწერილია — გაუქმება შეუძლებელია.']);
             }
 
             $locked->status = Invoice::STATUS_VOID;

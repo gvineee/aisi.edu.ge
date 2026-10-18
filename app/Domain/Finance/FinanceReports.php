@@ -27,6 +27,7 @@ class FinanceReports
         'partially_paid' => 'ნაწილობრივ გადახდილი',
         'paid' => 'გადახდილი',
         'void' => 'გაუქმებული',
+        'credited' => 'საკრედიტო ნოტით დახურული',
     ];
 
     /**

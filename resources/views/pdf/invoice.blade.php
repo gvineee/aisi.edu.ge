@@ -39,6 +39,9 @@
                 </tr>
             @endforeach
             <tr><th colspan="3">სულ</th><th class="num">{{ $invoice['total'] }}</th></tr>
+            @if ($invoice['credited'])
+                <tr><td colspan="3">საკრედიტო ნოტა: {{ implode(', ', $invoice['creditNotes']) }}</td><td class="num">−{{ $invoice['credited'] }}</td></tr>
+            @endif
             <tr><td colspan="3">გადახდილი</td><td class="num">{{ $invoice['paid'] }}</td></tr>
             <tr><th colspan="3">დარჩენილი</th><th class="num">{{ $invoice['outstanding'] }}</th></tr>
         </tbody>

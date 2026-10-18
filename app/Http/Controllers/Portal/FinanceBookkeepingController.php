@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Domain\Academics\Models\Student;
+use App\Domain\Finance\Actions\ManageCreditNotes;
 use App\Domain\Finance\Actions\ManageInvoices;
 use App\Domain\Finance\Actions\RecordManualPayments;
 use App\Domain\Finance\FinancePdf;
 use App\Domain\Finance\FinanceReports;
+use App\Domain\Finance\Models\CreditNote;
 use App\Domain\Finance\Models\FinanceSetting;
 use App\Domain\Finance\Models\Invoice;
 use App\Domain\Finance\Models\Payment;
@@ -29,7 +31,8 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 /**
  * Bookkeeping without a bank API: the payments journal, recording cash /
  * transfer / POS payments, reversing a wrong entry, paying credit back by
- * hand, per-student account statements, and invoice/receipt PDFs.
+ * hand, credit notes correcting an issued invoice, per-student account
+ * statements, and invoice/receipt/credit note PDFs.
  */
 class FinanceBookkeepingController extends Controller
 {
@@ -137,6 +140,59 @@ class FinanceBookkeepingController extends Controller
         return back()->with('toast', ['type' => 'success', 'message' => 'თანხის დაბრუნება აღირიცხა.']);
     }
 
+    public function storeCreditNote(Request $request, CurrentTenant $currentTenant, Invoice $invoice, ManageCreditNotes $action): RedirectResponse
+    {
+        $tenant = $currentTenant->get();
+        abort_unless($invoice->tenant_id === $tenant->id, 404);
+        $this->authorizeFinanceStaff($tenant->id, $request->user());
+        $data = $request->validate([
+            'amount' => ['required', 'string', 'regex:/^\d{1,7}([.,]\d{1,2})?$/'],
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+            'idempotency_key' => ['required', 'string', 'uuid'],
+        ]);
+
+        $creditNote = $action->issue($invoice, self::moneyToMinor($data['amount']), $data['reason'], $data['idempotency_key'], $request->user());
+
+        return back()->with('toast', [
+            'type' => 'success',
+            'message' => "საკრედიტო ნოტა № {$creditNote->number} გამოიწერა".($creditNote->released_minor > 0 ? ' — ზედმეტად გადახდილი თანხა ანგარიშის კრედიტზე გადავიდა.' : '.'),
+        ]);
+    }
+
+    public function creditNotePdf(Request $request, CurrentTenant $currentTenant, CreditNote $creditNote, FinancePdf $pdf): HttpResponse
+    {
+        $tenant = $currentTenant->get();
+        abort_unless($creditNote->tenant_id === $tenant->id, 404);
+        $user = $request->user();
+        $creditNote->load('invoice', 'account.student.schoolClass');
+        abort_unless($this->isFinanceStaff($tenant->id, $user) || $this->financialChildrenOf($tenant->id, $user)->contains('id', $creditNote->account->student_id), 403);
+
+        $money = fn (int $minor) => FinanceReports::money($minor).' '.($creditNote->currency === 'GEL' ? '₾' : $creditNote->currency);
+
+        $content = $pdf->render('pdf.credit-note', [
+            'schoolName' => $tenant->name,
+            'generatedAt' => Carbon::now('Asia/Tbilisi')->format('d.m.Y H:i'),
+            'settings' => FinanceSetting::forTenant($tenant->id)?->toPublicArray(),
+            'creditNote' => [
+                'number' => $creditNote->number,
+                'issuedOn' => $creditNote->issued_on->format('d.m.Y'),
+                'invoiceNumber' => $creditNote->invoice->number,
+                'invoiceIssuedOn' => $creditNote->invoice->issued_on->format('d.m.Y'),
+                'studentName' => $creditNote->account->student?->fullName(),
+                'className' => $creditNote->account->student?->schoolClass?->name,
+                'reason' => $creditNote->reason,
+                'amount' => $money($creditNote->amount_minor),
+                'released' => $creditNote->released_minor > 0 ? $money($creditNote->released_minor) : null,
+            ],
+        ]);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="credit-note-'.$creditNote->number.'.pdf"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     public function statement(Request $request, CurrentTenant $currentTenant, Student $student): Response
     {
         $tenant = $currentTenant->get();
@@ -165,7 +221,7 @@ class FinanceBookkeepingController extends Controller
                 ])->values(),
             ],
             'summary' => [
-                'invoicedMinor' => (int) $invoiceRows->where('status', '!=', Invoice::STATUS_VOID)->sum('total_minor'),
+                'invoicedMinor' => (int) $invoiceRows->where('status', '!=', Invoice::STATUS_VOID)->sum(fn (Invoice $i) => $i->netMinor()),
                 'paidMinor' => (int) $invoiceRows->where('status', '!=', Invoice::STATUS_VOID)->sum('paid_minor'),
                 'outstandingMinor' => (int) $open->sum(fn (Invoice $i) => $i->outstandingMinor()),
                 'overdueMinor' => (int) $open->filter(fn (Invoice $i) => $i->due_on->toDateString() < $today)->sum(fn (Invoice $i) => $i->outstandingMinor()),
@@ -173,7 +229,7 @@ class FinanceBookkeepingController extends Controller
             ],
             'invoices' => $invoiceRows->map(fn (Invoice $i) => [
                 'id' => $i->id, 'number' => $i->number, 'status' => $i->status, 'issuedOn' => $i->issued_on->toDateString(),
-                'dueOn' => $i->due_on->toDateString(), 'totalMinor' => $i->total_minor, 'paidMinor' => $i->paid_minor,
+                'dueOn' => $i->due_on->toDateString(), 'totalMinor' => $i->total_minor, 'creditedMinor' => $i->credited_minor, 'paidMinor' => $i->paid_minor,
                 'outstandingMinor' => $i->outstandingMinor(), 'currency' => $i->currency,
             ])->values(),
             'payments' => $payments->map(fn (Payment $p) => $this->paymentRow($p))->values(),
@@ -237,6 +293,8 @@ class FinanceBookkeepingController extends Controller
                     'description' => $item->description, 'quantity' => $item->quantity, 'unit' => $money($item->unit_minor), 'amount' => $money($item->amount_minor),
                 ])->all(),
                 'total' => $money($invoice->total_minor),
+                'credited' => $invoice->credited_minor > 0 ? $money($invoice->credited_minor) : null,
+                'creditNotes' => $invoice->creditNotes()->orderBy('id')->get()->map(fn (CreditNote $c) => $c->number.' ('.$c->issued_on->format('d.m.Y').')')->all(),
                 'paid' => $money($invoice->paid_minor),
                 'outstanding' => $money($invoice->outstandingMinor()),
             ],

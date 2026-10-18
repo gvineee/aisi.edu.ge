@@ -23,11 +23,12 @@ use Illuminate\Support\Carbon;
  * @property string $currency
  * @property int $total_minor
  * @property int $paid_minor
+ * @property int $credited_minor
  * @property string|null $void_reason
  * @property Carbon|null $voided_at
  * @property int $created_by
  */
-#[Fillable(['billing_account_id', 'fiscal_year', 'number', 'status', 'issued_on', 'due_on', 'currency', 'total_minor', 'paid_minor', 'void_reason', 'voided_at', 'created_by'])]
+#[Fillable(['billing_account_id', 'fiscal_year', 'number', 'status', 'issued_on', 'due_on', 'currency', 'total_minor', 'paid_minor', 'credited_minor', 'void_reason', 'voided_at', 'created_by'])]
 class Invoice extends Model
 {
     use BelongsToTenant;
@@ -40,9 +41,18 @@ class Invoice extends Model
 
     public const STATUS_VOID = 'void';
 
+    /** Fully cancelled by credit notes; nothing left to pay. */
+    public const STATUS_CREDITED = 'credited';
+
+    /** What the invoice asks for after credit notes. */
+    public function netMinor(): int
+    {
+        return max(0, $this->total_minor - $this->credited_minor);
+    }
+
     public function outstandingMinor(): int
     {
-        return max(0, $this->total_minor - $this->paid_minor);
+        return max(0, $this->netMinor() - $this->paid_minor);
     }
 
     public function isOpen(): bool
@@ -54,8 +64,9 @@ class Invoice extends Model
     public function statusFromPaid(): string
     {
         return match (true) {
+            $this->netMinor() === 0 && $this->paid_minor <= 0 => self::STATUS_CREDITED,
             $this->paid_minor <= 0 => self::STATUS_ISSUED,
-            $this->paid_minor < $this->total_minor => self::STATUS_PARTIALLY_PAID,
+            $this->paid_minor < $this->netMinor() => self::STATUS_PARTIALLY_PAID,
             default => self::STATUS_PAID,
         };
     }
@@ -68,6 +79,7 @@ class Invoice extends Model
             'due_on' => 'date',
             'total_minor' => 'integer',
             'paid_minor' => 'integer',
+            'credited_minor' => 'integer',
             'voided_at' => 'datetime',
         ];
     }
@@ -86,6 +98,14 @@ class Invoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    /**
+     * @return HasMany<CreditNote, $this>
+     */
+    public function creditNotes(): HasMany
+    {
+        return $this->hasMany(CreditNote::class);
     }
 
     /**

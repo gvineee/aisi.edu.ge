@@ -10,6 +10,7 @@ export const INVOICE_STATUS: Record<string, string> = {
     partially_paid: 'ნაწილობრივ გადახდილი',
     paid: 'გადახდილი',
     void: 'გაუქმებული',
+    credited: 'საკრედიტო ნოტით დახურული',
 };
 
 export const PAYMENT_METHODS: { value: string; label: string }[] = [

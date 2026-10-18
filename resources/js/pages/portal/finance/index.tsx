@@ -71,6 +71,7 @@ const FILTERS: { value: string; label: string }[] = [
     { value: 'issued', label: 'გადასახდელი' },
     { value: 'partially_paid', label: 'ნაწილობრივ' },
     { value: 'paid', label: 'გადახდილი' },
+    { value: 'credited', label: 'საკრედიტო ნოტით დახურული' },
     { value: 'void', label: 'გაუქმებული' },
 ];
 
@@ -209,7 +210,11 @@ export default function FinanceIndex({
             { preserveState: true, preserveScroll: true, replace: true },
         );
 
-    const updateItem = (index: number, key: 'description' | 'quantity' | 'unit', value: string) =>
+    const updateItem = (
+        index: number,
+        key: 'description' | 'quantity' | 'unit',
+        value: string,
+    ) =>
         setItems((all) =>
             all.map((x, j) => (j === index ? { ...x, [key]: value } : x)),
         );
@@ -352,7 +357,11 @@ export default function FinanceIndex({
                                     value={item.description}
                                     required
                                     onChange={(e) =>
-                                        updateItem(i, 'description', e.target.value)
+                                        updateItem(
+                                            i,
+                                            'description',
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="აღწერა"
                                 />
@@ -362,7 +371,11 @@ export default function FinanceIndex({
                                     min={1}
                                     value={item.quantity}
                                     onChange={(e) =>
-                                        updateItem(i, 'quantity', e.target.value)
+                                        updateItem(
+                                            i,
+                                            'quantity',
+                                            e.target.value,
+                                        )
                                     }
                                 />
                                 <Input
@@ -404,9 +417,7 @@ export default function FinanceIndex({
                 </form>
             )}
 
-            {children.length > 0 && (
-                <PaymentInstructions info={paymentInfo} />
-            )}
+            {children.length > 0 && <PaymentInstructions info={paymentInfo} />}
 
             {children.map((child) => (
                 <section
@@ -605,7 +616,11 @@ export default function FinanceIndex({
                                 placeholder="ნომერი ან მოსწავლე"
                                 className="min-w-0 flex-1"
                             />
-                            <Button type="submit" variant="outline" aria-label="ძებნა">
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                aria-label="ძებნა"
+                            >
                                 <Search size={16} />
                             </Button>
                         </form>

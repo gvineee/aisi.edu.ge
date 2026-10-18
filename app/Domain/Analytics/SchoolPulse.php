@@ -90,9 +90,9 @@ class SchoolPulse
             ->where('status', '!=', Invoice::STATUS_VOID)
             ->whereDate('issued_on', '>=', $now->copy()->startOfMonth()->toDateString())
             ->whereDate('issued_on', '<=', $now->copy()->endOfMonth()->toDateString())
-            ->get(['total_minor', 'paid_minor']);
+            ->get(['total_minor', 'paid_minor', 'credited_minor']);
 
-        $metric = $this->ratio('collection_current', 'მიმდინარე შემოსავალი', (int) $invoices->sum('paid_minor'), (int) $invoices->sum('total_minor'), $period, $definition, '/portal/finance');
+        $metric = $this->ratio('collection_current', 'მიმდინარე შემოსავალი', (int) $invoices->sum('paid_minor'), (int) $invoices->sum(fn (Invoice $i) => $i->netMinor()), $period, $definition, '/portal/finance');
         $metric['moneyUnit'] = 'minor';
 
         return $metric;
