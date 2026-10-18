@@ -18,7 +18,11 @@ class ReportCardPdf
     public function render(ReportCardPublication $publication, string $verificationUrl, string $timezone): string
     {
         $fontCache = storage_path('framework/cache/dompdf-fonts');
+        // Own temp dir: the system one is not always usable (e.g. under
+        // `php artisan serve` on Windows), and dompdf writes fonts there first.
+        $tempDir = storage_path('framework/cache/dompdf-tmp');
         File::ensureDirectoryExists($fontCache);
+        File::ensureDirectoryExists($tempDir);
 
         $options = new Options;
         $options->setIsRemoteEnabled(false);
@@ -26,6 +30,7 @@ class ReportCardPdf
         $options->setChroot([resource_path('fonts')]);
         $options->setFontDir($fontCache);
         $options->setFontCache($fontCache);
+        $options->setTempDir($tempDir);
         $options->setDefaultFont('NotoGeorgian');
 
         $dompdf = new Dompdf($options);
