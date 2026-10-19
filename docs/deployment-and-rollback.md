@@ -126,3 +126,11 @@
 - Smoke: საჯარო გვერდები, `/sitemap.xml`, `/robots.txt`, `/login` → 200; `/documents`, `/portal/finance`, `/portal/members` (სტუმარი) → 302. scheduler-ში ჩანს `finance:generate-fee-invoices` (03:00 UTC = 07:00 თბილისი) და `appointments:send-reminders`. failed jobs: 0; ლოგში ახალი შეცდომა არ არის. 2026-10-14 16:56-ის `legacy_redirects` შეცდომები იმ deploy-ის migration-მდე წამებიდანაა; ახლა ამას maintenance mode უშლის ხელს.
 - Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import`; cache rebuild; `up`.
 - **ღიაა:** ფინანსები production-ready არ არის ბუღალტრის UAT-მდე; სკოლის რეკვიზიტები (`finance_settings`) ცარიელია; nginx-ის დუბლირებული `X-Frame-Options`/`Referrer-Policy`.
+
+## Deploy — 2026-10-19 (`9fd45f9..f8544e2`, `bash deploy/deploy.sh`)
+
+- შინაარსი: საკრედიტო ნოტები (migration `2026_10_18_000001_create_credit_notes`, batch 16); dompdf-ის საკუთარი temp დირექტორია (`storage/framework/cache/dompdf-tmp`); ინვოისის გვერდის ქართული ტექსტის გასწორება.
+- Backup: `_backups/db-20261019-222636.sql.gz` (66 KB), `files-20261019-222636.tar.gz`, `env-20261019-222636` (600).
+- Smoke: საჯარო გვერდები და `/sitemap.xml` → 200; `/login` → 200; `/portal/finance`, `/documents` და `/portal/finance/credit-notes/1/pdf` სტუმრისთვის → 302. scheduler-ის ორივე ამოცანა ჩანს. ლოგში ახალი შეცდომა არ არის; `storage/framework/cache` ჩაწერადია (სისტემური temp: `/tmp`).
+- production-ზე PDF ჯერ არავის შეუქმნია — პირველი რეალური ინვოისის/ნოტის PDF-ის შემდეგ შესამოწმებელია `storage/framework/cache/dompdf-fonts/installed-fonts.json`.
+- Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import` (ან მხოლოდ სქემისთვის `php artisan migrate:rollback --step=1`); cache rebuild; `up`.
