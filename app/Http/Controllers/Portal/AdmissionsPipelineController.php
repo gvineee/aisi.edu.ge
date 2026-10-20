@@ -8,6 +8,8 @@ use App\Domain\Admissions\Actions\ScheduleAppointment;
 use App\Domain\Admissions\Models\AdmissionAppointment;
 use App\Domain\Admissions\Models\AdmissionDecision;
 use App\Domain\Admissions\Models\AdmissionLead;
+use App\Domain\Admissions\Models\AdmissionVisitBooking;
+use App\Domain\Admissions\Models\AdmissionVisitSlot;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Http\Controllers\Controller;
@@ -79,7 +81,7 @@ class AdmissionsPipelineController extends Controller
         $this->authorizeAccess($tenant->id, $request->user()->id);
         abort_unless($admissionLead->tenant_id === $tenant->id, 404);
 
-        $admissionLead->load(['appointments.creator', 'decision.decider']);
+        $admissionLead->load(['appointments.creator', 'decision.decider', 'visitBookings.slot']);
 
         return Inertia::render('portal/admissions-pipeline/show', [
             'lead' => $this->formatDetail($admissionLead),
@@ -231,6 +233,13 @@ class AdmissionsPipelineController extends Controller
                 'scheduledAt' => $appointment->scheduled_at->toIso8601String(),
                 'notes' => $appointment->notes,
                 'createdByName' => $appointment->creator?->name,
+            ])->values(),
+            'visitBookings' => $lead->visitBookings->map(fn (AdmissionVisitBooking $booking) => [
+                'id' => $booking->id,
+                'startsAt' => $booking->slot->starts_at->toIso8601String(),
+                'label' => $booking->slot->label,
+                'status' => $booking->status,
+                'slotCancelled' => $booking->slot->status === AdmissionVisitSlot::STATUS_CANCELLED,
             ])->values(),
             'decision' => $lead->decision === null ? null : [
                 'id' => $lead->decision->id,

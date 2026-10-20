@@ -90,6 +90,14 @@ class AdmissionLead extends Model
     }
 
     /**
+     * @return HasMany<AdmissionVisitBooking, $this>
+     */
+    public function visitBookings(): HasMany
+    {
+        return $this->hasMany(AdmissionVisitBooking::class)->orderBy('id');
+    }
+
+    /**
      * @return HasOne<AdmissionDecision, $this>
      */
     public function decision(): HasOne

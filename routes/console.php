@@ -10,6 +10,7 @@ Artisan::command('inspire', function () {
 
 // Requires the server cron: * * * * * php artisan schedule:run
 Schedule::command('appointments:send-reminders')->hourly()->withoutOverlapping();
+Schedule::command('admissions:send-visit-reminders')->hourly()->withoutOverlapping();
 
 if (config('finance.auto_generate')) {
     Schedule::command('finance:generate-fee-invoices')->dailyAt('07:00')->timezone('Asia/Tbilisi')->withoutOverlapping();

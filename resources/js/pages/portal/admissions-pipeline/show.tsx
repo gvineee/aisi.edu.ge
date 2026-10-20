@@ -33,6 +33,13 @@ type LeadDetail = {
     stage: string;
     createdAt: string | null;
     appointments: AppointmentRow[];
+    visitBookings: {
+        id: number;
+        startsAt: string;
+        label: string | null;
+        status: 'booked' | 'cancelled';
+        slotCancelled: boolean;
+    }[];
     decision: DecisionInfo | null;
 };
 
@@ -71,11 +78,15 @@ export default function AdmissionsPipelineShow({
         const form = new FormData(event.currentTarget);
         setAdvancing(true);
 
-        router.post(`/portal/admissions-pipeline/${lead.id}/advance-stage`, form, {
-            onSuccess: () => toast.success('ეტაპი განახლდა.'),
-            onError: () => toast.error('ეტაპის შეცვლა ვერ მოხერხდა.'),
-            onFinish: () => setAdvancing(false),
-        });
+        router.post(
+            `/portal/admissions-pipeline/${lead.id}/advance-stage`,
+            form,
+            {
+                onSuccess: () => toast.success('ეტაპი განახლდა.'),
+                onError: () => toast.error('ეტაპის შეცვლა ვერ მოხერხდა.'),
+                onFinish: () => setAdvancing(false),
+            },
+        );
     };
 
     const scheduleAppointment = (event: FormEvent<HTMLFormElement>) => {
@@ -83,14 +94,18 @@ export default function AdmissionsPipelineShow({
         const form = new FormData(event.currentTarget);
         setSchedulingVisit(true);
 
-        router.post(`/portal/admissions-pipeline/${lead.id}/appointments`, form, {
-            onSuccess: () => {
-                toast.success('ვიზიტი დაინიშნა.');
-                (event.target as HTMLFormElement).reset();
+        router.post(
+            `/portal/admissions-pipeline/${lead.id}/appointments`,
+            form,
+            {
+                onSuccess: () => {
+                    toast.success('ვიზიტი დაინიშნა.');
+                    (event.target as HTMLFormElement).reset();
+                },
+                onError: () => toast.error('შემოწმეთ ფორმის ველები.'),
+                onFinish: () => setSchedulingVisit(false),
             },
-            onError: () => toast.error('შემოწმეთ ფორმის ველები.'),
-            onFinish: () => setSchedulingVisit(false),
-        });
+        );
     };
 
     const recordDecision = (event: FormEvent<HTMLFormElement>) => {
@@ -181,7 +196,40 @@ export default function AdmissionsPipelineShow({
 
             <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6">
                 <h2 className="mb-3 text-lg">ვიზიტები</h2>
-                {lead.appointments.length === 0 ? (
+                {lead.visitBookings.length > 0 && (
+                    <ul className="mb-4 divide-y divide-slate-100">
+                        {lead.visitBookings.map((booking) => (
+                            <li key={booking.id} className="py-2 text-sm">
+                                <p
+                                    className={`font-medium ${booking.status === 'cancelled' ? 'line-through opacity-60' : ''}`}
+                                >
+                                    {new Date(booking.startsAt).toLocaleString(
+                                        'ka-GE',
+                                        { timeZone: 'Asia/Tbilisi' },
+                                    )}
+                                    {booking.label && ` · ${booking.label}`}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                    ოჯახმა საიტზე დაჯავშნა
+                                    {booking.status === 'cancelled' &&
+                                        (booking.slotCancelled
+                                            ? ' · ვიზიტი გაუქმდა'
+                                            : ' · ჯავშანი გაუქმდა')}{' '}
+                                    ·{' '}
+                                    <Link
+                                        href="/portal/school-visits"
+                                        className="underline underline-offset-4"
+                                    >
+                                        სკოლის ვიზიტები
+                                    </Link>
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                {lead.appointments.length === 0 &&
+                lead.visitBookings.length > 0 ? null : lead.appointments
+                      .length === 0 ? (
                     <p className="mb-4 text-sm text-slate-500">
                         ვიზიტი ჯერ არ დაგეგმილა.
                     </p>
@@ -242,14 +290,15 @@ export default function AdmissionsPipelineShow({
                             {
                                 decisionOptions.find(
                                     (option) =>
-                                        option.value === lead.decision?.decision,
+                                        option.value ===
+                                        lead.decision?.decision,
                                 )?.label
                             }
                         </p>
                         <p className="text-slate-500">
-                            {new Date(
-                                lead.decision.decidedAt,
-                            ).toLocaleString('ka-GE')}
+                            {new Date(lead.decision.decidedAt).toLocaleString(
+                                'ka-GE',
+                            )}
                             {lead.decision.decidedByName &&
                                 ` · ${lead.decision.decidedByName}`}
                         </p>

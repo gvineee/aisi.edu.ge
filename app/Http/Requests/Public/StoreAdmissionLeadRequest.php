@@ -30,6 +30,8 @@ class StoreAdmissionLeadRequest extends FormRequest
             'desired_grade' => ['nullable', 'string', 'max:60'],
             'preferred_date' => ['nullable', 'date'],
             'consent_given' => ['required', 'accepted'],
+            // Optional: a published visit slot (capacity checked under lock in ManageSchoolVisits).
+            'visit_slot_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

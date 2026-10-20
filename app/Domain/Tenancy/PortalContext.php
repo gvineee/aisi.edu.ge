@@ -371,6 +371,7 @@ class PortalContext
 
         if (in_array($activeRole, self::ADMISSIONS_PIPELINE_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'admissions-pipeline', 'label' => 'მიღების პროცესი', 'href' => route('admissions-pipeline.index'), 'icon' => 'admissions-pipeline'];
+            $items[] = ['key' => 'school-visits', 'label' => 'სკოლის ვიზიტები', 'href' => route('school-visits.index'), 'icon' => 'school-visits'];
         }
 
         if (in_array($activeRole, self::PICKUP_ACCESS_ROLES, true)) {

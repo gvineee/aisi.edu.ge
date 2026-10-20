@@ -43,6 +43,7 @@ use App\Http\Controllers\Portal\PortfolioController;
 use App\Http\Controllers\Portal\PortfolioExtrasController;
 use App\Http\Controllers\Portal\ReportCardController;
 use App\Http\Controllers\Portal\SchoolPulseController;
+use App\Http\Controllers\Portal\SchoolVisitController;
 use App\Http\Controllers\Portal\ServicesController;
 use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
@@ -66,6 +67,16 @@ Route::get('/', [PageController::class, 'home'])->name('home');
 Route::post('/admissions/leads', [AdmissionLeadController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('admissions.leads.store');
+Route::get('/admissions/visit-slots', [AdmissionLeadController::class, 'slots'])
+    ->middleware('throttle:60,1')
+    ->name('admissions.visit-slots');
+// Signed link from the confirmation e-mail; valid until the visit starts.
+Route::get('/admissions/visits/{booking}/cancel', [AdmissionLeadController::class, 'showCancel'])
+    ->middleware(['signed', 'throttle:30,1'])
+    ->name('admissions.visits.cancel');
+Route::post('/admissions/visits/{booking}/cancel', [AdmissionLeadController::class, 'cancel'])
+    ->middleware(['signed', 'throttle:10,1'])
+    ->name('admissions.visits.cancel.confirm');
 
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('/robots.txt', RobotsController::class)->name('robots');
@@ -270,6 +281,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/admissions-pipeline/{admissionLead}/advance-stage', [AdmissionsPipelineController::class, 'advanceStage'])->name('admissions-pipeline.advance-stage');
     Route::post('portal/admissions-pipeline/{admissionLead}/appointments', [AdmissionsPipelineController::class, 'storeAppointment'])->name('admissions-pipeline.appointments.store');
     Route::post('portal/admissions-pipeline/{admissionLead}/decision', [AdmissionsPipelineController::class, 'storeDecision'])->name('admissions-pipeline.decision.store');
+    Route::get('portal/school-visits', [SchoolVisitController::class, 'index'])->name('school-visits.index');
+    Route::post('portal/school-visits', [SchoolVisitController::class, 'store'])->middleware('throttle:30,1')->name('school-visits.store');
+    Route::post('portal/school-visits/{slot}/cancel', [SchoolVisitController::class, 'cancelSlot'])->name('school-visits.cancel');
+    Route::post('portal/school-visit-bookings/{booking}/cancel', [SchoolVisitController::class, 'cancelBooking'])->name('school-visit-bookings.cancel');
     // --- end Admissions pipeline ---
 
     // --- Pickup & Consent (CLAUDE-PLATFORM-MODULES.md §7) — guardian-facing

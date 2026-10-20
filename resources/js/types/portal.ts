@@ -10,6 +10,7 @@ export type PortalNavIconKey =
     | 'substitutions'
     | 'timetable'
     | 'admissions-pipeline'
+    | 'school-visits'
     | 'pickup'
     | 'consents'
     | 'gradebook'
