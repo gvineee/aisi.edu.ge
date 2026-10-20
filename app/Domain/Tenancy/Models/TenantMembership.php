@@ -29,6 +29,9 @@ class TenantMembership extends Model
 
     public const ROLE_EDITOR = 'editor';
 
+    /** Runs the school library: catalog, copies, loans, reservations. */
+    public const ROLE_LIBRARIAN = 'librarian';
+
     public const ROLE_ADMIN = 'admin';
 
     public const ROLE_DIRECTOR = 'director';

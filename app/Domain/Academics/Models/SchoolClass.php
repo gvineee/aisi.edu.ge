@@ -2,6 +2,7 @@
 
 namespace App\Domain\Academics\Models;
 
+use App\Domain\Library\Models\BookListItem;
 use App\Domain\Tenancy\Concerns\BelongsToTenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -46,6 +47,14 @@ class SchoolClass extends Model
     public function students(): HasMany
     {
         return $this->hasMany(Student::class);
+    }
+
+    /**
+     * @return HasMany<BookListItem, $this>
+     */
+    public function bookListItems(): HasMany
+    {
+        return $this->hasMany(BookListItem::class);
     }
 
     /**

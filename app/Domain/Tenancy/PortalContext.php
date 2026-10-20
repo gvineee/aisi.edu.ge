@@ -2,6 +2,7 @@
 
 namespace App\Domain\Tenancy;
 
+use App\Domain\Library\LibraryAccess;
 use App\Domain\Tenancy\Models\FeatureEntitlement;
 use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantMembership;
@@ -34,6 +35,7 @@ class PortalContext
         TenantMembership::ROLE_TEACHER,
         TenantMembership::ROLE_ACCOUNTANT,
         TenantMembership::ROLE_EDITOR,
+        TenantMembership::ROLE_LIBRARIAN,
         TenantMembership::ROLE_GUARDIAN,
         TenantMembership::ROLE_STUDENT,
     ];
@@ -48,6 +50,7 @@ class PortalContext
         TenantMembership::ROLE_TEACHER => 'მასწავლებელი',
         TenantMembership::ROLE_ACCOUNTANT => 'ბუღალტერი',
         TenantMembership::ROLE_EDITOR => 'რედაქტორი',
+        TenantMembership::ROLE_LIBRARIAN => 'ბიბლიოთეკარი',
         TenantMembership::ROLE_GUARDIAN => 'მშობელი',
         TenantMembership::ROLE_STUDENT => 'მოსწავლე',
     ];
@@ -66,6 +69,7 @@ class PortalContext
         TenantMembership::ROLE_ACADEMIC_MANAGER,
         TenantMembership::ROLE_ACCOUNTANT,
         TenantMembership::ROLE_EDITOR,
+        TenantMembership::ROLE_LIBRARIAN,
         TenantMembership::ROLE_DIRECTOR,
         TenantMembership::ROLE_ADMIN,
     ];
@@ -294,6 +298,18 @@ class PortalContext
         // routes are additionally closed server-side by `feature:` middleware.
         if (array_intersect($enabledFeatures, [FeatureEntitlement::FEATURE_CLUBS, FeatureEntitlement::FEATURE_TRANSPORT, FeatureEntitlement::FEATURE_MEALS]) !== []) {
             $items[] = ['key' => 'services', 'label' => 'სერვისები', 'href' => route('services.index'), 'icon' => 'services'];
+        }
+
+        if (in_array($activeRole, [TenantMembership::ROLE_GUARDIAN, TenantMembership::ROLE_STUDENT], true)) {
+            $items[] = ['key' => 'books', 'label' => 'წიგნები', 'href' => route('books.index'), 'icon' => 'books'];
+        }
+
+        if (in_array($activeRole, [TenantMembership::ROLE_TEACHER, ...LibraryAccess::DESK_ROLES], true)) {
+            $items[] = ['key' => 'book-lists', 'label' => 'წიგნების სიები', 'href' => route('book-lists.index'), 'icon' => 'book-lists'];
+        }
+
+        if (in_array(FeatureEntitlement::FEATURE_LIBRARY, $enabledFeatures, true) && in_array($activeRole, LibraryAccess::DESK_ROLES, true)) {
+            $items[] = ['key' => 'library-desk', 'label' => 'ბიბლიოთეკა', 'href' => route('library-desk.index'), 'icon' => 'library-desk'];
         }
 
         if (in_array($activeRole, self::DOCUMENT_ACCESS_ROLES, true)) {

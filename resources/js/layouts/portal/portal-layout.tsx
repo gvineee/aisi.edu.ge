@@ -2,6 +2,9 @@ import { Form, Link, router, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren } from 'react';
 import {
     Activity,
+    BookOpen,
+    LibraryBig,
+    ListChecks,
     CalendarCheck,
     CalendarClock,
     CalendarPlus,
@@ -60,6 +63,9 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     timetable: CalendarClock,
     'admissions-pipeline': UserPlus,
     'school-visits': CalendarPlus,
+    books: BookOpen,
+    'book-lists': ListChecks,
+    'library-desk': LibraryBig,
     pickup: UserCheck,
     consents: FileCheck2,
     gradebook: PenLine,

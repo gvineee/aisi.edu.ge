@@ -29,6 +29,9 @@ class FeatureEntitlement extends Model
 
     public const FEATURE_MEALS = 'meals';
 
+    /** Library circulation: copies, loans, reservations (book lists are always on). */
+    public const FEATURE_LIBRARY = 'library';
+
     /**
      * Features a tenant can switch on independently. A missing row means
      * "off" — new modules start disabled until the school opts in.
@@ -43,6 +46,7 @@ class FeatureEntitlement extends Model
         self::FEATURE_CLUBS,
         self::FEATURE_TRANSPORT,
         self::FEATURE_MEALS,
+        self::FEATURE_LIBRARY,
     ];
 
     public static function isEnabled(int $tenantId, string $feature): bool

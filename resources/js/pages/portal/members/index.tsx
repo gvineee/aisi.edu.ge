@@ -79,6 +79,7 @@ const ROLE_LABELS: Record<string, string> = {
     academic_manager: "აკადემიური მენეჯერი",
     accountant: "ბუღალტერი",
     editor: "რედაქტორი",
+    librarian: "ბიბლიოთეკარი",
     admin: "ადმინისტრატორი",
     director: "დირექტორი",
 };

@@ -5,6 +5,7 @@ namespace App\Domain\Library\Models;
 use App\Domain\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Public catalog entry (docs/02 section 5.5). Existence in this catalog is
@@ -41,5 +42,13 @@ class LibraryResource extends Model
         return [
             'is_required' => 'boolean',
         ];
+    }
+
+    /**
+     * @return HasMany<LibraryCopy, $this>
+     */
+    public function copies(): HasMany
+    {
+        return $this->hasMany(LibraryCopy::class);
     }
 }

@@ -108,6 +108,7 @@ class DocumentAccessGrantController extends Controller
             TenantMembership::ROLE_ACADEMIC_MANAGER => 'აკადემიური მენეჯერები',
             TenantMembership::ROLE_ACCOUNTANT => 'ბუღალტერია',
             TenantMembership::ROLE_EDITOR => 'რედაქტორები',
+            TenantMembership::ROLE_LIBRARIAN => 'ბიბლიოთეკარები',
             TenantMembership::ROLE_DIRECTOR => 'დირექცია',
             TenantMembership::ROLE_ADMIN => 'ადმინისტრატორები',
         ];

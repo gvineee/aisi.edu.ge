@@ -27,6 +27,7 @@ class StoreTenantInvitationRequest extends FormRequest
                 TenantMembership::ROLE_ACADEMIC_MANAGER,
                 TenantMembership::ROLE_ACCOUNTANT,
                 TenantMembership::ROLE_EDITOR,
+                TenantMembership::ROLE_LIBRARIAN,
                 TenantMembership::ROLE_ADMIN,
                 TenantMembership::ROLE_DIRECTOR,
             ])],

@@ -36,6 +36,7 @@ class ResolveMessageableUsers
         TenantMembership::ROLE_ACADEMIC_MANAGER,
         TenantMembership::ROLE_ACCOUNTANT,
         TenantMembership::ROLE_EDITOR,
+        TenantMembership::ROLE_LIBRARIAN,
         TenantMembership::ROLE_DIRECTOR,
         TenantMembership::ROLE_ADMIN,
     ];
@@ -50,6 +51,7 @@ class ResolveMessageableUsers
         TenantMembership::ROLE_ACADEMIC_MANAGER,
         TenantMembership::ROLE_ACCOUNTANT,
         TenantMembership::ROLE_EDITOR,
+        TenantMembership::ROLE_LIBRARIAN,
         TenantMembership::ROLE_DIRECTOR,
         TenantMembership::ROLE_ADMIN,
     ];

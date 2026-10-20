@@ -399,6 +399,7 @@ class MemberController extends Controller
             TenantMembership::ROLE_ACADEMIC_MANAGER => 'აკადემიური მენეჯერი',
             TenantMembership::ROLE_ACCOUNTANT => 'ბუღალტერი',
             TenantMembership::ROLE_EDITOR => 'რედაქტორი',
+            TenantMembership::ROLE_LIBRARIAN => 'ბიბლიოთეკარი',
             TenantMembership::ROLE_ADMIN => 'ადმინისტრატორი',
             TenantMembership::ROLE_DIRECTOR => 'დირექტორი',
             default => $role,

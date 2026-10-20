@@ -67,6 +67,7 @@ class DashboardController extends Controller
                 : Inertia::render('portal/no-role', ['name' => $user->name]),
             TenantMembership::ROLE_ACADEMIC_MANAGER => redirect()->route('academic-structure.index'),
             TenantMembership::ROLE_EDITOR => redirect()->route('cms.pages.index'),
+            TenantMembership::ROLE_LIBRARIAN => redirect()->route('library-desk.index'),
             default => Inertia::render('portal/no-role', ['name' => $user->name]),
         };
     }

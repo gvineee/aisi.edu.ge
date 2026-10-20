@@ -8,6 +8,8 @@ use App\Http\Controllers\Portal\AppointmentController;
 use App\Http\Controllers\Portal\AssessmentSettingsController;
 use App\Http\Controllers\Portal\AssignmentController;
 use App\Http\Controllers\Portal\AttendanceController;
+use App\Http\Controllers\Portal\BookListController;
+use App\Http\Controllers\Portal\BooksController;
 use App\Http\Controllers\Portal\ClubController;
 use App\Http\Controllers\Portal\CmsMediaController;
 use App\Http\Controllers\Portal\CmsPageController;
@@ -32,6 +34,7 @@ use App\Http\Controllers\Portal\FinanceSettingsController;
 use App\Http\Controllers\Portal\GradebookController;
 use App\Http\Controllers\Portal\HealthController;
 use App\Http\Controllers\Portal\LessonController;
+use App\Http\Controllers\Portal\LibraryDeskController;
 use App\Http\Controllers\Portal\MealController;
 use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
@@ -281,6 +284,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/admissions-pipeline/{admissionLead}/advance-stage', [AdmissionsPipelineController::class, 'advanceStage'])->name('admissions-pipeline.advance-stage');
     Route::post('portal/admissions-pipeline/{admissionLead}/appointments', [AdmissionsPipelineController::class, 'storeAppointment'])->name('admissions-pipeline.appointments.store');
     Route::post('portal/admissions-pipeline/{admissionLead}/decision', [AdmissionsPipelineController::class, 'storeDecision'])->name('admissions-pipeline.decision.store');
+    // --- Library: class book lists (always on) and circulation (feature:library) ---
+    Route::get('portal/book-lists', [BookListController::class, 'index'])->name('book-lists.index');
+    Route::get('portal/book-lists/{schoolClass}', [BookListController::class, 'show'])->name('book-lists.show');
+    Route::post('portal/book-lists/{schoolClass}/items', [BookListController::class, 'store'])->name('book-lists.items.store');
+    Route::put('portal/book-list-items/{item}', [BookListController::class, 'update'])->name('book-lists.items.update');
+    Route::delete('portal/book-list-items/{item}', [BookListController::class, 'destroy'])->name('book-lists.items.destroy');
+    Route::get('portal/books', [BooksController::class, 'index'])->name('books.index');
+    Route::middleware('feature:library')->group(function () {
+        Route::post('portal/books/reservations', [BooksController::class, 'reserve'])->middleware('throttle:30,1')->name('books.reservations.store');
+        Route::post('portal/books/reservations/{reservation}/cancel', [BooksController::class, 'cancel'])->name('books.reservations.cancel');
+        Route::get('portal/library-desk', [LibraryDeskController::class, 'index'])->name('library-desk.index');
+        Route::post('portal/library-desk/resources', [LibraryDeskController::class, 'storeResource'])->name('library-desk.resources.store');
+        Route::get('portal/library-desk/resources/{resource}', [LibraryDeskController::class, 'showResource'])->name('library-desk.resources.show');
+        Route::put('portal/library-desk/resources/{resource}', [LibraryDeskController::class, 'updateResource'])->name('library-desk.resources.update');
+        Route::post('portal/library-desk/resources/{resource}/copies', [LibraryDeskController::class, 'storeCopies'])->name('library-desk.copies.store');
+        Route::post('portal/library-desk/copies/{copy}/withdraw', [LibraryDeskController::class, 'withdrawCopy'])->name('library-desk.copies.withdraw');
+        Route::post('portal/library-desk/loans', [LibraryDeskController::class, 'lend'])->middleware('throttle:120,1')->name('library-desk.loans.store');
+        Route::post('portal/library-desk/loans/{loan}/return', [LibraryDeskController::class, 'returnLoan'])->name('library-desk.loans.return');
+        Route::post('portal/library-desk/loans/{loan}/renew', [LibraryDeskController::class, 'renew'])->name('library-desk.loans.renew');
+        Route::post('portal/library-desk/loans/{loan}/lost', [LibraryDeskController::class, 'lost'])->name('library-desk.loans.lost');
+        Route::post('portal/library-desk/reservations/{reservation}/cancel', [LibraryDeskController::class, 'cancelReservation'])->name('library-desk.reservations.cancel');
+    });
+    // --- end Library ---
     Route::get('portal/school-visits', [SchoolVisitController::class, 'index'])->name('school-visits.index');
     Route::post('portal/school-visits', [SchoolVisitController::class, 'store'])->middleware('throttle:30,1')->name('school-visits.store');
     Route::post('portal/school-visits/{slot}/cancel', [SchoolVisitController::class, 'cancelSlot'])->name('school-visits.cancel');
