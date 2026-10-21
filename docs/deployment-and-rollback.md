@@ -142,3 +142,11 @@
 - Smoke: `/`, `/about`, `/login`, `/admissions/visit-slots` → 200 (`{"slots":[]}` — გუნდს ჯერ დრო არ დაუმატებია); `/portal/books`, `/portal/book-lists`, `/portal/school-visits`, `/portal/library-desk` სტუმრისთვის → 302. scheduler-ში ჩანს `admissions:send-visit-reminders` და `library:run-notices` (ყოველ საათში). failed jobs: 0; ლოგში ახალი შეცდომა არ არის.
 - ბიბლიოთეკის ცირკულაცია (`feature:library`) გამორთულია, სანამ სკოლა არ ჩართავს; წიგნების სიები და ვიზიტის დაჯავშნა ჩართულია.
 - Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import` (ან მხოლოდ სქემისთვის `php artisan migrate:rollback --step=2`); cache rebuild; `up`.
+
+## Deploy — 2026-10-21 (მე-2, `20f30f3..208c6df`, მომხმარებელმა გაუშვა `! bash deploy/deploy.sh`)
+
+- შინაარსი: დოკუმენტების ცენტრის მე-3 ეტაპი — გაცნობის დადასტურება და შაბლონები; მასწავლებლის დღის ცენტრის 360px გასწორება. 23 ფაილი, 1 migration (batch 18).
+- Backup: `_backups/db-20261021-143527.sql.gz` (68 KB), `files-20261021-143527.tar.gz`, `env-20261021-143527` (600).
+- migration რეალურ MySQL-ზე წარმატებით გაეშვა. FK-ის მოკლე სახელი `doc_acks_request_fk` production-ზეც შემოწმდა (`information_schema`). ავტომატურად შექმნილი 70-სიმბოლოიანი სახელი იქ ჩავარდებოდა, MariaDB-ზე ტესტმა ეს deploy-მდე აჩვენა.
+- Smoke: `/`, `/about`, `/login` → 200; `/documents`, `/documents/templates`, `/documents/my-work` სტუმრისთვის → 302. scheduler-ის 4 ამოცანა ჩანს. failed jobs: 0; ლოგში ახალი შეცდომა არ არის.
+- Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import` (ან მხოლოდ სქემისთვის `php artisan migrate:rollback --step=1`); cache rebuild; `up`.
