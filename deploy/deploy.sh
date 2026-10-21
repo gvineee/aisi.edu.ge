@@ -48,7 +48,7 @@ curl -s -o /dev/null -w "login %{http_code}\n" https://aisi.edu.ge/login
 curl -s -o /dev/null -w "finance (guest) %{http_code}\n" https://aisi.edu.ge/portal/finance
 curl -s -o /dev/null -w "documents (guest) %{http_code}\n" https://aisi.edu.ge/documents
 php artisan migrate:status | tail -3
-php artisan schedule:list | grep -E "finance|appointments" || true
+php artisan schedule:list | grep -E "finance|appointments|visit|library" || true
 tail -n 5 storage/logs/laravel.log 2>/dev/null | grep -i -E "error|exception" || echo "no new errors in log tail"
 EOF
 

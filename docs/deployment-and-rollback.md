@@ -134,3 +134,11 @@
 - Smoke: საჯარო გვერდები და `/sitemap.xml` → 200; `/login` → 200; `/portal/finance`, `/documents` და `/portal/finance/credit-notes/1/pdf` სტუმრისთვის → 302. scheduler-ის ორივე ამოცანა ჩანს. ლოგში ახალი შეცდომა არ არის; `storage/framework/cache` ჩაწერადია (სისტემური temp: `/tmp`).
 - production-ზე PDF ჯერ არავის შეუქმნია — პირველი რეალური ინვოისის/ნოტის PDF-ის შემდეგ შესამოწმებელია `storage/framework/cache/dompdf-fonts/installed-fonts.json`.
 - Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import` (ან მხოლოდ სქემისთვის `php artisan migrate:rollback --step=1`); cache rebuild; `up`.
+
+## Deploy — 2026-10-21 (`f8544e2..a44aa25`, მომხმარებელმა გაუშვა `! bash deploy/deploy.sh`)
+
+- შინაარსი: სკოლის ვიზიტის ონლაინ დაჯავშნა; კლასის წიგნების სიები და ბიბლიოთეკის ცირკულაცია; ბიბლიოთეკარის როლი. 52 ფაილი, 2 migration (batch 17).
+- Backup: `_backups/db-20261021-090103.sql.gz` (67 KB), `files-20261021-090103.tar.gz`, `env-20261021-090103` (600).
+- Smoke: `/`, `/about`, `/login`, `/admissions/visit-slots` → 200 (`{"slots":[]}` — გუნდს ჯერ დრო არ დაუმატებია); `/portal/books`, `/portal/book-lists`, `/portal/school-visits`, `/portal/library-desk` სტუმრისთვის → 302. scheduler-ში ჩანს `admissions:send-visit-reminders` და `library:run-notices` (ყოველ საათში). failed jobs: 0; ლოგში ახალი შეცდომა არ არის.
+- ბიბლიოთეკის ცირკულაცია (`feature:library`) გამორთულია, სანამ სკოლა არ ჩართავს; წიგნების სიები და ვიზიტის დაჯავშნა ჩართულია.
+- Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import` (ან მხოლოდ სქემისთვის `php artisan migrate:rollback --step=2`); cache rebuild; `up`.
