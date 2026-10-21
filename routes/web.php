@@ -20,9 +20,11 @@ use App\Http\Controllers\Portal\CoverageController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
 use App\Http\Controllers\Portal\DocumentAccessGrantController;
+use App\Http\Controllers\Portal\DocumentAcknowledgementController;
 use App\Http\Controllers\Portal\DocumentApprovalController;
 use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentLibraryController;
+use App\Http\Controllers\Portal\DocumentTemplateController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\EnrollmentVerificationController;
 use App\Http\Controllers\Portal\FeePlanController;
@@ -183,6 +185,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('documents/my-work', MyDocumentWorkController::class)->name('documents.my-work');
     Route::get('documents/director-worklist', DirectorDocumentWorklistController::class)->name('documents.director-worklist');
+    Route::get('documents/templates', [DocumentTemplateController::class, 'index'])->name('documents.templates.index');
+    Route::post('documents/templates/{document}/use', [DocumentTemplateController::class, 'use'])->whereNumber('document')->middleware('throttle:30,1')->name('documents.templates.use');
+    Route::post('documents/{document}/template', [DocumentTemplateController::class, 'toggle'])->whereNumber('document')->name('documents.template.toggle');
+    Route::post('documents/{document}/acknowledgement-requests', [DocumentAcknowledgementController::class, 'store'])->whereNumber('document')->middleware('throttle:20,1')->name('documents.acknowledgement-requests.store');
+    Route::post('document-acknowledgement-requests/{acknowledgementRequest}/close', [DocumentAcknowledgementController::class, 'close'])->name('documents.acknowledgement-requests.close');
+    Route::post('document-acknowledgements/{acknowledgement}/acknowledge', [DocumentAcknowledgementController::class, 'acknowledge'])->middleware('throttle:60,1')->name('documents.acknowledgements.acknowledge');
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
     // Workspaces, categories and access distribution (internal staff files).

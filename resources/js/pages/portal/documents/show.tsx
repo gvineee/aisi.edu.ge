@@ -5,6 +5,12 @@ import { toast } from 'sonner';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    AcknowledgementManager,
+    MyAcknowledgementBanner,
+    type AcknowledgementRequest,
+    type MyAcknowledgement,
+} from '@/components/documents/acknowledgement-panel';
 import AccessGrantsPanel, {
     type AccessGrant,
 } from '@/components/documents/access-grants-panel';
@@ -75,6 +81,11 @@ type Props = {
     grants: AccessGrant[];
     staff: { id: number; name: string }[];
     roleOptions: Record<string, string>;
+    templateSource: string | null;
+    myAcknowledgement: MyAcknowledgement;
+    acknowledgementRequest: AcknowledgementRequest;
+    canRequestAcknowledgement: boolean;
+    isTemplate: boolean;
 };
 
 const scanLabels: Record<string, string> = {
@@ -276,6 +287,11 @@ export default function DocumentShow({
     grants,
     staff,
     roleOptions,
+    templateSource,
+    myAcknowledgement,
+    acknowledgementRequest,
+    canRequestAcknowledgement,
+    isTemplate,
 }: Props) {
     const [uploading, setUploading] = useState(false);
     const [editing, setEditing] = useState(false);
@@ -573,6 +589,14 @@ export default function DocumentShow({
                 </form>
             )}
 
+            <MyAcknowledgementBanner ack={myAcknowledgement} />
+
+            {templateSource && (
+                <p className="mb-4 text-sm text-slate-600">
+                    შექმნილია შაბლონიდან: {templateSource}
+                </p>
+            )}
+
             <h2 className="mb-3 text-lg font-medium">ვერსიები</h2>
             {versions.length === 0 ? (
                 <p className="mb-8 text-sm text-slate-500">
@@ -622,6 +646,22 @@ export default function DocumentShow({
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {canManage && (
+                <AcknowledgementManager
+                    documentId={document.id}
+                    request={acknowledgementRequest}
+                    canRequest={canRequestAcknowledgement}
+                    roleOptions={roleOptions}
+                    isTemplate={isTemplate}
+                    canBeTemplate={
+                        !document.isArchived &&
+                        versions.some(
+                            (v) => v.isPublished && v.downloadUrl !== null,
+                        )
+                    }
+                />
             )}
 
             {canManage && (

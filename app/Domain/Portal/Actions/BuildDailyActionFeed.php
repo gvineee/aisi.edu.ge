@@ -14,6 +14,8 @@ use App\Domain\Communications\Models\AppointmentBooking;
 use App\Domain\Communications\Models\ConversationParticipant;
 use App\Domain\Documents\Actions\ListPendingApprovalRequests;
 use App\Domain\Documents\Models\ApprovalRequest;
+use App\Domain\Documents\Models\DocumentAcknowledgement;
+use App\Domain\Documents\Models\DocumentAcknowledgementRequest;
 use App\Domain\Finance\Models\BillingAccount;
 use App\Domain\Finance\Models\Invoice;
 use App\Domain\Learning\Models\Assignment;
@@ -57,7 +59,8 @@ class BuildDailyActionFeed
         $timezone = Tenant::query()->whereKey($tenantId)->value('timezone') ?: 'Asia/Tbilisi';
         $now = Carbon::now($timezone);
 
-        $items = collect($this->unreadConversations($tenantId, $user))->merge($this->openActionRequests($tenantId, $user));
+        $items = collect($this->unreadConversations($tenantId, $user))->merge($this->openActionRequests($tenantId, $user))
+            ->merge($this->pendingAcknowledgements($tenantId, $user));
 
         $items = $items->merge(match ($activeRole) {
             TenantMembership::ROLE_GUARDIAN => $this->guardianItems($tenantId, $user, $now),
@@ -74,6 +77,23 @@ class BuildDailyActionFeed
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Published documents this staff member was asked to read and has not
+     * confirmed yet (document centre §5 "გაცნობის დადასტურება").
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function pendingAcknowledgements(int $tenantId, User $user): array
+    {
+        return DocumentAcknowledgement::query()->where('tenant_id', $tenantId)->where('user_id', $user->id)->whereNull('acknowledged_at')
+            ->whereHas('request', fn ($query) => $query->where('status', DocumentAcknowledgementRequest::STATUS_OPEN))
+            ->with('request.document')->get()
+            ->map(fn (DocumentAcknowledgement $ack) => $this->item("document_ack:{$ack->id}", 'document_acknowledgement',
+                'გაეცანით: '.$ack->request->document->title, 'დოკუმენტები', "/documents/{$ack->request->document_id}",
+                $ack->request->due_on, $ack->request->due_on !== null && $ack->request->due_on->lt(Carbon::now()->startOfDay()) ? 'high' : 'normal'))
+            ->values()->all();
     }
 
     /**

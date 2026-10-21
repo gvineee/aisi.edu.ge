@@ -25,6 +25,7 @@ export type ActionItem = {
 
 const ICONS: Record<string, typeof FileCheck2> = {
     document_approval: FileCheck2,
+    document_acknowledgement: ScrollText,
     unread_message: MessageSquareText,
     consent_request: FileCheck2,
     invoice: Receipt,

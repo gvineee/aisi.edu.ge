@@ -172,6 +172,12 @@ export default function DocumentCenterIndex({
                     >
                         ჩემი სამუშაო
                     </Link>
+                    <Link
+                        href="/documents/templates"
+                        className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium"
+                    >
+                        შაბლონები
+                    </Link>
                     {isDirectorOrAdmin && (
                         <>
                             <Link

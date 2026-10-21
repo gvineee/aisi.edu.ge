@@ -105,9 +105,7 @@ export default function TeacherDashboard({
                     className="flex flex-col justify-center gap-2 rounded-2xl border border-slate-200 bg-white p-6 hover:border-slate-300"
                 >
                     <BookMarked size={22} className="text-[#c84925]" />
-                    <span className="font-semibold">
-                        პორტფოლიოს განხილვა
-                    </span>
+                    <span className="font-semibold">პორტფოლიოს განხილვა</span>
                     <span className="text-sm text-slate-500">
                         მოსწავლეების გაგზავნილი ნამუშევრები
                     </span>
@@ -138,8 +136,7 @@ export default function TeacherDashboard({
                                 </strong>
                                 -ს — {substitution.subject} ·{' '}
                                 {substitution.className} (
-                                {substitution.startsAt}–
-                                {substitution.endsAt}
+                                {substitution.startsAt}–{substitution.endsAt}
                                 {substitution.roomName
                                     ? `, ${substitution.roomName}`
                                     : ''}
@@ -150,7 +147,7 @@ export default function TeacherDashboard({
                 </div>
             )}
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
                 <Panel title="დღევანდელი გაკვეთილები" className="lg:col-span-1">
                     <div id="todays-lessons">
                         {lessons.length === 0 ? (
@@ -164,7 +161,7 @@ export default function TeacherDashboard({
                             lessons.map((lesson, index) => (
                                 <div
                                     key={lesson.lessonId}
-                                    className="group relative"
+                                    className={`group relative ${lesson.cancelled ? '' : 'pr-28'}`}
                                 >
                                     <LessonRow
                                         index={index}
@@ -177,10 +174,9 @@ export default function TeacherDashboard({
                                     {!lesson.cancelled && (
                                         <Link
                                             href={`/lessons/${lesson.lessonId}/attendance?date=${date}`}
-                                            className="absolute top-4 right-0 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium hover:bg-slate-200"
+                                            className="absolute top-3 right-0 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium hover:bg-slate-200"
                                         >
-                                            <ClipboardList size={14} />{' '}
-                                            დასწრება
+                                            <ClipboardList size={14} /> დასწრება
                                         </Link>
                                     )}
                                 </div>

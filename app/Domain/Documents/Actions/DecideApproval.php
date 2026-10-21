@@ -22,7 +22,10 @@ use RuntimeException;
  */
 class DecideApproval
 {
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly ManageDocumentAcknowledgements $acknowledgements,
+    ) {}
 
     public function handle(ApprovalRequest $approvalRequest, User $reviewer, string $decision, ?string $comment): ApprovalDecision
     {
@@ -77,6 +80,10 @@ class DecideApproval
                 $document->status = Document::STATUS_CHANGES_REQUESTED;
             }
             $document->save();
+
+            if ($decision === ApprovalDecision::DECISION_APPROVED) {
+                $this->acknowledgements->onPublished($document, $version, $reviewer->id);
+            }
 
             $this->auditLogger->record($document->tenant_id, "document.{$decision}", $document, $reviewer->id, [
                 'approval_request_id' => $request->id,

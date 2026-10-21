@@ -167,7 +167,9 @@ class DocumentController extends Controller
             'grants' => $canManage ? DocumentAccessGrantController::grantsFor($tenant->id, DocumentAccessGrant::RESOURCE_DOCUMENT, $document->id) : [],
             'staff' => $canManage ? DocumentAccessGrantController::staffOptions($tenant->id) : [],
             'roleOptions' => $canManage ? DocumentAccessGrantController::roleOptions() : [],
-        ]);
+            'templateSource' => $document->template_version_id === null ? null : DocumentVersion::query()->where('tenant_id', $tenant->id)
+                ->whereKey($document->template_version_id)->with('document')->first()?->document?->title,
+        ] + DocumentAcknowledgementController::documentProps($document, $user, $canManage));
     }
 
     public function store(StoreDocumentRequest $request, CurrentTenant $currentTenant, CreateDraftDocument $action): RedirectResponse

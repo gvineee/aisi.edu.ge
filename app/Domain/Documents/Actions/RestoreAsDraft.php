@@ -23,6 +23,7 @@ class RestoreAsDraft
     public function __construct(
         private readonly DocumentFileStorage $storage,
         private readonly AuditLogger $auditLogger,
+        private readonly ManageDocumentAcknowledgements $acknowledgements,
     ) {}
 
     public function handle(Document $document, DocumentVersion $fromVersion, User $actor): DocumentVersion
@@ -63,14 +64,20 @@ class RestoreAsDraft
             $version->save();
 
             $document->latest_version_id = $version->id;
+            $republished = false;
 
             if ($document->workspace->requiresApproval()) {
                 $document->status = Document::STATUS_DRAFT;
             } else {
                 $document->status = Document::STATUS_ACTIVE;
                 $document->published_version_id = $version->id;
+                $republished = true;
             }
             $document->save();
+
+            if ($republished) {
+                $this->acknowledgements->onPublished($document, $version, $actor->id);
+            }
 
             $this->auditLogger->record($document->tenant_id, 'document.restored_as_draft', $document, $actor->id, [
                 'restored_from_version_id' => $fromVersion->id,

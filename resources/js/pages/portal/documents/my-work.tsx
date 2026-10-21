@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ClipboardList } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
+import { formatDay } from '@/lib/assessment';
 import * as DocumentController from '@/actions/App/Http/Controllers/Portal/DocumentController';
 
 type WorkItem = {
@@ -12,7 +13,14 @@ type WorkItem = {
     nextAction: 'submit' | 'revise' | 'wait' | 'none';
 };
 
-type Props = { documents: WorkItem[] };
+type Props = {
+    documents: WorkItem[];
+    toAcknowledge: {
+        documentId: number;
+        title: string;
+        dueOn: string | null;
+    }[];
+};
 
 const nextActionLabels: Record<WorkItem['nextAction'], string> = {
     submit: 'გაგზავნეთ განსახილველად',
@@ -21,12 +29,41 @@ const nextActionLabels: Record<WorkItem['nextAction'], string> = {
     none: 'დამტკიცებულია',
 };
 
-export default function MyDocumentWork({ documents }: Props) {
+export default function MyDocumentWork({ documents, toAcknowledge }: Props) {
     return (
         <PortalLayout>
             <Head title="ჩემი სამუშაო" />
 
             <h1 className="mb-6 text-2xl">ჩემი სამუშაო</h1>
+
+            {toAcknowledge.length > 0 && (
+                <section className="mb-6" aria-labelledby="to-ack">
+                    <h2 id="to-ack" className="mb-2 text-lg font-medium">
+                        გასაცნობი დოკუმენტები
+                    </h2>
+                    <ul className="divide-y divide-slate-100 rounded-xl border border-amber-200 bg-amber-50">
+                        {toAcknowledge.map((item) => (
+                            <li key={item.documentId}>
+                                <Link
+                                    href={DocumentController.show.url(
+                                        item.documentId,
+                                    )}
+                                    className="flex min-h-11 flex-col gap-1 p-4"
+                                >
+                                    <span className="font-medium">
+                                        {item.title}
+                                    </span>
+                                    <span className="text-sm text-amber-900">
+                                        გაეცანით და დაადასტურეთ
+                                        {item.dueOn &&
+                                            ` — ${formatDay(item.dueOn)}-მდე`}
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
 
             {documents.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">

@@ -29,6 +29,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $expires_on
  * @property array<int, string>|null $tags
  * @property string|null $visibility
+ * @property bool $is_template
+ * @property int|null $template_version_id
  * @property int|null $latest_version_id
  * @property int|null $published_version_id
  * @property string $status
@@ -64,6 +66,7 @@ class Document extends Model
             'document_date' => 'date',
             'expires_on' => 'date',
             'tags' => 'array',
+            'is_template' => 'boolean',
         ];
     }
 
