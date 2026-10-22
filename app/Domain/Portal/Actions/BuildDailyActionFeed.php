@@ -60,7 +60,8 @@ class BuildDailyActionFeed
         $now = Carbon::now($timezone);
 
         $items = collect($this->unreadConversations($tenantId, $user))->merge($this->openActionRequests($tenantId, $user))
-            ->merge($this->pendingAcknowledgements($tenantId, $user));
+            ->merge($this->pendingAcknowledgements($tenantId, $user))
+            ->merge($this->listPendingApprovalRequests->forChainReviewer($tenantId, $user)->map(fn (ApprovalRequest $r) => $this->formatApprovalItem($r))->all());
 
         $items = $items->merge(match ($activeRole) {
             TenantMembership::ROLE_GUARDIAN => $this->guardianItems($tenantId, $user, $now),
@@ -71,6 +72,7 @@ class BuildDailyActionFeed
         });
 
         return $items
+            ->unique('key')
             ->sortBy([
                 fn (array $a, array $b) => self::PRIORITY_ORDER[$a['priority']] <=> self::PRIORITY_ORDER[$b['priority']],
                 fn (array $a, array $b) => ($a['dueAt'] ?? '9999') <=> ($b['dueAt'] ?? '9999'),
@@ -304,7 +306,8 @@ class BuildDailyActionFeed
         $document = $approvalRequest->documentVersion->document;
 
         return $this->item("document_approval:{$approvalRequest->id}", 'document_approval', "დასამტკიცებელია: {$document->title}",
-            $approvalRequest->documentVersion->author->name, "/documents/{$document->id}", null, 'normal');
+            $approvalRequest->documentVersion->author->name, "/documents/{$document->id}", $approvalRequest->due_at,
+            $approvalRequest->due_at === null ? 'normal' : ($approvalRequest->due_at->isPast() ? 'urgent' : 'high'));
     }
 
     /**

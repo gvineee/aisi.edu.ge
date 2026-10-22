@@ -13,6 +13,9 @@ import {
     formText,
     selectClass,
 } from '@/components/documents/labels';
+import ReviewChainForm, {
+    type ReviewMode,
+} from '@/components/documents/review-chain-form';
 import { firstError } from '@/lib/assessment';
 
 type WorkspaceRow = {
@@ -22,6 +25,9 @@ type WorkspaceRow = {
     classification: string;
     visibility: string;
     requiresApproval: boolean;
+    reviewMode: ReviewMode;
+    reviewDays: number | null;
+    reviewerIds: number[];
     isConfidential: boolean;
     isArchived: boolean;
     documentsCount: number;
@@ -297,14 +303,22 @@ export default function DocumentSettings({
             </Link>
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl">სივრცეები და წვდომა</h1>
-                {canConfigure && !creating && (
-                    <Button
-                        className="min-h-11"
-                        onClick={() => setCreating(true)}
+                <div className="flex flex-wrap gap-2">
+                    <Link
+                        href="/documents/delegations"
+                        className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium"
                     >
-                        <FolderPlus size={16} aria-hidden /> ახალი სივრცე
-                    </Button>
-                )}
+                        შემცვლელები
+                    </Link>
+                    {canConfigure && !creating && (
+                        <Button
+                            className="min-h-11"
+                            onClick={() => setCreating(true)}
+                        >
+                            <FolderPlus size={16} aria-hidden /> ახალი სივრცე
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {creating && (
@@ -364,7 +378,10 @@ export default function DocumentSettings({
                                                 ? 'შეზღუდული'
                                                 : 'ყველა თანამშრომელი'}
                                             {workspace.requiresApproval &&
-                                                ' · დამტკიცებით'}
+                                                (workspace.reviewMode ===
+                                                'single'
+                                                    ? ' · დამტკიცებით'
+                                                    : ` · ${workspace.reviewerIds.length} რეცენზენტი`)}
                                             {workspace.isConfidential &&
                                                 ' · კონფიდენციალური'}
                                         </p>
@@ -411,6 +428,15 @@ export default function DocumentSettings({
                                         </div>
                                     )}
                                 </div>
+                            )}
+                            {canConfigure && workspace.requiresApproval && (
+                                <ReviewChainForm
+                                    workspaceId={workspace.id}
+                                    reviewMode={workspace.reviewMode}
+                                    reviewDays={workspace.reviewDays}
+                                    reviewerIds={workspace.reviewerIds}
+                                    staff={staff}
+                                />
                             )}
                             <AccessGrantsPanel
                                 resourceType="workspace"

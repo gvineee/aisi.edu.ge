@@ -3,17 +3,20 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Domain\Documents\Actions\CreateDraftDocument;
+use App\Domain\Documents\Actions\ListPendingApprovalRequests;
 use App\Domain\Documents\Actions\UpdateDocumentDetails;
 use App\Domain\Documents\DocumentAccess;
 use App\Domain\Documents\DocumentFileStorage;
 use App\Domain\Documents\Models\ApprovalDecision;
 use App\Domain\Documents\Models\ApprovalRequest;
+use App\Domain\Documents\Models\ApprovalStep;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\DocumentAccessGrant;
 use App\Domain\Documents\Models\DocumentAccessLevel;
 use App\Domain\Documents\Models\DocumentCategory;
 use App\Domain\Documents\Models\DocumentVersion;
 use App\Domain\Documents\Models\DocumentWorkspace;
+use App\Domain\Documents\ReviewAuthority;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Http\Controllers\Controller;
@@ -123,29 +126,38 @@ class DocumentController extends Controller
             'filters' => $filters,
             'expiringCount' => $expiringCount,
             'isDirectorOrAdmin' => $isOversight,
+            'myReviewCount' => $isOversight ? 0 : app(ListPendingApprovalRequests::class)->forChainReviewer($tenant->id, $user)->count(),
         ]);
     }
 
-    public function show(Request $request, CurrentTenant $currentTenant, Document $document): Response
+    public function show(Request $request, CurrentTenant $currentTenant, Document $document, ReviewAuthority $authority): Response
     {
         $tenant = $currentTenant->get();
         abort_unless($document->tenant_id === $tenant->id, 404);
         $user = $request->user();
-        abort_unless($this->access->canView($document, $user), 403);
+        // A review-chain reviewer (or delegate) reads the version under review
+        // even without access to the document otherwise.
+        $isChainReviewer = $authority->isChainReviewer($document, $user);
+        abort_unless($this->access->canView($document, $user) || $isChainReviewer, 403);
 
-        $document->load(['workspace', 'category', 'owner', 'latestVersion', 'publishedVersion', 'versions.author', 'versions.approvalRequest.decisions.reviewer']);
+        $document->load(['workspace', 'category', 'owner', 'latestVersion', 'publishedVersion', 'versions.author',
+            'versions.approvalRequest.decisions.reviewer', 'versions.approvalRequest.decisions.onBehalfOf', 'versions.approvalRequest.steps.reviewer']);
+        $pendingRequest = $document->latestVersion?->approvalRequest;
+        $pendingRequest = $pendingRequest?->state === ApprovalRequest::STATE_PENDING ? $pendingRequest : null;
 
         $canEdit = $this->access->canEdit($document, $user);
         $canManage = $this->access->canManage($document, $user);
         $isArchived = $document->archived_at !== null;
         $requiresApproval = $document->workspace->requiresApproval();
 
-        // A reader with VIEW only ever sees the published version.
+        // A reader with VIEW only ever sees the published version; a chain
+        // reviewer also sees the version under review.
         $versions = $canEdit
             ? $document->versions
-            : $document->versions->where('id', $document->published_version_id)->values();
+            : $document->versions->filter(fn (DocumentVersion $version) => $version->id === $document->published_version_id
+                || ($isChainReviewer && $version->id === $document->latest_version_id))->values();
 
-        $approvalHistory = $canEdit ? $document->versions->flatMap(fn (DocumentVersion $version) => $version->approvalRequest !== null ? [$version->approvalRequest] : []) : collect();
+        $approvalHistory = $canEdit || $isChainReviewer ? $document->versions->flatMap(fn (DocumentVersion $version) => $version->approvalRequest !== null ? [$version->approvalRequest] : []) : collect();
 
         return Inertia::render('portal/documents/show', [
             'document' => $this->formatSummary($document) + [
@@ -161,8 +173,10 @@ class DocumentController extends Controller
             'canManage' => $canManage,
             'canSubmit' => $canEdit && ! $isArchived && $requiresApproval
                 && in_array($document->status, [Document::STATUS_DRAFT, Document::STATUS_CHANGES_REQUESTED], true),
-            'canDecide' => $canManage && $document->status === Document::STATUS_IN_REVIEW
-                && $document->latestVersion?->author_id !== $user->id,
+            'canDecide' => $document->status === Document::STATUS_IN_REVIEW && $pendingRequest !== null
+                && $authority->canDecide($pendingRequest, $user),
+            'reviewMode' => $document->workspace->review_mode,
+            'reviewDueAt' => $pendingRequest?->due_at?->toIso8601String(),
             'categories' => $this->categories($tenant->id, false),
             'grants' => $canManage ? DocumentAccessGrantController::grantsFor($tenant->id, DocumentAccessGrant::RESOURCE_DOCUMENT, $document->id) : [],
             'staff' => $canManage ? DocumentAccessGrantController::staffOptions($tenant->id) : [],
@@ -328,6 +342,13 @@ class DocumentController extends Controller
         return [
             'id' => $approvalRequest->id,
             'state' => $approvalRequest->state,
+            'dueAt' => $approvalRequest->due_at?->toIso8601String(),
+            'steps' => $approvalRequest->steps->map(fn (ApprovalStep $step) => [
+                'position' => $step->position,
+                'reviewerName' => $step->reviewer->name,
+                'state' => $step->state,
+                'actedAt' => $step->acted_at?->toIso8601String(),
+            ])->values(),
             'decisions' => $approvalRequest->decisions->map(fn ($decision) => $this->formatDecision($decision))->values(),
         ];
     }
@@ -339,6 +360,7 @@ class DocumentController extends Controller
     {
         return [
             'reviewerName' => $decision->reviewer->name,
+            'onBehalfOfName' => $decision->onBehalfOf?->name,
             'decision' => $decision->decision,
             'comment' => $decision->comment,
             'actedAt' => $decision->acted_at->toIso8601String(),

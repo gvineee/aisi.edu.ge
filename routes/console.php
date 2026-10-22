@@ -12,6 +12,7 @@ Artisan::command('inspire', function () {
 Schedule::command('appointments:send-reminders')->hourly()->withoutOverlapping();
 Schedule::command('admissions:send-visit-reminders')->hourly()->withoutOverlapping();
 Schedule::command('library:run-notices')->hourly()->withoutOverlapping();
+Schedule::command('documents:send-review-reminders')->hourly()->withoutOverlapping();
 
 if (config('finance.auto_generate')) {
     Schedule::command('finance:generate-fee-invoices')->dailyAt('07:00')->timezone('Asia/Tbilisi')->withoutOverlapping();

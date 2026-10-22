@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Gavel } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import * as DocumentController from '@/actions/App/Http/Controllers/Portal/DocumentController';
+import { formatDateTime } from '@/lib/assessment';
 
 type WorklistEntry = {
     id: number;
@@ -11,6 +12,7 @@ type WorklistEntry = {
     authorName: string;
     ordinal: number;
     submittedAt: string | null;
+    dueAt: string | null;
     canDecide: boolean;
 };
 
@@ -19,9 +21,9 @@ type Props = { requests: WorklistEntry[] };
 export default function DirectorWorklist({ requests }: Props) {
     return (
         <PortalLayout>
-            <Head title="დირექტორის სამუშაო სია" />
+            <Head title="დასამტკიცებელი დოკუმენტები" />
 
-            <h1 className="mb-6 text-2xl">დირექტორის სამუშაო სია</h1>
+            <h1 className="mb-6 text-2xl">დასამტკიცებელი დოკუმენტები</h1>
 
             {requests.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">
@@ -47,10 +49,22 @@ export default function DirectorWorklist({ requests }: Props) {
                                     {entry.workspaceTitle} · ავტორი:{' '}
                                     {entry.authorName}
                                 </p>
+                                {entry.dueAt && (
+                                    <p
+                                        className={
+                                            new Date(entry.dueAt) < new Date()
+                                                ? 'text-sm font-medium text-red-700'
+                                                : 'text-sm text-slate-600'
+                                        }
+                                    >
+                                        ვადა: {formatDateTime(entry.dueAt)}
+                                    </p>
+                                )}
                                 {!entry.canDecide && (
-                                    <p className="text-sm text-red-600">
-                                        თქვენ გამოგზავნეთ ეს ვერსია — ვერ
-                                        დაამტკიცებთ საკუთარ დოკუმენტს.
+                                    <p className="text-sm text-slate-600">
+                                        ახლა თქვენი გადაწყვეტილება არ ელის — ან
+                                        თქვენ გამოგზავნეთ, ან ჯაჭვში სხვა
+                                        რეცენზენტის ჯერია.
                                     </p>
                                 )}
                             </Link>

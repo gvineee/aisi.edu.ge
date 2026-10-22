@@ -73,6 +73,7 @@ type Props = {
     filters: Filters;
     expiringCount: number;
     isDirectorOrAdmin: boolean;
+    myReviewCount: number;
 };
 
 const sortLabels: Record<string, string> = {
@@ -116,6 +117,7 @@ export default function DocumentCenterIndex({
     filters,
     expiringCount,
     isDirectorOrAdmin,
+    myReviewCount,
 }: Props) {
     const [search, setSearch] = useState(filters.search);
     const [showCreate, setShowCreate] = useState(false);
@@ -178,14 +180,23 @@ export default function DocumentCenterIndex({
                     >
                         შაბლონები
                     </Link>
+                    <Link
+                        href="/documents/delegations"
+                        className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium"
+                    >
+                        შემცვლელები
+                    </Link>
+                    {(isDirectorOrAdmin || myReviewCount > 0) && (
+                        <Link
+                            href="/documents/director-worklist"
+                            className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium"
+                        >
+                            დასამტკიცებელი
+                            {myReviewCount > 0 && ` (${myReviewCount})`}
+                        </Link>
+                    )}
                     {isDirectorOrAdmin && (
                         <>
-                            <Link
-                                href="/documents/director-worklist"
-                                className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium"
-                            >
-                                დასამტკიცებელი
-                            </Link>
                             <Link
                                 href="/documents/settings"
                                 className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium"

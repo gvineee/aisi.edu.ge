@@ -4,7 +4,9 @@ namespace App\Domain\Documents\Actions;
 
 use App\Domain\Documents\Models\ApprovalDecision;
 use App\Domain\Documents\Models\ApprovalRequest;
+use App\Domain\Documents\Models\ApprovalStep;
 use App\Domain\Documents\Models\Document;
+use App\Domain\Documents\ReviewAuthority;
 use App\Domain\Governance\AuditLogger;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -19,12 +21,19 @@ use RuntimeException;
  * rejected — never a double-apply, and never a "last write wins" surprise.
  * The row's `lock_version` is bumped every commit as an explicit, testable
  * signal of that guarantee.
+ *
+ * With a review chain (docs/07 §4) the decision belongs to a step: the
+ * reviewer's own actionable step or, for an active delegate, the
+ * delegator's (recorded as on_behalf_of). An approval completes the
+ * request only when no pending step remains; a return closes the request
+ * at once and cancels the steps nobody has acted on yet.
  */
 class DecideApproval
 {
     public function __construct(
         private readonly AuditLogger $auditLogger,
         private readonly ManageDocumentAcknowledgements $acknowledgements,
+        private readonly ReviewAuthority $authority,
     ) {}
 
     public function handle(ApprovalRequest $approvalRequest, User $reviewer, string $decision, ?string $comment): ApprovalDecision
@@ -57,21 +66,62 @@ class DecideApproval
                 throw new RuntimeException('A submitter cannot approve their own document.');
             }
 
-            $request->state = $decision === ApprovalDecision::DECISION_APPROVED
-                ? ApprovalRequest::STATE_APPROVED
-                : ApprovalRequest::STATE_RETURNED;
+            $steps = ApprovalStep::query()->where('tenant_id', $request->tenant_id)->where('approval_request_id', $request->id)
+                ->orderBy('position')->lockForUpdate()->get();
+            $step = null;
+            $onBehalfOf = null;
+
+            if ($steps->isNotEmpty()) {
+                $actionable = $this->authority->actionableStep($request, $reviewer, $steps);
+
+                if ($actionable === null) {
+                    throw new ApprovalAlreadyDecidedException("No step of approval request {$request->id} is actionable for user {$reviewer->id}.");
+                }
+
+                ['step' => $step, 'onBehalfOf' => $onBehalfOf] = $actionable;
+                $step->state = $decision === ApprovalDecision::DECISION_APPROVED ? ApprovalStep::STATE_APPROVED : ApprovalStep::STATE_RETURNED;
+                $step->acted_at = now();
+                $step->save();
+
+                if ($decision === ApprovalDecision::DECISION_RETURNED) {
+                    ApprovalStep::query()->where('approval_request_id', $request->id)->where('state', ApprovalStep::STATE_PENDING)
+                        ->update(['state' => ApprovalStep::STATE_CANCELLED, 'acted_at' => now()]);
+                }
+            }
+
+            $completes = $decision === ApprovalDecision::DECISION_RETURNED
+                || $steps->where('state', ApprovalStep::STATE_PENDING)->isEmpty();
+
+            if ($completes) {
+                $request->state = $decision === ApprovalDecision::DECISION_APPROVED
+                    ? ApprovalRequest::STATE_APPROVED
+                    : ApprovalRequest::STATE_RETURNED;
+            }
             $request->lock_version = $request->lock_version + 1;
             $request->save();
 
             $approvalDecision = new ApprovalDecision([
                 'approval_request_id' => $request->id,
+                'approval_step_id' => $step?->id,
                 'reviewer_id' => $reviewer->id,
+                'on_behalf_of_id' => $onBehalfOf,
                 'decision' => $decision,
                 'comment' => $comment,
                 'acted_at' => now(),
             ]);
             $approvalDecision->tenant_id = $document->tenant_id;
             $approvalDecision->save();
+
+            if (! $completes) {
+                $this->auditLogger->record($document->tenant_id, 'document.step_approved', $document, $reviewer->id, [
+                    'approval_request_id' => $request->id,
+                    'approval_step_id' => $step?->id,
+                    'on_behalf_of_id' => $onBehalfOf,
+                    'version_id' => $version->id,
+                ]);
+
+                return $approvalDecision;
+            }
 
             if ($decision === ApprovalDecision::DECISION_APPROVED) {
                 $document->status = Document::STATUS_APPROVED;
@@ -87,6 +137,8 @@ class DecideApproval
 
             $this->auditLogger->record($document->tenant_id, "document.{$decision}", $document, $reviewer->id, [
                 'approval_request_id' => $request->id,
+                'approval_step_id' => $step?->id,
+                'on_behalf_of_id' => $onBehalfOf,
                 'version_id' => $version->id,
                 'comment' => $comment,
             ]);

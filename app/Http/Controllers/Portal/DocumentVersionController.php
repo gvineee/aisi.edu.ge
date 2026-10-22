@@ -6,6 +6,7 @@ use App\Domain\Documents\Actions\UploadDocumentVersion;
 use App\Domain\Documents\DocumentAccess;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\DocumentVersion;
+use App\Domain\Documents\ReviewAuthority;
 use App\Domain\Governance\AuditLogger;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
@@ -38,10 +39,11 @@ class DocumentVersionController extends Controller
      * Signed, short-lived download — cross-tenant or expired links 404/403
      * rather than 200-with-wrong-content. A pending or quarantined version
      * can never be downloaded regardless of who asks. VIEW-level readers get
-     * only the published version; working versions need EDIT. Downloads
+     * only the published version; working versions need EDIT, except that a
+     * review-chain reviewer (or delegate) may read the version under review. Downloads
      * from confidential workspaces (contracts, HR) are audited.
      */
-    public function download(Request $request, CurrentTenant $currentTenant, Document $document, DocumentVersion $version, AuditLogger $auditLogger): StreamedResponse
+    public function download(Request $request, CurrentTenant $currentTenant, Document $document, DocumentVersion $version, AuditLogger $auditLogger, ReviewAuthority $authority): StreamedResponse
     {
         abort_unless($request->hasValidSignature(), 403);
 
@@ -55,7 +57,8 @@ class DocumentVersionController extends Controller
         if ($document->published_version_id === $version->id) {
             abort_unless($this->access->canView($document, $user), 403);
         } else {
-            abort_unless($this->access->canEdit($document, $user), 403);
+            abort_unless($this->access->canEdit($document, $user)
+                || ($document->latest_version_id === $version->id && $authority->isChainReviewer($document, $user)), 403);
         }
 
         if ($document->workspace->isConfidential() || $document->isRestricted()) {

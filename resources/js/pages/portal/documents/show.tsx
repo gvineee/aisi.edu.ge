@@ -19,7 +19,7 @@ import {
     formText,
     selectClass,
 } from '@/components/documents/labels';
-import { firstError, formatDay } from '@/lib/assessment';
+import { firstError, formatDateTime, formatDay } from '@/lib/assessment';
 
 type VersionEntry = {
     id: number;
@@ -37,15 +37,33 @@ type VersionEntry = {
 
 type DecisionEntry = {
     reviewerName: string;
+    onBehalfOfName: string | null;
     decision: string;
     comment: string | null;
     actedAt: string;
 };
 
+type StepEntry = {
+    position: number;
+    reviewerName: string;
+    state: 'pending' | 'approved' | 'returned' | 'skipped' | 'cancelled';
+    actedAt: string | null;
+};
+
 type ApprovalHistoryEntry = {
     id: number;
     state: string;
+    dueAt: string | null;
+    steps: StepEntry[];
     decisions: DecisionEntry[];
+};
+
+const stepLabels: Record<StepEntry['state'], string> = {
+    pending: 'ელოდება',
+    approved: 'დაამტკიცა',
+    returned: 'დააბრუნა',
+    skipped: 'გამოტოვებულია (ავტორი)',
+    cancelled: 'გაუქმდა',
 };
 
 type Props = {
@@ -77,6 +95,8 @@ type Props = {
     canManage: boolean;
     canSubmit: boolean;
     canDecide: boolean;
+    reviewMode: 'single' | 'sequential' | 'all';
+    reviewDueAt: string | null;
     categories: { id: number; name: string }[];
     grants: AccessGrant[];
     staff: { id: number; name: string }[];
@@ -283,6 +303,8 @@ export default function DocumentShow({
     canManage,
     canSubmit,
     canDecide,
+    reviewMode,
+    reviewDueAt,
     categories,
     grants,
     staff,
@@ -518,7 +540,16 @@ export default function DocumentShow({
 
             {canDecide && pendingApprovalRequest && (
                 <div className="mb-6 space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4">
-                    <p className="text-sm font-medium">გადაწყვეტილება</p>
+                    <p className="text-sm font-medium">
+                        გადაწყვეტილება
+                        {reviewMode !== 'single' &&
+                            ' (თქვენი ნაბიჯი რეცენზენტების ჯაჭვში)'}
+                    </p>
+                    {reviewDueAt && (
+                        <p className="text-sm text-slate-600">
+                            განხილვის ვადა: {formatDateTime(reviewDueAt)}
+                        </p>
+                    )}
                     <label htmlFor="return-comment" className="sr-only">
                         დაბრუნების მიზეზი
                     </label>
@@ -698,13 +729,47 @@ export default function DocumentShow({
                                           : entry.state === 'returned'
                                             ? 'დაბრუნდა'
                                             : 'ჩანაცვლდა'}
+                                    {entry.state === 'pending' &&
+                                        entry.dueAt &&
+                                        ` · ვადა: ${formatDateTime(entry.dueAt)}`}
                                 </p>
+                                {entry.steps.length > 0 && (
+                                    <ol className="mb-2 space-y-1 text-sm">
+                                        {entry.steps.map((step) => (
+                                            <li
+                                                key={step.position}
+                                                className="flex flex-wrap gap-x-2"
+                                            >
+                                                <span className="text-slate-500">
+                                                    {step.position}.
+                                                </span>
+                                                <span>{step.reviewerName}</span>
+                                                <span
+                                                    className={
+                                                        step.state ===
+                                                        'approved'
+                                                            ? 'text-emerald-700'
+                                                            : step.state ===
+                                                                'returned'
+                                                              ? 'text-red-700'
+                                                              : 'text-slate-500'
+                                                    }
+                                                >
+                                                    — {stepLabels[step.state]}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                )}
                                 {entry.decisions.map((decision, index) => (
                                     <div
                                         key={index}
                                         className="text-sm text-slate-600"
                                     >
-                                        {decision.reviewerName} —{' '}
+                                        {decision.reviewerName}
+                                        {decision.onBehalfOfName &&
+                                            ` (${decision.onBehalfOfName}-ის ნაცვლად)`}{' '}
+                                        —{' '}
                                         {decision.decision === 'approved'
                                             ? 'დამტკიცდა'
                                             : 'დაბრუნდა'}

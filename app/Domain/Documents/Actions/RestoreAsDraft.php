@@ -36,10 +36,7 @@ class RestoreAsDraft
             $document = Document::query()->where('id', $document->id)->lockForUpdate()->firstOrFail();
 
             if ($document->latest_version_id !== null) {
-                ApprovalRequest::query()
-                    ->where('document_version_id', $document->latest_version_id)
-                    ->where('state', ApprovalRequest::STATE_PENDING)
-                    ->update(['state' => ApprovalRequest::STATE_SUPERSEDED]);
+                ApprovalRequest::supersedePendingFor($document->tenant_id, $document->latest_version_id);
             }
 
             $nextOrdinal = (int) DocumentVersion::query()

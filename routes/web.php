@@ -24,6 +24,7 @@ use App\Http\Controllers\Portal\DocumentAcknowledgementController;
 use App\Http\Controllers\Portal\DocumentApprovalController;
 use App\Http\Controllers\Portal\DocumentController;
 use App\Http\Controllers\Portal\DocumentLibraryController;
+use App\Http\Controllers\Portal\DocumentReviewController;
 use App\Http\Controllers\Portal\DocumentTemplateController;
 use App\Http\Controllers\Portal\DocumentVersionController;
 use App\Http\Controllers\Portal\EnrollmentVerificationController;
@@ -197,6 +198,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('documents/settings', [DocumentLibraryController::class, 'index'])->name('documents.settings');
     Route::post('documents/workspaces', [DocumentLibraryController::class, 'storeWorkspace'])->name('documents.workspaces.store');
     Route::put('documents/workspaces/{documentWorkspace}', [DocumentLibraryController::class, 'updateWorkspace'])->name('documents.workspaces.update');
+    Route::put('documents/workspaces/{documentWorkspace}/review-chain', [DocumentReviewController::class, 'updateChain'])->middleware('reauth')->name('documents.workspaces.review-chain');
+    Route::get('documents/delegations', [DocumentReviewController::class, 'delegations'])->name('documents.delegations.index');
+    Route::post('documents/delegations', [DocumentReviewController::class, 'storeDelegation'])->middleware(['throttle:20,1', 'reauth'])->name('documents.delegations.store');
+    Route::post('documents/delegations/{delegation}/revoke', [DocumentReviewController::class, 'revokeDelegation'])->middleware('reauth')->name('documents.delegations.revoke');
     Route::post('documents/workspaces/{documentWorkspace}/archive', [DocumentLibraryController::class, 'archiveWorkspace'])->name('documents.workspaces.archive');
     Route::post('documents/categories', [DocumentLibraryController::class, 'storeCategory'])->name('documents.categories.store');
     Route::put('documents/categories/{documentCategory}', [DocumentLibraryController::class, 'updateCategory'])->name('documents.categories.update');

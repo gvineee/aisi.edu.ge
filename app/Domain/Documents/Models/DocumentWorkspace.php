@@ -18,14 +18,28 @@ use Illuminate\Support\Carbon;
  * @property string $classification
  * @property string $visibility
  * @property bool|null $requires_approval
+ * @property string $review_mode
+ * @property int|null $review_days
  * @property bool $is_confidential
  * @property int|null $created_by
  * @property Carbon|null $archived_at
  */
-#[Fillable(['title', 'description', 'classification', 'visibility', 'requires_approval', 'is_confidential', 'created_by'])]
+#[Fillable(['title', 'description', 'classification', 'visibility', 'requires_approval', 'review_mode', 'review_days', 'is_confidential', 'created_by'])]
 class DocumentWorkspace extends Model
 {
     use BelongsToTenant;
+
+    /** Any manager of the document decides (the original flow). */
+    public const REVIEW_SINGLE = 'single';
+
+    /** The chain's reviewers decide one after another. */
+    public const REVIEW_SEQUENTIAL = 'sequential';
+
+    /** Every reviewer in the chain must approve, in any order. */
+    public const REVIEW_ALL = 'all';
+
+    /** @var array<int, string> */
+    public const REVIEW_MODES = [self::REVIEW_SINGLE, self::REVIEW_SEQUENTIAL, self::REVIEW_ALL];
 
     public const VISIBILITY_ALL_STAFF = 'all_staff';
 
@@ -83,6 +97,19 @@ class DocumentWorkspace extends Model
     public function requiresApproval(): bool
     {
         return $this->requires_approval ?? true;
+    }
+
+    public function usesReviewChain(): bool
+    {
+        return $this->requiresApproval() && in_array($this->review_mode, [self::REVIEW_SEQUENTIAL, self::REVIEW_ALL], true);
+    }
+
+    /**
+     * @return HasMany<DocumentWorkspaceReviewer, $this>
+     */
+    public function reviewers(): HasMany
+    {
+        return $this->hasMany(DocumentWorkspaceReviewer::class, 'workspace_id')->orderBy('position');
     }
 
     public function isRestricted(): bool

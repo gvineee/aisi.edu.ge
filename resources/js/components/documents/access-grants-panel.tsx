@@ -4,6 +4,7 @@ import { ShieldCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { firstError } from '@/lib/assessment';
+import { successUnlessReauth } from '@/lib/reauth';
 import {
     permissionHints,
     permissionLabels,
@@ -71,7 +72,7 @@ export default function AccessGrantsPanel({
             },
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('წვდომა მიენიჭა.'),
+                onSuccess: successUnlessReauth('წვდომა მიენიჭა.'),
                 onError: (errors) =>
                     toast.error(firstError(errors) ?? 'ვერ შესრულდა.'),
                 onFinish: () => setBusy(false),
@@ -82,7 +83,7 @@ export default function AccessGrantsPanel({
     const revoke = (grant: AccessGrant) => {
         router.delete(`/documents/access-grants/${grant.id}`, {
             preserveScroll: true,
-            onSuccess: () => toast.success('წვდომა გაუქმდა.'),
+            onSuccess: successUnlessReauth('წვდომა გაუქმდა.'),
             onError: () => toast.error('ვერ შესრულდა.'),
         });
     };

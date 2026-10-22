@@ -37,7 +37,7 @@ class DocumentLibraryController extends Controller
         abort_unless($isOversight || $managed !== [], 403);
 
         $workspaces = DocumentWorkspace::query()->where('tenant_id', $tenant->id)->whereIn('id', $managed)
-            ->withCount('documents')->orderBy('title')->get();
+            ->withCount('documents')->with('reviewers')->orderBy('title')->get();
 
         return Inertia::render('portal/documents/settings', [
             'canConfigure' => $isOversight,
@@ -48,6 +48,9 @@ class DocumentLibraryController extends Controller
                 'classification' => $workspace->classification,
                 'visibility' => $workspace->visibility,
                 'requiresApproval' => $workspace->requiresApproval(),
+                'reviewMode' => $workspace->review_mode,
+                'reviewDays' => $workspace->review_days,
+                'reviewerIds' => $workspace->reviewers->pluck('user_id')->values(),
                 'isConfidential' => (bool) $workspace->is_confidential,
                 'isArchived' => $workspace->archived_at !== null,
                 'documentsCount' => $workspace->documents_count,
