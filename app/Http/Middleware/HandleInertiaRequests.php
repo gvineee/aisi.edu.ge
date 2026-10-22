@@ -6,6 +6,7 @@ use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\PortalContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -38,6 +39,13 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Controllers report outcomes with `->with('toast', [...])`, a plain
+        // session flash; Inertia v3 only delivers its own flash bag to the
+        // client (the `flash` router event), so hand the toast over to it.
+        if ($request->hasSession() && is_array($toast = $request->session()->get('toast'))) {
+            Inertia::flash('toast', $toast);
+        }
+
         $tenant = app(CurrentTenant::class)->get();
 
         $appName = config('app.name');
