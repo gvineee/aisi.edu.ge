@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // No built-in /storage/{path} route for private files: every
+            // download goes through a policy-checked controller instead.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

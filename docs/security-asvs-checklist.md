@@ -7,7 +7,7 @@
 | სფერო (ASVS) | სტატუსი | მტკიცებულება | რა აკლია |
 |---|---|---|---|
 | V8 Authorization — tenant isolation | ✓ | `BelongsToTenant` + explicit `tenant_id` checks; cross-tenant ტესტები (Messaging, Finance, Substitution, Platform, Health…) | — |
-| V8 Authorization — ობიექტის დონე (IDOR) | ✓ | controller-ებში `abort_unless(... tenant_id ...)` + role/guardian/assignment შემოწმება read endpoint-ებზეც | ავტომატური endpoint-ინვენტარის ტესტი (ყველა route-ზე) არ არის |
+| V8 Authorization — ობიექტის დონე (IDOR) | ✓ | controller-ებში `abort_unless(... tenant_id ...)` + role/guardian/assignment შემოწმება read endpoint-ებზეც. **route-ების ინვენტარი** (`RouteInventoryTest`, 2026-10-22): ყველა route ან `auth`-ის მიღმაა, ან საჯარო allowlist-შია, მიზეზის მითითებით. ყოველი ავტორიზებული route (200+) სტუმრად მოწმდება: შედეგი login ან 4xx უნდა იყოს. private disk-ის ჩაშენებული `/storage/{path}` route გამორთულია (`serve => false`): ფაილები მხოლოდ policy-შემოწმებული controller-ით გაიცემა | ინვენტარი სტუმარს ამოწმებს; როლებს შორის (მაგ. მშობელი → პერსონალის route) და tenant-ებს შორის — მოდულის ტესტები, არა ავტომატური ინვენტარი |
 | V8 Guardian flags (academic/financial/pickup) | ✓ | `GuardianLink` flags; FinanceSandboxTest, Gradebook, Pickup ტესტები | — |
 | V6 Authentication — MFA privileged roles | ✓ | `EnsureAdminMfa` (admin/director/accountant), finance/health 2FA, `platform` middleware; `AdminMfaEnforcementTest` | WebAuthn/passkey არ არის |
 | V6 Rate limiting | ◐ | login (Fortify), 2FA, admissions lead, pickup codes/verify, invitations, messages/broadcast, payment start, webhooks, report-card verify | გლობალური per-tenant ლიმიტი; abuse monitoring |
