@@ -115,4 +115,7 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    // Extra recipient for ops:check alerts, besides active platform operators.
+    'ops_alert_address' => env('OPS_ALERT_EMAIL'),
+
 ];

@@ -2,15 +2,19 @@
 
 namespace App\Providers;
 
+use App\Domain\Platform\OperationsHealth;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Uploads\ClamdFileScanner;
 use App\Domain\Uploads\FileScanner;
 use App\Domain\Uploads\NullFileScanner;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,6 +36,16 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // `/up` reports background work too: a stalled scheduler or an
+        // unworked queue turns it into a 500 for the uptime monitor.
+        Event::listen(DiagnosingHealth::class, function () {
+            $problems = app(OperationsHealth::class)->problems();
+
+            if ($problems !== []) {
+                throw new RuntimeException('Operations unhealthy: '.implode('; ', $problems));
+            }
+        });
     }
 
     /**

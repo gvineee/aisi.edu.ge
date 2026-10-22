@@ -24,7 +24,7 @@
 | V13 Secrets | ◐ | `.env` (placeholders `.env.example`-ში), არაფერი commit-ში | secret manager / rotation |
 | Telemetry / analytics | ✓ | მოსწავლის დონის tracking არ არის; director pulse — მხოლოდ aggregate, health გამორიცხულია | — |
 | Operations — backup/restore | ✗ | `docs/deployment-and-rollback.md` გეგმა | restore drill production-ზე არ ჩატარებულა |
-| Operations — queue/scheduler monitoring | ✗ | scheduler (`appointments:send-reminders`) და queue jobs არსებობს | production-ზე worker/cron/failed-jobs monitoring არ არის აწყობილი |
+| Operations — queue/scheduler monitoring | ◐ | (2026-10-22) scheduler ყოველ წუთში heartbeat-ს წერს. `/up` აბრუნებს 500-ს, როცა heartbeat 10 წუთზე ძველია ან queue-ში 15 წუთზე მეტი ხნის დაუმუშავებელი ამოცანაა. `ops:check` (ყოველ საათში) აქტიურ platform operator-ებს და `OPS_ALERT_EMAIL`-ს ელფოსტით ატყობინებს ახალ failed jobs-ზე (კლასი + შეცდომის პირველი ხაზი, payload არასდროს) და პრობლემაზე (6 საათში მაქსიმუმ ერთხელ). `OperationsHealthTest` | **გარე uptime-მონიტორი `https://aisi.edu.ge/up`-ზე ჯერ არ არის დაყენებული**: scheduler-ის სრულ გაჩერებას შიგნიდან ვერავინ შეატყობინებს. სჭირდება მომხმარებლის ანგარიში (მაგ. UptimeRobot) |
 
 ## შემდეგი უსაფრთხოების ნაბიჯები (პრიორიტეტით)
 

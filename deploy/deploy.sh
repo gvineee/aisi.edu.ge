@@ -46,10 +46,11 @@ php artisan up
 # 4. Smoke checks.
 curl -s -o /dev/null -w "home %{http_code}\n" https://aisi.edu.ge/
 curl -s -o /dev/null -w "login %{http_code}\n" https://aisi.edu.ge/login
+curl -s -o /dev/null -w "up (scheduler/queue health) %{http_code}\n" https://aisi.edu.ge/up
 curl -s -o /dev/null -w "finance (guest) %{http_code}\n" https://aisi.edu.ge/portal/finance
 curl -s -o /dev/null -w "documents (guest) %{http_code}\n" https://aisi.edu.ge/documents
 php artisan migrate:status | tail -3
-php artisan schedule:list | grep -E "finance|appointments|visit|library|documents" || true
+php artisan schedule:list | grep -E "finance|appointments|visit|library|documents|ops" || true
 tail -n 5 storage/logs/laravel.log 2>/dev/null | grep -i -E "error|exception" || echo "no new errors in log tail"
 echo "Migrations run by this deploy: \$PENDING (schema-only rollback: php artisan migrate:rollback --step=\$PENDING)"
 EOF

@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Platform\OperationsHealth;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -9,6 +10,9 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Requires the server cron: * * * * * php artisan schedule:run
+// Heartbeat read by /up and ops:check (OperationsHealth).
+Schedule::call(fn () => app(OperationsHealth::class)->beat())->everyMinute()->name('ops-heartbeat');
+Schedule::command('ops:check')->hourly()->withoutOverlapping();
 Schedule::command('appointments:send-reminders')->hourly()->withoutOverlapping();
 Schedule::command('admissions:send-visit-reminders')->hourly()->withoutOverlapping();
 Schedule::command('library:run-notices')->hourly()->withoutOverlapping();
