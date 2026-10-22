@@ -33,6 +33,7 @@ php artisan down --retry=30 || true
 tar -xzf /tmp/aisi-release-$STAMP.tar.gz
 composer install --no-dev --optimize-autoloader --no-interaction
 rm -f storage/framework/views/*.php
+PENDING=\$(php artisan migrate:status --pending 2>/dev/null | grep -c Pending || true)
 php artisan migrate --force
 
 # 3. Caches, workers, back up.
@@ -50,6 +51,7 @@ curl -s -o /dev/null -w "documents (guest) %{http_code}\n" https://aisi.edu.ge/d
 php artisan migrate:status | tail -3
 php artisan schedule:list | grep -E "finance|appointments|visit|library|documents" || true
 tail -n 5 storage/logs/laravel.log 2>/dev/null | grep -i -E "error|exception" || echo "no new errors in log tail"
+echo "Migrations run by this deploy: \$PENDING (schema-only rollback: php artisan migrate:rollback --step=\$PENDING)"
 EOF
 
-echo "Done. Rollback: php artisan down; restore $BACKUPS/files-$STAMP.tar.gz and db-$STAMP.sql.gz (clpctl db:import); php artisan migrate:rollback --step=2 if only schema; cache rebuild; php artisan up (docs/deployment-and-rollback.md)."
+echo "Done. Rollback: php artisan down; restore $BACKUPS/files-$STAMP.tar.gz and db-$STAMP.sql.gz (clpctl db:import); php artisan migrate:rollback --step=<count printed above> if only schema; cache rebuild; php artisan up (docs/deployment-and-rollback.md)."

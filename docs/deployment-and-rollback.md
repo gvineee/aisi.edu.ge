@@ -150,3 +150,16 @@
 - migration რეალურ MySQL-ზე წარმატებით გაეშვა. FK-ის მოკლე სახელი `doc_acks_request_fk` production-ზეც შემოწმდა (`information_schema`). ავტომატურად შექმნილი 70-სიმბოლოიანი სახელი იქ ჩავარდებოდა, MariaDB-ზე ტესტმა ეს deploy-მდე აჩვენა.
 - Smoke: `/`, `/about`, `/login` → 200; `/documents`, `/documents/templates`, `/documents/my-work` სტუმრისთვის → 302. scheduler-ის 4 ამოცანა ჩანს. failed jobs: 0; ლოგში ახალი შეცდომა არ არის.
 - Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import` (ან მხოლოდ სქემისთვის `php artisan migrate:rollback --step=1`); cache rebuild; `up`.
+
+## Deploy — 2026-10-22 (`6e85f21..73da5cc`, მომხმარებელმა გაუშვა `! bash deploy/deploy.sh`)
+
+- შინაარსი:
+  - დოკუმენტების ცენტრის მე-4 ეტაპი: რეცენზენტების ჯაჭვი, განხილვის ვადა და შეხსენება, შემცვლელი;
+  - controller-ების toast-ები ახლა კლიენტამდე აღწევს.
+  - 35 ფაილი, 1 migration (batch 19).
+- Backup: `_backups/db-20261022-144559.sql.gz`, `files-20261022-144559.tar.gz`, `env-20261022-144559`.
+- migration რეალურ MySQL-ზე 794 ms-ში გაეშვა. მანამდე MariaDB-ზე შემოწმდა: up/down/up და დოკუმენტების 42 ტესტი.
+- Smoke: `/` და `/login` → 200; `/portal/finance` და `/documents` სტუმრისთვის → 302. scheduler-ის 5 ამოცანა ჩანს, მათ შორის ახალი `documents:send-review-reminders` (ყოველ საათში). ლოგში ახალი შეცდომა არ არის.
+- ყველა სივრცე რჩება „ერთი გადაწყვეტილების“ რეჟიმში (ნაგულისხმევი), სანამ დირექცია ჯაჭვს არ დააყენებს. ქცევა deploy-მდე არსებულს ემთხვევა.
+- Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import` (ან მხოლოდ სქემისთვის `php artisan migrate:rollback --step=1`); cache rebuild; `up`.
+- გასწორდა: deploy-ის ბოლო შეტყობინება ყოველთვის `--step=2`-ს წერდა. ახლა `deploy.sh` ითვლის, რამდენი migration გაეშვა ამ deploy-ში, და ამ რიცხვს ბეჭდავს.
