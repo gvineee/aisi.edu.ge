@@ -169,3 +169,15 @@
 - ყველა სივრცე რჩება „ერთი გადაწყვეტილების“ რეჟიმში (ნაგულისხმევი), სანამ დირექცია ჯაჭვს არ დააყენებს. ქცევა deploy-მდე არსებულს ემთხვევა.
 - Rollback: `php artisan down`; `files-…` გახსნა, `db-…` → `clpctl db:import` (ან მხოლოდ სქემისთვის `php artisan migrate:rollback --step=1`); cache rebuild; `up`.
 - გასწორდა: deploy-ის ბოლო შეტყობინება ყოველთვის `--step=2`-ს წერდა. ახლა `deploy.sh` ითვლის, რამდენი migration გაეშვა ამ deploy-ში, და ამ რიცხვს ბეჭდავს.
+
+## Deploy — 2026-10-23 (`73da5cc..c299a71`, მომხმარებელმა გაუშვა `! bash deploy/deploy.sh`)
+
+- შინაარსი:
+  - route-ების ინვენტარი;
+  - private disk-ის `/storage/{path}` route-ები გამორთულია;
+  - ფონური სამუშაოების მონიტორინგი: heartbeat, `/up`, `ops:check`.
+  - 8 ფაილი, migration არ ყოფილა.
+- Backup: `_backups/db-20261023-115347.sql.gz`, `files-20261023-115347.tar.gz`.
+- Smoke: `/`, `/login`, `/up` → 200; `/portal/finance`, `/documents` სტუმრისთვის → 302. scheduler-ში ჩანს `ops-heartbeat` (ყოველ წუთში) და `ops:check` (ყოველ საათში). ლოგში ახალი შეცდომა არ არის.
+- deploy-ის ახალმა ანგარიშმა სწორად აჩვენა: „Migrations run by this deploy: 0“.
+- დარჩენილია (მომხმარებლის ანგარიშით): გარე uptime-მონიტორი `https://aisi.edu.ge/up`-ზე.
