@@ -35,7 +35,17 @@
                 $listPage = (int) request()->query('page', 1);
                 $canonicalUrl = $seoTenant->canonicalUrl(request()->getPathInfo().($listPage > 1 ? '?page='.$listPage : ''));
             }
+
+            // Indexable public pages also get their text in the body (see
+            // partials/public-content). Only on full page loads: Inertia
+            // visits never render this view.
+            $renderPublicContent = $canonicalUrl !== null;
         @endphp
+
+        @if ($renderPublicContent)
+            <script @if (\Illuminate\Support\Facades\Vite::cspNonce()) nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}" @endif>document.documentElement.classList.add('js');</script>
+            <style>.js #public-content { display: none; }</style>
+        @endif
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
@@ -53,5 +63,8 @@
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />
+        @if ($renderPublicContent)
+            @include('partials.public-content')
+        @endif
     </body>
 </html>

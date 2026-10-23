@@ -1,5 +1,13 @@
 # Implementation Status
 
+### 2026-10-23 — საჯარო გვერდების ტექსტი initial HTML-ში (Inertia SSR-ის გარეშე) — `verified_local`
+
+- production-ის HTML-ში მხოლოდ title/description იყო, ტექსტი კი JS-ის შემდეგ ჩნდებოდა. სერვერზე Node.js არ არის, ამიტომ Inertia SSR იქ ვერ გაეშვება.
+- `resources/views/partials/public-content.blade.php` ინდექსირებადი საჯარო გვერდების ტექსტს იმავე props-იდან არენდერებს: CMS ბლოკები, ამბების სია და სტატია, მასწავლებლები, ბიბლიოთეკა, nav და footer-ის კონტაქტი. JS-იან ბრაუზერში ბლოკი იმალება `html.js`-ით (inline script, CSP nonce), ასე რომ ვიზუალი არ იცვლება. გადაწყვეტილება: `docs/decisions/0003-public-rendering-without-ssr.md`.
+- ტესტები: `HomePageSeoTest` (4: ტექსტი raw HTML-ში, `<script>` escape-დება, ამბები, პორტალზე ბლოკი არ ჩნდება). სრული suite: **416/416 passed, 3828 assertions**; Pint სუფთა.
+- ბრაუზერი: `/about` JS-ით ლოკალურად ვიზუალურად ემთხვევა production-ს.
+- production deploy ჯერ არ გაკეთებულა.
+
 განახლებულია: 2026-10-02 · **მიმდინარე ეტაპის მოკლე სურათი** — საჯარო საიტი (ფაზა 1) production-ზეა; პორტალის მოდულების სტატუსი ცალკე მატრიცაშია: `docs/platform-modules-status.md`. ქვემოთ, ქრონოლოგიურ ჩანაწერებში, უახლესი ზემოთაა. ძველი (2026-09-11) შეჯამება შენარჩუნებულია ისტორიისთვის:
 
 > განახლებულია: 2026-09-11 · ეტაპი 1 დასრულებულია (ბრენდის სინქრონიზაცია + სრული საჯარო საიტი, ახლა დიზაინთან მჭიდრო fidelity-თი — იხ. ქვემოთ); **ეტაპი 2 მნიშვნელოვნად დაწინაურებულია** (როლზე დაფუძნებული dashboard-ები ყველა როლისთვის — guardian/teacher/student/director/admin —, სრული sidebar/bottom-nav portal layout, დოკუმენტების ცენტრის Stage 1+2, კონტენტის მიგრაციის importer ყველა 92 source key-ს ცხადი გადაწყვეტილებით). `CLAUDE-PLATFORM-MODULES.md`-ის **Phase A ("საერთო საფუძველი და vertical slice") ამჟამად სრულადაა დაფარული**: PortalLayout/sidebar/mobile nav ✓, role/context (`PortalContext`) ✓, დღის ცენტრი (`BuildDailyActionFeed`) ✓, Messaging ✓, tenant/role/guardian auth ყველგან ✓. **Phase B დაწყებულია: Portfolio ✓** (draft→submit→publish/return, student/teacher/guardian ხილვადობის წესები — დეტალები ქვემოთ). **ადმინისტრაციული ხარვეზები (CMS UI, წევრების მართვა, მედიის ფაილების რეალური გადმოტანა) ამ ეტაპზე დახურულია** — დეტალები ქვემოთ. დანარჩენი Phase B-C-D-E (Assessment/Gradebook, Health, Pickup/Consent, Admissions CRM, Finance, Transport/Meals/Clubs, Platform white-label) ჯერ არ დაწყებულა — დეტალები `docs/design-parity-checklist.md`-ში. სრული ტესტ-suite: **190/190 passed, 843 assertions** (Pint/PHPStan level 7/`npm run types:check`/`npm run build` ყველა სუფთა). **ყველა ცვლილება production-ზეც დეპლოირებული და რეალურ ბრაუზერში/`curl`-ით დამოწმებულია** (`https://aisi.edu.ge`) — 19 რეალური მიგრირებული ფოტო ფაქტობრივად არსებობს production storage-ზე, hero-ს/header-ის/nav-ის ვიზუალური ბაგები გასწორებულია, **მასწავლებლების ცალკე ბლოკი აშენდა და 17 რეალური მასწავლებელი გამოქვეყნებულია**, **20 რეალური ამბავი + 10 რეალური გვერდი გამოქვეყნებულია (9 ყალბი WordPress-თემის Lorem-Ipsum პოსტი და ორმაგი/დუბლირებული გვერდი განზრახ არ გამოქვეყნებულა)**, და **ისტორიული სიახლეების რეალური თარიღები აღდგენილია** (ადრე ყველა publish ღილაკზე დაწკაპებისას "დღეს" თარიღი იწერებოდა).
@@ -537,14 +545,13 @@ draft→submitted→published/returned workflow; მოსწავლე ხე
 
 ## ცნობილი ხარვეზები / ჯერ არ დამტკიცებული (ერთი, გასწორებული სია)
 
-- **SSR node-პროცესი არ არის მუდმივად გაშვებული.** `config/inertia.php`-ში `ssr.enabled=true`; dev-ში (`vp dev`) SSR module graph ავტომატურად თბება და სრულ body-საც რენდერავს (`data-server-rendered="true"`) — ეს dev convenience-ია, **production-ისთვის persistent SSR პროცესი ჯერ არ არის მოწყობილი**. ამის ნაცვლად, production-ისთვის `app.blade.php` პირდაპირ კითხულობს `page.props.page.seoTitle/seoDescription`-ს და გამოაქვს რეალურ `<title>`/`<meta description>`-ად JS-ის გარეშეც (დამტკიცებული ტესტით `HomePageSeoTest`). **სრული body-content კვლავ მხოლოდ ჰიდრაციის შემდეგ ჩნდება production build-ში** — თუ crawler-ს/JS-less კლიენტს დასჭირდება სრული HTML, საჭირო იქნება `resources/js/ssr.tsx` + supervisor.
-- **CMS admin editor (draft→preview→publish→revert UI) — მხოლოდ schema, არა ეკრანი.** ეს ახლა უფრო აქტუალურია: content-import command-მა უკვე შექმნა 44 რეალური draft გვერდი/პოსტი ლოკალურ dev ბაზაში, რომელთა განსახილველად/გამოსაქვეყნებლად admin UI ჯერ არ არსებობს (მხოლოდ პირდაპირი DB წვდომაა შესაძლებელი).
-- დოკუმენტების ცენტრის Stage 3-5 (publish-ის ცალკე ეტაპი, acknowledgement, multi-reviewer, template registry, retention/OCR, გარე editor ინტეგრაცია) — განზრახ არ დაწყებულა; დეტალები ზემოთ.
-- Content import-ის შემდეგი ეტაპები (301 redirects, media byte migration, `documents`/`teachers` ტიპები, ავტომატური merge) — განზრახ არ დაწყებულა; დეტალები ზემოთ.
-- ~~სრული ვიზიტის/მიღების ნაკადი~~ — დასრულდა 2026-10-20 (სკოლის ვიზიტის ონლაინ დაჯავშნა, იხ. ზემოთ).
-- canonical/hreflang tags, ძველი საიტის 301-mapping — ჯერ არ არის (sitemap/robots უკვე მზადაა; `redirect-map.csv` მხოლოდ შემოთავაზებული რუკაა, გააქტიურებული არაა).
-- შეფასებები/დავალებები — დასრულებულია (ცალკე ჩანაწერებში); წიგნების სიები და ბიბლიოთეკის ცირკულაცია — დასრულდა 2026-10-20.
-- Finance (ეტაპი 4), Communications (ეტაპი 3), Platform onboarding (ეტაპი 5), Deployment/UAT (ეტაპი 6) — არ დაწყებულა.
+განახლდა 2026-10-23. ამ სიიდან მოიხსნა ის, რაც უკვე გაკეთებულია: CMS editor (2026-09-11), canonical/hreflang და ძველი URL-ების 301 (`RedirectLegacyUrls`, `content:sync-redirects`, deploy 2026-10-14), დოკუმენტების ცენტრის მე-3 და მე-4 ეტაპები, Finance (sandbox + ხელით ბუღალტერია), Communications, Platform admin.
+
+- **Inertia SSR production-ზე არ არის**, რადგან სერვერზე Node.js არ არის. მის ნაცვლად საჯარო გვერდების ტექსტს Blade არენდერებს (`partials/public-content`), იხ. `docs/decisions/0003-public-rendering-without-ssr.md`.
+- დოკუმენტების ცენტრის მე-5 ეტაპი (retention/restore drills, OCR, გარე editor) დაიწყება მხოლოდ საჭიროების დადასტურების შემდეგ. ასევე ელოდება რეესტრი/ნუმერაცია სკოლის წესს.
+- Content import-ის `documents` ტიპი და ავტომატური merge ჯერ არ გაკეთებულა.
+- portal-ის არცერთი მოდული არ არის `verified_production`, რადგან production-ში მხოლოდ ადმინია. საჭიროა რეალური მომხმარებლების მოწვევა და ერთ კლასზე პილოტი (ეტაპი 6, UAT).
+- Finance production-ready არ არის ბანკის API-სა და ბუღალტრის UAT-მდე.
 - `logo-concept.png`/`school-life.jpg` კვლავ კონცეფციური მასალაა — production-მდე სჭირდება ვექტორიზაცია/სკოლის დადასტურება.
 - Georgian date formatting (`toLocaleDateString('ka-GE')`) headless Chromium-ის ერთ ვარიანტში (`chrome-headless-shell`) ციფრულ ფორმატზე დაბრუნდა შეზღუდული ICU მონაცემების გამო (`9/9/2026` ნაცვლად ქართული თვის სახელისა); სრულ Chromium/რეალურ ბრაუზერებში `Intl`-ს ka-GE მხარდაჭერა სტანდარტულია — გადასამოწმებელია რეალურ მოწყობილობაზე.
 - `php artisan serve` (single-threaded PHP built-in server) production build-თან ერთად ვერ უმკლავდება ბრაუზერის ერთდროულ ბევრ asset-მოთხოვნას (ვლინდება `/login`-ზეც, ახალი კოდის გარეშეც) — ლოკალური გადამოწმებისას აუცილებლად გამოიყენეთ `npm run dev`/`composer run dev`, არა production build + `artisan serve` კომბინაცია.
@@ -576,12 +583,11 @@ composer run dev                            # server + queue + vite ერთა
 
 ## შემდეგი კონკრეტული ამოცანა
 
-(განახლდა 2026-10-02; წინა სია 2026-09-10-ით იყო დათარიღებული და მისი პუნქტები — მოწვევები, განრიგი/დასწრება, CMS editor, teacher dashboard, portal layout — უკვე შესრულებულია.)
+(განახლდა 2026-10-23. 2026-10-02-ის სია შესრულებულია: Gradebook, ტაბელი, Health, Clubs/Transport/Meals და „სკოლის პულსი“ production-ზეა. 2026-10-23-ს ყველა მათი route სტუმრისთვის 302 → `/login` აბრუნებს.)
 
-1. Gradebook + ტაბელის production deploy (+ სერვერზე `public/robots.txt`-ის წაშლა) და ვიზუალური ბრაუზერ-QA.
-2. ტაბელის სერვერული PDF (PDF engine + ქართული TTF) და competencies. Gradebook-ის ვიზუალური ბრაუზერ-QA 360/390/768/1440-ზე და production deploy (incremental migrations, `route:clear && route:cache`).
-3. ფაზა C: Health record (მკაცრი წვდომა + read audit).
-4. ფაზა D: Clubs → Transport/Meals; Director „სკოლის პულსი".
+1. production-ში რეალური თანამშრომლების მოწვევა და ერთ კლასზე პილოტი. ამის შემდეგ მოდულები `verified_production`-ზე გადავა.
+2. Gradebook-ისა და ტაბელის ვიზუალური QA 360/390/768/1440-ზე, სკოლის რეალური სკალით.
+3. სკოლის მონაცემები: შეფასების სკალა/წონები, კომპეტენციების ჩარჩო, `finance_settings`-ის რეკვიზიტები.
 
 ## საჭირო მონაცემები გასაგრძელებლად
 
