@@ -208,3 +208,19 @@
 - production-ის `.env`-ში `SECURITY_CSP` არ ეწერა, ამიტომ კოდის ნაგულისხმევი მნიშვნელობა მოქმედებს. live პასუხი `Content-Security-Policy` ჰედერს აბრუნებს (აღარ არის `-Report-Only`).
 - headless Chrome-ით შემოწმდა 13 საჯარო გვერდი ჩართული CSP-ით: ყველა რენდერდება, `securitypolicyviolation` 0. `/news` ახალ bundle-ს (`news-index-CojFXsG6.js`) ტვირთავს.
 - Rollback მხოლოდ CSP-ისთვის: `.env`-ში `SECURITY_CSP=report-only` → `php artisan config:cache`. სრული rollback: `php artisan down`; `files-…` გახსნა; cache rebuild; `up`.
+
+## Deploy — 2026-10-25 (მე-2, `1771421..809f9b4`, `bash deploy/deploy.sh`) + სატესტო სკოლა
+
+- შინაარსი: ბრძანება `school:test-fixtures`. 1 ფაილი, migration არ ყოფილა.
+- Backup: `_backups/db-20261025-120111.sql.gz`, `files-20261025-120111.tar.gz`.
+- Smoke: `/`, `/login`, `/up` → 200; `/portal/finance`, `/documents` → 302. ლოგში ახალი შეცდომა არ არის.
+- შემდეგ გაეშვა `php artisan school:test-fixtures --tenant=aisi --force` (audit: `test_fixtures.created`):
+  - 40 კლასი (1ა–10დ, მიმდინარე წელი „2026“; სკოლის კლასები „1“ და „2“ ხელუხლებელია);
+  - 121 მოსწავლე, 40 მასწავლებელი, 1000 გაკვეთილი;
+  - 9 შესასვლელი ანგარიში `@test-aisi.invalid` დომენზე. პაროლები მხოლოდ ლოკალურ, git-იდან გამორიცხულ `test-accounts.txt`-შია.
+- შემოწმდა live-ზე:
+  - მშობლით, მასწავლებლითა და მოსწავლით შესვლა მუშაობს;
+  - 12 პორტალის გვერდი რენდერდება ჩართული CSP-ით, დარღვევა 0;
+  - ბაზაში ორმაგად დაკავებული მასწავლებელი 0;
+  - teacher01-ს კვირაში 30 გაკვეთილი აქვს.
+- წაშლა რეალური გაშვების წინ: `php artisan school:test-fixtures --tenant=aisi --remove --force` (მხოლოდ ამ ბრძანების შექმნილს შლის).
