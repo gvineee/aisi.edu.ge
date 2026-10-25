@@ -4,10 +4,12 @@ namespace App\Http\Requests\Portal;
 
 use App\Domain\Academics\Models\AcademicYear;
 use App\Domain\Academics\Models\SchoolClass;
+use App\Domain\Academics\Models\StudentGroup;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Timetable\Actions\CheckLessonConflicts;
 use App\Domain\Timetable\Models\Room;
 use App\Domain\Timetable\Models\Subject;
+use App\Domain\Timetable\Models\TimetableVersion;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -30,6 +32,9 @@ class StoreLessonRequest extends FormRequest
             'subject_id' => ['required', 'integer'],
             'teacher_id' => ['required', 'integer'],
             'room_id' => ['nullable', 'integer'],
+            'student_group_id' => ['nullable', 'integer'],
+            'timetable_version_id' => ['nullable', 'integer'],
+            'period_number' => ['nullable', 'integer', 'min:1', 'max:15'],
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'starts_at' => ['required', 'date_format:H:i'],
             'ends_at' => ['required', 'date_format:H:i', 'after:starts_at'],
@@ -74,6 +79,16 @@ class StoreLessonRequest extends FormRequest
                 $validator->errors()->add('room_id', 'არასწორი მონაცემი — სცადეთ თავიდან.');
             }
 
+            if (! empty($data['student_group_id']) && ! StudentGroup::query()->where('tenant_id', $tenant->id)
+                ->where('school_class_id', $data['school_class_id'])->whereKey($data['student_group_id'])->exists()) {
+                $validator->errors()->add('student_group_id', 'ჯგუფი ამ კლასს არ ეკუთვნის.');
+            }
+
+            if (! empty($data['timetable_version_id']) && ! TimetableVersion::query()->where('tenant_id', $tenant->id)
+                ->where('academic_year_id', $data['academic_year_id'])->whereKey($data['timetable_version_id'])->exists()) {
+                $validator->errors()->add('timetable_version_id', 'ცხრილის ვერსია ამ სასწავლო წელს არ ეკუთვნის.');
+            }
+
             if ($validator->errors()->isNotEmpty()) {
                 return;
             }
@@ -89,6 +104,8 @@ class StoreLessonRequest extends FormRequest
                 // No update/edit endpoint exists yet — when one is added,
                 // pass the lesson being edited here so it excludes itself.
                 excludingLessonId: null,
+                studentGroupId: empty($data['student_group_id']) ? null : (int) $data['student_group_id'],
+                timetableVersionId: empty($data['timetable_version_id']) ? null : (int) $data['timetable_version_id'],
             );
 
             if ($conflicts->isNotEmpty()) {

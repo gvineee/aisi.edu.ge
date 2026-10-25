@@ -343,6 +343,15 @@ class PortalContext
             ];
         }
 
+        if (in_array($activeRole, [TenantMembership::ROLE_STUDENT, TenantMembership::ROLE_GUARDIAN, TenantMembership::ROLE_TEACHER], true)) {
+            $items[] = [
+                'key' => 'my-timetable',
+                'label' => $activeRole === TenantMembership::ROLE_GUARDIAN ? 'შვილის განრიგი' : 'ჩემი განრიგი',
+                'href' => route('my-timetable'),
+                'icon' => 'timetable',
+            ];
+        }
+
         if ($activeRole === TenantMembership::ROLE_TEACHER) {
             $items[] = ['key' => 'teacher-workspace', 'label' => 'ჩემი სივრცე', 'href' => route('teacher-workspace.index'), 'icon' => 'teacher-workspace'];
             $items[] = ['key' => 'competencies', 'label' => 'კომპეტენციები', 'href' => route('competencies.index'), 'icon' => 'progress'];
@@ -355,6 +364,11 @@ class PortalContext
 
         if ($activeRole === TenantMembership::ROLE_TEACHER || in_array($activeRole, self::ASSESSMENT_SETTINGS_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'report-cards', 'label' => 'ტაბელები', 'href' => route('report-cards.index'), 'icon' => 'report-cards'];
+        }
+
+        // AbsenceNoteController::index re-checks the guardian link / reviewer scope itself.
+        if (in_array($activeRole, [TenantMembership::ROLE_GUARDIAN, TenantMembership::ROLE_TEACHER, TenantMembership::ROLE_ADMIN, TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ACADEMIC_MANAGER], true)) {
+            $items[] = ['key' => 'absence-notes', 'label' => 'გაცდენის შეტყობინებები', 'href' => route('absence-notes.index'), 'icon' => 'absence-notes'];
         }
 
         if (in_array($activeRole, [TenantMembership::ROLE_TEACHER, TenantMembership::ROLE_GUARDIAN], true)) {

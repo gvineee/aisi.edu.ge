@@ -1,5 +1,32 @@
 # Implementation Status
 
+### 2026-10-26 — პირადი განრიგი, კლასის პროფილი, ჟურნალის თემა, გაცდენის შეტყობინებები — `verified_local`, import/deploy არ შესრულებულა
+
+- **პირადი განრიგი** `/portal/my-timetable`, დღე/კვირა: მოსწავლეს — საკუთარი კლასი და ჯგუფები; მშობელს — მხოლოდ აქტიური და `can_view_academic` შვილები; მასწავლებელს — საკუთარი გაკვეთილები და იმ დღის ჩანაცვლებები.
+  - `ResolveDailyLessons` გაფართოვდა: ჯგუფები, მოქმედი ცხრილის ვერსია, `SubstitutionAssignment`, სტატუსები. dashboard-ებიც მას იყენებს.
+  - პასუხი `no-store`-ია. ADR: `docs/decisions/0005-…`.
+- **კლასის პროფილი:** საფეხური, მოკლე სახელი, ოთახი, მეორე დამრიგებელი, ჯგუფები წევრებით, ჩარიცხვების ისტორია (დამატება/გადაყვანა/გასვლა ავტომატურად იწერება).
+- **ჯგუფური roster:** დასწრება მხოლოდ ჯგუფის წევრებზე.
+- **ჟურნალის თემა** მასწავლებლის გაკვეთილის გვერდზე: მხოლოდ რეალური occurrence-ისთვის, audit-ით.
+- **გაცდენის შეტყობინებები** `/portal/absence-notes`: მშობელი → დამრიგებელი/ადმინისტრაცია. დადასტურება `absent`-ს `excused`-ად ცვლის transaction-ში, audit-ით. მიზეზი audit-ში არ იწერება.
+- **ზარები და ცხრილის ვერსიები** `/portal/timetable`-ზე. გაკვეთილის ფორმას დაემატა ჯგუფი, ვერსია, პერიოდი.
+- **ტესტები:** 445 + 14 ახალი. responsive QA 360/390/768/1440: overflow 0, შეცდომა 0. phpunit-ის memory_limit 512M-მდე გაიზარდა (128M-ს suite აღარ ეტევა).
+- **import preview:** `docs/edupage-import-preview-2026-10-26.md`. E2–E7 ექსპორტები ისევ არ არის (Chrome extension არ არის დაკავშირებული).
+
+### 2026-10-25 — ლოკალური კონტენტის შეჯერება და 9 cover კავშირის დასრულება
+
+- `aisi_local`/`aisi`-ზე existing content import dry-run: 92 source candidate → 73 unchanged, 18 blocked, 1 local text conflict. ტექსტები/blocked გადაწყვეტილებები ხელუხლებელია. ახალი content commit ამ გაშვებაში არ შესრულებულა.
+- local `content:sync-media --tenant=aisi --commit`: 8 ფაილი დაკოპირდა და 1 shared image მიება; 11 existing cover არ გადაიწერა. განმეორებითი dry-run: 9 unchanged, 0 copy pending, 11 existing-cover conflict კვლავ დაცულია.
+- 92 candidate-ს აქვს category-placement proposal, 0 unassigned; კატეგორიები DB-ში არ გამოყენებულა. პრომტი: `CLAUDE-CONTENT-CATEGORIES.md`; ანგარიში: `content-migration/local-import-reconciliation-2026-10-25.json`.
+- production არ შეცვლილა. ეს არ ადასტურებს სრული live-site მიგრაციას: HTTPS certificate/724 URLs/37 timeouts/media discrepancy და სრული per-record parity კვლავ ბლოკერებია.
+
+### 2026-10-25 — ძველი საჯარო კონტენტის უცვლელი საიმპორტო პაკეტი
+
+- `scripts/package-legacy-content.py`-ით ისტორიული 2026-09-10 snapshot შეფუთულია `content-migration/snapshots/2026-10-25/`-ში. ყველა 920 საწყისი ფაილი ZIP-იდან SHA256-ით ხელახლა შემოწმდა; 317 asset checksum/size სწორია; CRC სწორია.
+- Raw API page/post/media და 476 HTML შენარჩუნდა ყველა ორიგინალური ველით; 662 source representations არ ნიშნავს უნიკალურ სტატიებს. ძველი editorial draft-ებიც შენარჩუნებულია დამოუკიდებლად.
+- Live სრული capture დაბლოკილია HTTPS-ის ვადაგასული სერტიფიკატით. Verification არ გათიშულა. 724 unvisited URL/37 timeout/media 176-vs-141 სხვაობა unresolved რჩება. სრული დანაკარგის გარეშე მიგრაცია არ დადასტურებულა; DB write არ შესრულებულა.
+- Handoff: `CLAUDE-LEGACY-CONTENT-IMPORT.md`. გაგრძელებას სჭირდება certificate fix/fresh reconciliation ან ავტორიზებული WXR/DB + uploads backup.
+
 ### 2026-10-25 (გაგრძელება) — EduPage-ის importer-ის საფუძველი და სტრუქტურა — `verified_local`, import არ შესრულებულა
 
 - 3 additive migration:

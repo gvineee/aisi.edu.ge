@@ -16,6 +16,7 @@ export type PortalNavIconKey =
     | 'library-desk'
     | 'pickup'
     | 'consents'
+    | 'absence-notes'
     | 'gradebook'
     | 'assessment-settings'
     | 'progress'

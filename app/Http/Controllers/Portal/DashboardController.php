@@ -118,7 +118,7 @@ class DashboardController extends Controller
             $todaySchedule = [];
 
             if ($link->can_view_academic && $link->student->school_class_id !== null) {
-                $lessons = $resolveDailyLessons->forSchoolClass($tenant->id, $link->student->school_class_id, $today);
+                $lessons = $resolveDailyLessons->forStudent($tenant->id, $link->student, $today);
                 $todaySchedule = $lessons->map(fn (array $entry) => $this->formatScheduleEntry($entry))->values()->all();
             }
 
@@ -149,7 +149,9 @@ class DashboardController extends Controller
      */
     private function renderTeacher(Tenant $tenant, User $user, Carbon $today, ResolveDailyLessons $resolveDailyLessons, array $actionItems, array $recentNews): Response
     {
-        $lessons = $resolveDailyLessons->forTeacher($tenant->id, $user->id, $today);
+        // Covers are listed separately below as `substitutions`.
+        $lessons = $resolveDailyLessons->forTeacher($tenant->id, $user->id, $today)
+            ->reject(fn (array $entry) => $entry['status'] === ResolveDailyLessons::STATUS_COVERING);
 
         $classIds = TeacherAssignment::query()
             ->where('tenant_id', $tenant->id)
@@ -226,7 +228,7 @@ class DashboardController extends Controller
         $todaySchedule = [];
 
         if ($student->school_class_id !== null) {
-            $lessons = $resolveDailyLessons->forSchoolClass($tenant->id, $student->school_class_id, $today);
+            $lessons = $resolveDailyLessons->forStudent($tenant->id, $student, $today);
             $todaySchedule = $lessons->map(fn (array $entry) => $this->formatScheduleEntry($entry))->values()->all();
         }
 

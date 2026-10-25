@@ -1,11 +1,12 @@
-import { Head, router } from "@inertiajs/react";
-import { useState, type FormEvent } from "react";
-import { CalendarRange, Plus } from "lucide-react";
-import { toast } from "sonner";
-import PortalLayout from "@/layouts/portal/portal-layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import * as AcademicStructureController from "@/actions/App/Http/Controllers/Portal/AcademicStructureController";
+import { Head, Link, router } from '@inertiajs/react';
+import { useState, type FormEvent } from 'react';
+import { CalendarRange, Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import PortalLayout from '@/layouts/portal/portal-layout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import * as AcademicStructureController from '@/actions/App/Http/Controllers/Portal/AcademicStructureController';
+import * as SchoolClassProfileController from '@/actions/App/Http/Controllers/Portal/SchoolClassProfileController';
 
 type AcademicYear = {
     id: number;
@@ -62,12 +63,12 @@ export default function AcademicStructureIndex({
     const [showStudentForm, setShowStudentForm] = useState(false);
     const [sending, setSending] = useState(false);
     const [editingStudent, setEditingStudent] = useState<number | null>(null);
-    const [studentFilter, setStudentFilter] = useState("");
+    const [studentFilter, setStudentFilter] = useState('');
 
     const visibleStudents = students.filter(
         (student) =>
-            studentFilter === "" ||
-            (studentFilter === "inactive"
+            studentFilter === '' ||
+            (studentFilter === 'inactive'
                 ? !student.isActive
                 : String(student.schoolClassId) === studentFilter),
     );
@@ -78,8 +79,8 @@ export default function AcademicStructureIndex({
     ) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
-        form.set("is_active", form.get("is_active") ? "1" : "0");
-        form.set("_method", "put");
+        form.set('is_active', form.get('is_active') ? '1' : '0');
+        form.set('_method', 'put');
         setSending(true);
         router.post(
             AcademicStructureController.updateStudent.url(student.id),
@@ -87,12 +88,12 @@ export default function AcademicStructureIndex({
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success("მოსწავლის მონაცემები შენახულია.");
+                    toast.success('მოსწავლის მონაცემები შენახულია.');
                     setEditingStudent(null);
                 },
                 onError: (errors) =>
                     toast.error(
-                        Object.values(errors)[0] ?? "შემოწმეთ ფორმის ველები.",
+                        Object.values(errors)[0] ?? 'შემოწმეთ ფორმის ველები.',
                     ),
                 onFinish: () => setSending(false),
             },
@@ -105,11 +106,11 @@ export default function AcademicStructureIndex({
         setSending(true);
         router.post(AcademicStructureController.storeAcademicYear.url(), form, {
             onSuccess: () => {
-                toast.success("სასწავლო წელი დაემატა.");
+                toast.success('სასწავლო წელი დაემატა.');
                 setShowYearForm(false);
                 (event.target as HTMLFormElement).reset();
             },
-            onError: () => toast.error("შემოწმეთ ფორმის ველები."),
+            onError: () => toast.error('შემოწმეთ ფორმის ველები.'),
             onFinish: () => setSending(false),
         });
     };
@@ -120,11 +121,11 @@ export default function AcademicStructureIndex({
         setSending(true);
         router.post(AcademicStructureController.storeSchoolClass.url(), form, {
             onSuccess: () => {
-                toast.success("კლასი დაემატა.");
+                toast.success('კლასი დაემატა.');
                 setShowClassForm(false);
                 (event.target as HTMLFormElement).reset();
             },
-            onError: () => toast.error("შემოწმეთ ფორმის ველები."),
+            onError: () => toast.error('შემოწმეთ ფორმის ველები.'),
             onFinish: () => setSending(false),
         });
     };
@@ -135,11 +136,11 @@ export default function AcademicStructureIndex({
         setSending(true);
         router.post(AcademicStructureController.storeStudent.url(), form, {
             onSuccess: () => {
-                toast.success("მოსწავლე დაემატა.");
+                toast.success('მოსწავლე დაემატა.');
                 setShowStudentForm(false);
                 (event.target as HTMLFormElement).reset();
             },
-            onError: () => toast.error("შემოწმეთ ფორმის ველები."),
+            onError: () => toast.error('შემოწმეთ ფორმის ველები.'),
             onFinish: () => setSending(false),
         });
     };
@@ -234,7 +235,7 @@ export default function AcademicStructureIndex({
                                         )}
                                     </p>
                                     <p className="text-sm text-slate-500">
-                                        {year.startsOn} – {year.endsOn} ·{" "}
+                                        {year.startsOn} – {year.endsOn} ·{' '}
                                         {year.schoolClassesCount} კლასი
                                     </p>
                                 </div>
@@ -313,10 +314,17 @@ export default function AcademicStructureIndex({
                             >
                                 <div>
                                     <p className="font-medium">
-                                        {schoolClass.name}
+                                        <Link
+                                            href={SchoolClassProfileController.show.url(
+                                                schoolClass.id,
+                                            )}
+                                            className="inline-block py-0.5 hover:underline"
+                                        >
+                                            {schoolClass.name}
+                                        </Link>
                                     </p>
                                     <p className="text-sm text-slate-500">
-                                        {schoolClass.academicYearName} ·{" "}
+                                        {schoolClass.academicYearName} ·{' '}
                                         {schoolClass.studentsCount} მოსწავლე
                                     </p>
                                 </div>
@@ -327,7 +335,7 @@ export default function AcademicStructureIndex({
                                     <select
                                         className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
                                         value={
-                                            schoolClass.homeroomTeacherId ?? ""
+                                            schoolClass.homeroomTeacherId ?? ''
                                         }
                                         onChange={(event) =>
                                             router.post(
@@ -340,11 +348,11 @@ export default function AcademicStructureIndex({
                                                     preserveScroll: true,
                                                     onSuccess: () =>
                                                         toast.success(
-                                                            "დამრიგებელი შენახულია.",
+                                                            'დამრიგებელი შენახულია.',
                                                         ),
                                                     onError: () =>
                                                         toast.error(
-                                                            "ვერ შეინახა.",
+                                                            'ვერ შეინახა.',
                                                         ),
                                                 },
                                             )
@@ -407,7 +415,7 @@ export default function AcademicStructureIndex({
                                         key={schoolClass.id}
                                         value={schoolClass.id}
                                     >
-                                        {schoolClass.name} ·{" "}
+                                        {schoolClass.name} ·{' '}
                                         {schoolClass.academicYearName}
                                     </option>
                                 ))}
@@ -461,7 +469,7 @@ export default function AcademicStructureIndex({
                                     key={schoolClass.id}
                                     value={schoolClass.id}
                                 >
-                                    {schoolClass.name} ·{" "}
+                                    {schoolClass.name} ·{' '}
                                     {schoolClass.academicYearName}
                                 </option>
                             ))}
@@ -474,8 +482,8 @@ export default function AcademicStructureIndex({
                     <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center">
                         <p className="font-medium">
                             {students.length === 0
-                                ? "მოსწავლე ჯერ არ არის დამატებული."
-                                : "ამ ფილტრით მოსწავლე ვერ მოიძებნა."}
+                                ? 'მოსწავლე ჯერ არ არის დამატებული.'
+                                : 'ამ ფილტრით მოსწავლე ვერ მოიძებნა.'}
                         </p>
                     </div>
                 ) : (
@@ -494,12 +502,12 @@ export default function AcademicStructureIndex({
                                         </p>
                                         <p className="text-sm text-slate-500">
                                             {student.schoolClassName ??
-                                                "კლასის გარეშე"}
+                                                'კლასის გარეშე'}
                                             {student.nationalId &&
                                                 ` · ${student.nationalId}`}
                                             {student.hasAccount
-                                                ? " · პორტალის ანგარიშით"
-                                                : " · ანგარიშის გარეშე"}
+                                                ? ' · პორტალის ანგარიშით'
+                                                : ' · ანგარიშის გარეშე'}
                                         </p>
                                     </div>
                                     <Button
@@ -574,7 +582,7 @@ export default function AcademicStructureIndex({
                                                     id={`st-nid-${student.id}`}
                                                     name="national_id"
                                                     defaultValue={
-                                                        student.nationalId ?? ""
+                                                        student.nationalId ?? ''
                                                     }
                                                     className="h-11"
                                                 />
@@ -592,7 +600,7 @@ export default function AcademicStructureIndex({
                                                     required
                                                     defaultValue={
                                                         student.schoolClassId ??
-                                                        ""
+                                                        ''
                                                     }
                                                     className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
                                                 >
@@ -611,8 +619,8 @@ export default function AcademicStructureIndex({
                                                             >
                                                                 {
                                                                     schoolClass.name
-                                                                }{" "}
-                                                                ·{" "}
+                                                                }{' '}
+                                                                ·{' '}
                                                                 {
                                                                     schoolClass.academicYearName
                                                                 }

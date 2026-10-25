@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Domain\Governance\AuditLogger;
+use App\Domain\Learning\Models\AbsenceNote;
 use App\Domain\Learning\Models\AttendanceRecord;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Timetable\Models\Lesson;
@@ -31,10 +32,7 @@ class AttendanceController extends Controller
 
         $this->authorizeTeacher($request, $currentTenant, $lesson, $date->toDateString());
 
-        $students = $lesson->schoolClass->students()
-            ->where('is_active', true)
-            ->orderBy('last_name')
-            ->get();
+        $students = $lesson->rosterQuery()->orderBy('last_name')->get();
 
         $existing = AttendanceRecord::query()
             ->where('tenant_id', $currentTenant->get()->id)
@@ -67,8 +65,8 @@ class AttendanceController extends Controller
 
         $this->authorizeTeacher($request, $currentTenant, $lesson, $occurredOn);
 
-        // Only students of this lesson's own class roster may be marked.
-        $roster = $lesson->schoolClass->students()->where('tenant_id', $tenant->id)->where('is_active', true)->pluck('id')->all();
+        // Only pupils this lesson is for (its class, or its group) may be marked.
+        $roster = $lesson->rosterQuery()->pluck('id')->all();
 
         foreach ($request->validated('records') as $index => $entry) {
             if (! in_array((int) $entry['student_id'], $roster, true)) {
@@ -91,19 +89,23 @@ class AttendanceController extends Controller
             $record->lesson_id = $lesson->id;
             $record->student_id = $entry['student_id'];
             $record->occurred_on = Carbon::parse($occurredOn);
-            $record->status = $entry['status'];
+            // An approved absence note already excuses this day.
+            $record->status = $entry['status'] === AttendanceRecord::STATUS_ABSENT
+                && AbsenceNote::approvedCovers($tenant->id, (int) $entry['student_id'], $occurredOn)
+                ? AttendanceRecord::STATUS_EXCUSED
+                : $entry['status'];
             $record->comment = $entry['comment'] ?? null;
             $record->marked_by = $existing === null ? $actorId : $existing->marked_by;
             $record->updated_by = $actorId;
             $record->save();
 
-            if ($previousStatus !== $entry['status']) {
+            if ($previousStatus !== $record->status) {
                 $auditLogger->record(
                     $tenant->id,
                     $existing ? 'attendance.updated' : 'attendance.recorded',
                     $record,
                     $actorId,
-                    ['from' => $previousStatus, 'to' => $entry['status']],
+                    ['from' => $previousStatus, 'to' => $record->status],
                 );
             }
         }

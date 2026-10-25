@@ -1,11 +1,12 @@
 import { Head, router } from '@inertiajs/react';
 import { useState, type FormEvent } from 'react';
-import { CalendarClock, Plus } from 'lucide-react';
+import { CalendarClock, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import * as LessonController from '@/actions/App/Http/Controllers/Portal/LessonController';
+import * as TimetableSetupController from '@/actions/App/Http/Controllers/Portal/TimetableSetupController';
 
 type AcademicYearOption = {
     id: number;
@@ -41,6 +42,9 @@ type LessonRow = {
     subjectName: string;
     teacherName: string;
     roomName: string | null;
+    groupName: string | null;
+    timetableVersionId: number | null;
+    periodNumber: number | null;
     dayOfWeek: number;
     startsAt: string;
     endsAt: string;
@@ -54,7 +58,38 @@ type Props = {
     rooms: RoomOption[];
     teachers: TeacherOption[];
     lessons: LessonRow[];
+    groups: GroupOption[];
+    versions: Version[];
+    bellPeriods: BellPeriodRow[];
 };
+
+type GroupOption = { id: number; name: string; schoolClassId: number };
+
+type Version = {
+    id: number;
+    academicYearId: number;
+    label: string;
+    sourceVersion: string | null;
+    validFrom: string;
+    validTo: string | null;
+    status: 'draft' | 'active' | 'archived';
+};
+
+type BellPeriodRow = {
+    academicYearId: number;
+    number: number;
+    startsAt: string;
+    endsAt: string;
+};
+
+const VERSION_STATUS: Record<Version['status'], string> = {
+    draft: 'სამუშაო',
+    active: 'აქტიური',
+    archived: 'დაარქივებული',
+};
+
+const selectClass =
+    'h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm';
 
 const DAY_LABELS: Record<number, string> = {
     1: 'ორშაბათი',
@@ -86,10 +121,31 @@ export default function TimetableIndex({
     rooms,
     teachers,
     lessons,
+    groups,
+    versions,
+    bellPeriods,
 }: Props) {
     const [showSubjectForm, setShowSubjectForm] = useState(false);
     const [showLessonForm, setShowLessonForm] = useState(false);
     const [sending, setSending] = useState(false);
+    const [yearId, setYearId] = useState<number | undefined>(
+        academicYears.find((y) => y.isCurrent)?.id ?? academicYears[0]?.id,
+    );
+    const [classId, setClassId] = useState<number | null>(null);
+    const [startsAt, setStartsAt] = useState('');
+    const [endsAt, setEndsAt] = useState('');
+
+    const yearPeriods = bellPeriods.filter((p) => p.academicYearId === yearId);
+    const yearVersions = versions.filter((v) => v.academicYearId === yearId);
+    const classGroups = groups.filter((g) => g.schoolClassId === classId);
+
+    const pickPeriod = (value: string) => {
+        const period = yearPeriods.find((p) => String(p.number) === value);
+        if (period) {
+            setStartsAt(period.startsAt);
+            setEndsAt(period.endsAt);
+        }
+    };
 
     const submitSubject = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -98,7 +154,6 @@ export default function TimetableIndex({
 
         router.post(LessonController.storeSubject.url(), form, {
             onSuccess: () => {
-                toast.success('საგანი დაემატა.');
                 setShowSubjectForm(false);
                 (event.target as HTMLFormElement).reset();
             },
@@ -114,13 +169,15 @@ export default function TimetableIndex({
 
         router.post(LessonController.store.url(), form, {
             onSuccess: () => {
-                toast.success('გაკვეთილი დაემატა.');
                 setShowLessonForm(false);
                 (event.target as HTMLFormElement).reset();
+                setStartsAt('');
+                setEndsAt('');
             },
-            onError: () =>
+            onError: (errors) =>
                 toast.error(
-                    'ვერ დაემატა — შეამოწმეთ ველები ან დროის კონფლიქტი.',
+                    Object.values(errors)[0] ??
+                        'ვერ დაემატა — შეამოწმეთ ველები ან დროის კონფლიქტი.',
                 ),
             onFinish: () => setSending(false),
         });
@@ -133,6 +190,39 @@ export default function TimetableIndex({
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl">განრიგი</h1>
             </div>
+
+            {yearId !== undefined && (
+                <>
+                    <div className="mb-6 max-w-xs">
+                        <label
+                            htmlFor="setup-year"
+                            className="mb-1 block text-sm font-medium"
+                        >
+                            სასწავლო წელი (ზარები და ვერსიები)
+                        </label>
+                        <select
+                            id="setup-year"
+                            value={yearId}
+                            onChange={(event) =>
+                                setYearId(Number(event.target.value))
+                            }
+                            className={selectClass}
+                        >
+                            {academicYears.map((year) => (
+                                <option key={year.id} value={year.id}>
+                                    {year.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <BellSchedule
+                        key={`bells-${yearId}`}
+                        yearId={yearId}
+                        periods={yearPeriods}
+                    />
+                    <Versions yearId={yearId} versions={yearVersions} />
+                </>
+            )}
 
             {/* Subjects */}
             <section className="mb-8">
@@ -228,9 +318,9 @@ export default function TimetableIndex({
                                 <select
                                     name="academic_year_id"
                                     required
-                                    defaultValue={
-                                        academicYears.find((y) => y.isCurrent)
-                                            ?.id ?? ''
+                                    value={yearId ?? ''}
+                                    onChange={(event) =>
+                                        setYearId(Number(event.target.value))
                                     }
                                     className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm"
                                 >
@@ -249,6 +339,14 @@ export default function TimetableIndex({
                                 <select
                                     name="school_class_id"
                                     required
+                                    value={classId ?? ''}
+                                    onChange={(event) =>
+                                        setClassId(
+                                            event.target.value
+                                                ? Number(event.target.value)
+                                                : null,
+                                        )
+                                    }
                                     className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm"
                                 >
                                     <option value="">აირჩიეთ</option>
@@ -259,6 +357,48 @@ export default function TimetableIndex({
                                         >
                                             {schoolClass.name} ·{' '}
                                             {schoolClass.academicYearName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium">
+                                    ჯგუფი
+                                </label>
+                                <select
+                                    name="student_group_id"
+                                    className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm"
+                                >
+                                    <option value="">მთელი კლასი</option>
+                                    {classGroups.map((group) => (
+                                        <option key={group.id} value={group.id}>
+                                            {group.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium">
+                                    ცხრილის ვერსია
+                                </label>
+                                <select
+                                    name="timetable_version_id"
+                                    key={`version-${yearId}`}
+                                    defaultValue={
+                                        yearVersions.find(
+                                            (v) => v.status === 'active',
+                                        )?.id ?? ''
+                                    }
+                                    className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm"
+                                >
+                                    <option value="">ვერსიის გარეშე</option>
+                                    {yearVersions.map((version) => (
+                                        <option
+                                            key={version.id}
+                                            value={version.id}
+                                        >
+                                            {version.label} ·{' '}
+                                            {VERSION_STATUS[version.status]}
                                         </option>
                                     ))}
                                 </select>
@@ -337,17 +477,59 @@ export default function TimetableIndex({
                                     )}
                                 </select>
                             </div>
+                            {yearPeriods.length > 0 && (
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium">
+                                        პერიოდი (ზარის მიხედვით)
+                                    </label>
+                                    <select
+                                        name="period_number"
+                                        onChange={(event) =>
+                                            pickPeriod(event.target.value)
+                                        }
+                                        className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm"
+                                    >
+                                        <option value="">—</option>
+                                        {yearPeriods.map((period) => (
+                                            <option
+                                                key={period.number}
+                                                value={period.number}
+                                            >
+                                                {period.number}.{' '}
+                                                {period.startsAt}–
+                                                {period.endsAt}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                             <div>
                                 <label className="mb-1 block text-sm font-medium">
                                     დაწყების დრო
                                 </label>
-                                <Input name="starts_at" type="time" required />
+                                <Input
+                                    name="starts_at"
+                                    type="time"
+                                    required
+                                    value={startsAt}
+                                    onChange={(event) =>
+                                        setStartsAt(event.target.value)
+                                    }
+                                />
                             </div>
                             <div>
                                 <label className="mb-1 block text-sm font-medium">
                                     დასრულების დრო
                                 </label>
-                                <Input name="ends_at" type="time" required />
+                                <Input
+                                    name="ends_at"
+                                    type="time"
+                                    required
+                                    value={endsAt}
+                                    onChange={(event) =>
+                                        setEndsAt(event.target.value)
+                                    }
+                                />
                             </div>
                             <div>
                                 <label className="mb-1 block text-sm font-medium">
@@ -392,9 +574,13 @@ export default function TimetableIndex({
                                     <p className="font-medium">
                                         {lesson.subjectName} ·{' '}
                                         {lesson.schoolClassName}
+                                        {lesson.groupName &&
+                                            ` · ${lesson.groupName}`}
                                     </p>
                                     <p className="text-sm text-slate-500">
                                         {DAY_LABELS[lesson.dayOfWeek]} ·{' '}
+                                        {lesson.periodNumber !== null &&
+                                            `${lesson.periodNumber}. `}
                                         {lesson.startsAt}–{lesson.endsAt} ·{' '}
                                         {lesson.teacherName}
                                         {lesson.roomName &&
@@ -411,5 +597,310 @@ export default function TimetableIndex({
                 )}
             </section>
         </PortalLayout>
+    );
+}
+
+/**
+ * The year's bell schedule: period number → start/end. It pre-fills a new
+ * lesson's times; lessons already saved keep their own.
+ */
+function BellSchedule({
+    yearId,
+    periods,
+}: {
+    yearId: number;
+    periods: BellPeriodRow[];
+}) {
+    const [rows, setRows] = useState(
+        periods.map((p) => ({ startsAt: p.startsAt, endsAt: p.endsAt })),
+    );
+    const [sending, setSending] = useState(false);
+
+    const update = (
+        index: number,
+        field: 'startsAt' | 'endsAt',
+        value: string,
+    ) =>
+        setRows((current) =>
+            current.map((row, i) =>
+                i === index ? { ...row, [field]: value } : row,
+            ),
+        );
+
+    const save = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setSending(true);
+        router.put(
+            TimetableSetupController.saveBellPeriods.url(yearId),
+            {
+                periods: rows.map((row) => ({
+                    starts_at: row.startsAt,
+                    ends_at: row.endsAt,
+                })),
+            },
+            {
+                preserveScroll: true,
+                onError: (errors) =>
+                    toast.error(Object.values(errors)[0] ?? 'ვერ შეინახა.'),
+                onFinish: () => setSending(false),
+            },
+        );
+    };
+
+    return (
+        <section className="mb-8" aria-labelledby="bell-schedule">
+            <h2 id="bell-schedule" className="mb-3 text-lg">
+                ზარების განრიგი
+            </h2>
+            <form
+                onSubmit={save}
+                className="space-y-3 rounded-xl border border-slate-200 bg-white p-4"
+            >
+                {rows.length === 0 && (
+                    <p className="text-sm text-slate-500">
+                        ზარები ჯერ არ არის. დაამატეთ პერიოდები — ისინი ახალი
+                        გაკვეთილის დროს შეავსებს.
+                    </p>
+                )}
+                <ol className="space-y-2">
+                    {rows.map((row, index) => (
+                        <li
+                            key={index}
+                            className="flex flex-wrap items-end gap-2"
+                        >
+                            <span className="w-8 pb-3 text-sm font-medium">
+                                {index + 1}.
+                            </span>
+                            <label className="text-sm">
+                                <span className="mb-1 block text-xs text-slate-600">
+                                    დაწყება
+                                </span>
+                                <Input
+                                    type="time"
+                                    required
+                                    value={row.startsAt}
+                                    onChange={(event) =>
+                                        update(
+                                            index,
+                                            'startsAt',
+                                            event.target.value,
+                                        )
+                                    }
+                                />
+                            </label>
+                            <label className="text-sm">
+                                <span className="mb-1 block text-xs text-slate-600">
+                                    დასრულება
+                                </span>
+                                <Input
+                                    type="time"
+                                    required
+                                    value={row.endsAt}
+                                    onChange={(event) =>
+                                        update(
+                                            index,
+                                            'endsAt',
+                                            event.target.value,
+                                        )
+                                    }
+                                />
+                            </label>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label={`${index + 1}-ე პერიოდის წაშლა`}
+                                className="h-11 w-11"
+                                onClick={() =>
+                                    setRows((current) =>
+                                        current.filter((_, i) => i !== index),
+                                    )
+                                }
+                            >
+                                <Trash2 size={16} />
+                            </Button>
+                        </li>
+                    ))}
+                </ol>
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={rows.length >= 15}
+                        onClick={() =>
+                            setRows((current) => [
+                                ...current,
+                                { startsAt: '', endsAt: '' },
+                            ])
+                        }
+                    >
+                        <Plus size={16} /> პერიოდი
+                    </Button>
+                    <Button type="submit" disabled={sending}>
+                        ზარების შენახვა
+                    </Button>
+                </div>
+            </form>
+        </section>
+    );
+}
+
+/**
+ * Timetable versions of the year with their validity. Lessons are checked
+ * for clashes only within one version; activating a version archives the
+ * one active before it.
+ */
+function Versions({
+    yearId,
+    versions,
+}: {
+    yearId: number;
+    versions: Version[];
+}) {
+    const [showForm, setShowForm] = useState(false);
+    const [sending, setSending] = useState(false);
+
+    const submit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const target = event.currentTarget;
+        setSending(true);
+        router.post(
+            TimetableSetupController.storeVersion.url(yearId),
+            new FormData(target),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setShowForm(false);
+                    target.reset();
+                },
+                onError: (errors) =>
+                    toast.error(Object.values(errors)[0] ?? 'ვერ შეინახა.'),
+                onFinish: () => setSending(false),
+            },
+        );
+    };
+
+    const activate = (version: Version) =>
+        router.post(
+            TimetableSetupController.activateVersion.url(version.id),
+            {},
+            { preserveScroll: true },
+        );
+
+    return (
+        <section className="mb-8" aria-labelledby="timetable-versions">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <h2 id="timetable-versions" className="text-lg">
+                    ცხრილის ვერსიები
+                </h2>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowForm((v) => !v)}
+                >
+                    <Plus size={16} /> ახალი ვერსია
+                </Button>
+            </div>
+            {showForm && (
+                <form
+                    onSubmit={submit}
+                    className="mb-4 grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-6 sm:grid-cols-2"
+                >
+                    <div>
+                        <label
+                            htmlFor="version-label"
+                            className="mb-1 block text-sm font-medium"
+                        >
+                            დასახელება
+                        </label>
+                        <Input
+                            id="version-label"
+                            name="label"
+                            maxLength={120}
+                            placeholder="მაგ. II სემესტრი"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label
+                            htmlFor="version-source"
+                            className="mb-1 block text-sm font-medium"
+                        >
+                            წყაროს ვერსია (არასავალდებულო)
+                        </label>
+                        <Input
+                            id="version-source"
+                            name="source_version"
+                            maxLength={64}
+                            placeholder="მაგ. 210"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            htmlFor="version-from"
+                            className="mb-1 block text-sm font-medium"
+                        >
+                            მოქმედებს დან
+                        </label>
+                        <Input
+                            id="version-from"
+                            name="valid_from"
+                            type="date"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label
+                            htmlFor="version-to"
+                            className="mb-1 block text-sm font-medium"
+                        >
+                            მოქმედებს მდე (არასავალდებულო)
+                        </label>
+                        <Input id="version-to" name="valid_to" type="date" />
+                    </div>
+                    <div className="sm:col-span-2">
+                        <Button type="submit" disabled={sending}>
+                            შენახვა
+                        </Button>
+                    </div>
+                </form>
+            )}
+            {versions.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                    ვერსია ჯერ არ არის. ვერსიის გარეშე გაკვეთილებიც მუშაობს.
+                </p>
+            ) : (
+                <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+                    {versions.map((version) => (
+                        <li
+                            key={version.id}
+                            className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                            <div>
+                                <p className="font-medium">
+                                    {version.label}
+                                    {version.sourceVersion &&
+                                        ` (v${version.sourceVersion})`}
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                    {version.validFrom} –{' '}
+                                    {version.validTo ?? '…'} ·{' '}
+                                    {VERSION_STATUS[version.status]}
+                                </p>
+                            </div>
+                            {version.status !== 'active' && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => activate(version)}
+                                >
+                                    გააქტიურება
+                                </Button>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </section>
     );
 }

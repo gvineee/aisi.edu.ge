@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Portal;
 
 use App\Domain\Academics\Models\AcademicYear;
 use App\Domain\Academics\Models\SchoolClass;
+use App\Domain\Academics\Models\StudentGroup;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Domain\Timetable\Actions\CreateLesson;
 use App\Domain\Timetable\Actions\CreateSubject;
+use App\Domain\Timetable\Models\BellPeriod;
 use App\Domain\Timetable\Models\Lesson;
 use App\Domain\Timetable\Models\Room;
 use App\Domain\Timetable\Models\Subject;
+use App\Domain\Timetable\Models\TimetableVersion;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\StoreLessonRequest;
 use App\Http\Requests\Portal\StoreSubjectRequest;
@@ -86,7 +89,7 @@ class LessonController extends Controller
 
         $lessons = Lesson::query()
             ->where('tenant_id', $tenant->id)
-            ->with(['academicYear', 'schoolClass', 'subject', 'teacher', 'room'])
+            ->with(['academicYear', 'schoolClass', 'subject', 'teacher', 'room', 'studentGroup'])
             ->orderByDesc('day_of_week')
             ->orderBy('starts_at')
             ->get();
@@ -112,12 +115,34 @@ class LessonController extends Controller
                 'name' => $room->name,
             ])->values(),
             'teachers' => $teachers,
+            'groups' => StudentGroup::query()->where('tenant_id', $tenant->id)->orderBy('name')->get()
+                ->map(fn (StudentGroup $group) => ['id' => $group->id, 'name' => $group->name, 'schoolClassId' => $group->school_class_id])->values(),
+            'versions' => TimetableVersion::query()->where('tenant_id', $tenant->id)->orderByDesc('valid_from')->get()
+                ->map(fn (TimetableVersion $version) => [
+                    'id' => $version->id,
+                    'academicYearId' => $version->academic_year_id,
+                    'label' => $version->label,
+                    'sourceVersion' => $version->source_version,
+                    'validFrom' => $version->valid_from->toDateString(),
+                    'validTo' => $version->valid_to?->toDateString(),
+                    'status' => $version->status,
+                ])->values(),
+            'bellPeriods' => BellPeriod::query()->where('tenant_id', $tenant->id)->orderBy('number')->get()
+                ->map(fn (BellPeriod $period) => [
+                    'academicYearId' => $period->academic_year_id,
+                    'number' => $period->number,
+                    'startsAt' => substr($period->starts_at, 0, 5),
+                    'endsAt' => substr($period->ends_at, 0, 5),
+                ])->values(),
             'lessons' => $lessons->map(fn (Lesson $lesson) => [
                 'id' => $lesson->id,
                 'schoolClassName' => $lesson->schoolClass->name,
                 'subjectName' => $lesson->subject->name,
                 'teacherName' => $lesson->teacher->name,
                 'roomName' => $lesson->room?->name,
+                'groupName' => $lesson->studentGroup?->name,
+                'timetableVersionId' => $lesson->timetable_version_id,
+                'periodNumber' => $lesson->period_number,
                 'dayOfWeek' => $lesson->day_of_week,
                 'startsAt' => substr($lesson->starts_at, 0, 5),
                 'endsAt' => substr($lesson->ends_at, 0, 5),

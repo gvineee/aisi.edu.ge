@@ -2,6 +2,7 @@
 
 namespace App\Domain\Academics\Actions;
 
+use App\Domain\Academics\EnrollmentHistory;
 use App\Domain\Academics\Models\SchoolClass;
 use App\Domain\Academics\Models\Student;
 use App\Domain\Governance\AuditLogger;
@@ -19,7 +20,10 @@ use App\Models\User;
  */
 class CreateStudent
 {
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly EnrollmentHistory $enrollments,
+    ) {}
 
     public function handle(
         int $tenantId,
@@ -38,6 +42,7 @@ class CreateStudent
         ]);
         $student->tenant_id = $tenantId;
         $student->save();
+        $this->enrollments->open($student, $schoolClass);
 
         $this->auditLogger->record($tenantId, 'student.created', $student, $actor->id, [
             'name' => $student->fullName(),

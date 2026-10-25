@@ -12,6 +12,7 @@ use App\Domain\Communications\Models\ConversationParticipant;
 use App\Domain\Learning\Models\Assignment;
 use App\Domain\Learning\Models\AssignmentSubmission;
 use App\Domain\Learning\Models\AttendanceRecord;
+use App\Domain\Learning\Models\LessonRecord;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Domain\Timetable\Models\Lesson;
@@ -86,7 +87,10 @@ class TeacherWorkspaceController extends Controller
         $isSubstituteToday = $coverToday !== null;
         abort_unless(TenantMembership::userHasActiveRole($tenant->id, $user->id, TenantMembership::ROLE_TEACHER) && ($isOwner || $isSubstituteToday), 403);
 
-        $lesson->load('subject', 'schoolClass', 'room');
+        $lesson->load('subject', 'schoolClass', 'room', 'studentGroup');
+        $records = LessonRecord::query()->where('tenant_id', $tenant->id)->where('lesson_id', $lesson->id)
+            ->orderByDesc('occurs_on')->limit(10)->get();
+        $todayRecord = $records->first(fn (LessonRecord $record) => $record->occurs_on->toDateString() === $today);
         $attendance = AttendanceRecord::query()->where('tenant_id', $tenant->id)->where('lesson_id', $lesson->id)->whereDate('occurred_on', $today)->get()->keyBy('student_id');
 
         // The substitute sees the roster for this lesson today, not the
@@ -102,14 +106,22 @@ class TeacherWorkspaceController extends Controller
                 'id' => $lesson->id,
                 'subject' => $lesson->subject->name ?? null,
                 'className' => $lesson->schoolClass->name ?? null,
+                'groupName' => $lesson->studentGroup?->name,
                 'startsAt' => substr($lesson->starts_at, 0, 5),
                 'endsAt' => substr($lesson->ends_at, 0, 5),
                 'room' => $lesson->room?->name,
                 'onlineUrl' => $lesson->online_url,
+                'heldToday' => Carbon::parse($today)->isoWeekday() === $lesson->day_of_week,
             ],
+            'todayTopic' => $todayRecord?->topic,
+            // A substitute sees only today's entry, never the class's history.
+            'recentTopics' => $isOwner
+                ? $records->filter(fn (LessonRecord $record) => $record->topic !== null)
+                    ->map(fn (LessonRecord $record) => ['date' => $record->occurs_on->toDateString(), 'topic' => $record->topic])->values()
+                : [],
             'isSubstitute' => ! $isOwner,
             'date' => $today,
-            'roster' => Student::query()->where('tenant_id', $tenant->id)->where('school_class_id', $lesson->school_class_id)->where('is_active', true)
+            'roster' => $lesson->rosterQuery()
                 ->orderBy('last_name')->get()->map(fn (Student $s) => ['id' => $s->id, 'name' => $s->fullName(), 'attendance' => $attendance->get($s->id)?->status])->values(),
             'assignments' => $assignments,
             // The absent teacher's plan, only through today's active cover.
@@ -127,7 +139,7 @@ class TeacherWorkspaceController extends Controller
     private function lessonRow(int $tenantId, Lesson $lesson, string $today, bool $substitute): array
     {
         $marked = AttendanceRecord::query()->where('tenant_id', $tenantId)->where('lesson_id', $lesson->id)->whereDate('occurred_on', $today)->count();
-        $roster = Student::query()->where('tenant_id', $tenantId)->where('school_class_id', $lesson->school_class_id)->where('is_active', true)->count();
+        $roster = $lesson->rosterQuery()->count();
 
         return [
             'id' => $lesson->id,

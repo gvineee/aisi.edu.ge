@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\Platform\PlatformAdminController;
+use App\Http\Controllers\Portal\AbsenceNoteController;
 use App\Http\Controllers\Portal\AcademicStructureController;
 use App\Http\Controllers\Portal\AdmissionsPipelineController;
 use App\Http\Controllers\Portal\AppointmentController;
@@ -37,17 +38,20 @@ use App\Http\Controllers\Portal\FinanceSettingsController;
 use App\Http\Controllers\Portal\GradebookController;
 use App\Http\Controllers\Portal\HealthController;
 use App\Http\Controllers\Portal\LessonController;
+use App\Http\Controllers\Portal\LessonRecordController;
 use App\Http\Controllers\Portal\LibraryDeskController;
 use App\Http\Controllers\Portal\MealController;
 use App\Http\Controllers\Portal\MemberController;
 use App\Http\Controllers\Portal\MessageController;
 use App\Http\Controllers\Portal\MyAssignmentsController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
+use App\Http\Controllers\Portal\MyTimetableController;
 use App\Http\Controllers\Portal\PickupController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
 use App\Http\Controllers\Portal\PortfolioExtrasController;
 use App\Http\Controllers\Portal\ReportCardController;
+use App\Http\Controllers\Portal\SchoolClassProfileController;
 use App\Http\Controllers\Portal\SchoolPulseController;
 use App\Http\Controllers\Portal\SchoolVisitController;
 use App\Http\Controllers\Portal\ServicesController;
@@ -56,6 +60,7 @@ use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\SupportAccessController;
 use App\Http\Controllers\Portal\TeacherController;
 use App\Http\Controllers\Portal\TeacherWorkspaceController;
+use App\Http\Controllers\Portal\TimetableSetupController;
 use App\Http\Controllers\Portal\TransportController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\InvitationController;
@@ -117,8 +122,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // CLAUDE-PLATFORM-MODULES §3 names the day centre /portal/today; it is
     // the same role-aware start page.
     Route::get('portal/today', DashboardController::class)->name('portal.today');
+    Route::get('portal/my-timetable', MyTimetableController::class)->name('my-timetable');
     Route::get('portal/teacher', [TeacherWorkspaceController::class, 'index'])->name('teacher-workspace.index');
     Route::get('portal/teacher/lessons/{lesson}', [TeacherWorkspaceController::class, 'lesson'])->name('teacher-workspace.lesson');
+    Route::post('portal/teacher/lessons/{lesson}/record', [LessonRecordController::class, 'store'])->middleware('throttle:60,1')->name('lesson-records.store');
 
     // --- Self-service enrollment identity verification (student/guardian
     // claims a roster identity; admin/director approves via the members
@@ -136,6 +143,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/timetable', [LessonController::class, 'index'])->name('timetable.index');
     Route::post('portal/timetable/subjects', [LessonController::class, 'storeSubject'])->name('timetable.subjects.store');
     Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
+    Route::put('portal/timetable/years/{academicYear}/bell-periods', [TimetableSetupController::class, 'saveBellPeriods'])->name('timetable.bell-periods.save');
+    Route::post('portal/timetable/years/{academicYear}/versions', [TimetableSetupController::class, 'storeVersion'])->name('timetable.versions.store');
+    Route::post('portal/timetable/versions/{timetableVersion}/activate', [TimetableSetupController::class, 'activateVersion'])->name('timetable.versions.activate');
     // --- end Timetable ---
 
     Route::get('portal/students/{student}/portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
@@ -180,6 +190,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/messages/{conversation}/archive', [MessageController::class, 'archive'])->name('messages.archive');
     Route::post('portal/messages/{conversation}/messages/{message}/request-response', [MessageController::class, 'requestResponse'])->name('messages.request-response');
     Route::post('portal/action-requests/{actionRequest}/acknowledge', [MessageController::class, 'acknowledge'])->name('action-requests.acknowledge');
+
+    Route::get('portal/absence-notes', [AbsenceNoteController::class, 'index'])->name('absence-notes.index');
+    Route::post('portal/absence-notes', [AbsenceNoteController::class, 'store'])->middleware('throttle:10,1')->name('absence-notes.store');
+    Route::post('portal/absence-notes/{absenceNote}/review', [AbsenceNoteController::class, 'review'])->middleware('throttle:60,1')->name('absence-notes.review');
 
     Route::get('lessons/{lesson}/attendance', [AttendanceController::class, 'show'])->name('attendance.show');
     Route::post('lessons/{lesson}/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
@@ -268,6 +282,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/academic-structure/school-classes/{schoolClass}/homeroom', [AcademicStructureController::class, 'assignHomeroom'])->name('academic-structure.school-classes.homeroom');
     Route::post('portal/academic-structure/students', [AcademicStructureController::class, 'storeStudent'])->name('academic-structure.students.store');
     Route::put('portal/academic-structure/students/{student}', [AcademicStructureController::class, 'updateStudent'])->name('academic-structure.students.update');
+    Route::get('portal/academic-structure/school-classes/{schoolClass}', [SchoolClassProfileController::class, 'show'])->name('academic-structure.school-classes.show');
+    Route::put('portal/academic-structure/school-classes/{schoolClass}', [SchoolClassProfileController::class, 'update'])->name('academic-structure.school-classes.update');
+    Route::post('portal/academic-structure/school-classes/{schoolClass}/groups', [SchoolClassProfileController::class, 'storeGroup'])->name('academic-structure.groups.store');
+    Route::put('portal/academic-structure/school-classes/{schoolClass}/groups/{studentGroup}', [SchoolClassProfileController::class, 'updateGroup'])->name('academic-structure.groups.update');
+    Route::delete('portal/academic-structure/school-classes/{schoolClass}/groups/{studentGroup}', [SchoolClassProfileController::class, 'destroyGroup'])->name('academic-structure.groups.destroy');
     // --- end Academic structure ---
 
     // --- Substitutions (admin/academic_manager/director) — the "teacher

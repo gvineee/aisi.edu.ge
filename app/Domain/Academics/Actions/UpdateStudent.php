@@ -2,8 +2,10 @@
 
 namespace App\Domain\Academics\Actions;
 
+use App\Domain\Academics\EnrollmentHistory;
 use App\Domain\Academics\Models\SchoolClass;
 use App\Domain\Academics\Models\Student;
+use App\Domain\Academics\Models\StudentEnrollment;
 use App\Domain\Governance\AuditLogger;
 use App\Models\User;
 
@@ -15,7 +17,10 @@ use App\Models\User;
  */
 class UpdateStudent
 {
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly EnrollmentHistory $enrollments,
+    ) {}
 
     public function handle(
         Student $student,
@@ -43,6 +48,13 @@ class UpdateStudent
 
         $meta = ['changed_fields' => array_keys($student->getDirty())];
         $student->save();
+
+        match (true) {
+            $wasActive && ! $isActive => $this->enrollments->close($student, StudentEnrollment::STATUS_LEFT),
+            ! $wasActive && $isActive => $this->enrollments->open($student, $schoolClass),
+            $isActive && $fromClassId !== $schoolClass->id => $this->enrollments->transfer($student, $schoolClass),
+            default => null,
+        };
 
         if ($fromClassId !== $schoolClass->id) {
             $meta['school_class'] = ['from' => $fromClassId, 'to' => $schoolClass->id];

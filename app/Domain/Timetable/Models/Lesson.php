@@ -4,12 +4,16 @@ namespace App\Domain\Timetable\Models;
 
 use App\Domain\Academics\Models\AcademicYear;
 use App\Domain\Academics\Models\SchoolClass;
+use App\Domain\Academics\Models\Student;
+use App\Domain\Academics\Models\StudentGroup;
 use App\Domain\Tenancy\Concerns\BelongsToTenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A recurring weekly slot. `starts_at`/`ends_at` are wall-clock time in the
@@ -58,6 +62,32 @@ class Lesson extends Model
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class);
+    }
+
+    /**
+     * @return BelongsTo<StudentGroup, $this>
+     */
+    public function studentGroup(): BelongsTo
+    {
+        return $this->belongsTo(StudentGroup::class);
+    }
+
+    /**
+     * The pupils this lesson is for: the active pupils of its class, or —
+     * for a group lesson — only that group's members.
+     *
+     * @return Builder<Student>
+     */
+    public function rosterQuery(): Builder
+    {
+        return Student::query()
+            ->where('tenant_id', $this->tenant_id)
+            ->where('school_class_id', $this->school_class_id)
+            ->where('is_active', true)
+            ->when($this->student_group_id !== null, fn (Builder $query) => $query->whereIn(
+                'id',
+                DB::table('student_group_members')->where('student_group_id', $this->student_group_id)->select('student_id'),
+            ));
     }
 
     /**

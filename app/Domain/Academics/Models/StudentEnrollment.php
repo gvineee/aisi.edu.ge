@@ -28,6 +28,10 @@ class StudentEnrollment extends Model
 
     public const STATUS_ACTIVE = 'active';
 
+    public const STATUS_TRANSFERRED = 'transferred';
+
+    public const STATUS_LEFT = 'left';
+
     protected function casts(): array
     {
         return [
