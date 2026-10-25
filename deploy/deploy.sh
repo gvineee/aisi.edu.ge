@@ -43,12 +43,13 @@ php artisan view:cache
 php artisan queue:restart || true
 php artisan up
 
-# 4. Smoke checks.
-curl -s -o /dev/null -w "home %{http_code}\n" https://aisi.edu.ge/
-curl -s -o /dev/null -w "login %{http_code}\n" https://aisi.edu.ge/login
-curl -s -o /dev/null -w "up (scheduler/queue health) %{http_code}\n" https://aisi.edu.ge/up
-curl -s -o /dev/null -w "finance (guest) %{http_code}\n" https://aisi.edu.ge/portal/finance
-curl -s -o /dev/null -w "documents (guest) %{http_code}\n" https://aisi.edu.ge/documents
+# 4. Smoke checks — against this server itself: public DNS for the domain
+#    may still point at the old host while the new site is prepared.
+curl -s --max-time 20 --resolve aisi.edu.ge:443:127.0.0.1 -o /dev/null -w "home %{http_code}\n" https://aisi.edu.ge/
+curl -s --max-time 20 --resolve aisi.edu.ge:443:127.0.0.1 -o /dev/null -w "login %{http_code}\n" https://aisi.edu.ge/login
+curl -s --max-time 20 --resolve aisi.edu.ge:443:127.0.0.1 -o /dev/null -w "up (scheduler/queue health) %{http_code}\n" https://aisi.edu.ge/up
+curl -s --max-time 20 --resolve aisi.edu.ge:443:127.0.0.1 -o /dev/null -w "finance (guest) %{http_code}\n" https://aisi.edu.ge/portal/finance
+curl -s --max-time 20 --resolve aisi.edu.ge:443:127.0.0.1 -o /dev/null -w "documents (guest) %{http_code}\n" https://aisi.edu.ge/documents
 php artisan migrate:status | tail -3
 php artisan schedule:list | grep -E "finance|appointments|visit|library|documents|ops" || true
 tail -n 5 storage/logs/laravel.log 2>/dev/null | grep -i -E "error|exception" || echo "no new errors in log tail"
