@@ -52,3 +52,6 @@ yarn-error.log
 /dump.rdb
 /deploy/*.tar.gz
 /deploy/files.txt
+
+# Test login credentials (never commit)
+/test-accounts*.txt
