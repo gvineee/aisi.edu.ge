@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Content\CategoryListing;
+use App\Domain\Content\Models\ContentMediaLink;
 use App\Domain\Content\Models\Post;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
@@ -11,14 +13,16 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class PostController extends Controller
 {
-    public function index(CurrentTenant $currentTenant): Response
+    public function index(CurrentTenant $currentTenant, CategoryListing $categories): Response
     {
         $tenant = $currentTenant->get();
 
+        // Posts placed in another section (e.g. documents) are listed there.
         $posts = Post::query()
             ->where('tenant_id', $tenant->id)
             ->where('status', Post::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
+            ->whereNotIn('id', $categories->postIdsOutsideNews($tenant->id))
             ->orderByDesc('published_at')
             ->paginate(9)
             ->through(fn (Post $post) => [
@@ -34,7 +38,7 @@ class PostController extends Controller
         ]);
     }
 
-    public function show(CurrentTenant $currentTenant, string $slug): Response
+    public function show(CurrentTenant $currentTenant, CategoryListing $categories, string $slug): Response
     {
         $tenant = $currentTenant->get();
 
@@ -59,6 +63,8 @@ class PostController extends Controller
                 'seoDescription' => $post->seo_description,
                 'coverImageUrl' => $post->coverImageUrl(),
             ],
+            'breadcrumb' => $categories->breadcrumbFor($post),
+            'media' => ContentMediaLink::propsFor($post),
         ]);
     }
 }

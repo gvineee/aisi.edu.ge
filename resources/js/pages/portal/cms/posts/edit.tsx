@@ -5,6 +5,10 @@ import { toast } from 'sonner';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import CategoryPicker, {
+    type CategoryOption,
+    type Placement,
+} from '@/components/portal/category-picker';
 
 type PostDetail = {
     id: number;
@@ -41,9 +45,18 @@ type Props = {
     revisions: Revision[];
     media: MediaItem[];
     canPublish: boolean;
+    categories?: CategoryOption[];
+    placement?: Placement;
 };
 
-export default function CmsPostEdit({ post, revisions, media, canPublish }: Props) {
+export default function CmsPostEdit({
+    post,
+    revisions,
+    media,
+    canPublish,
+    categories = [],
+    placement = null,
+}: Props) {
     const [saving, setSaving] = useState(false);
     const [coverImagePath, setCoverImagePath] = useState(
         post?.coverImagePath ?? '',
@@ -124,7 +137,9 @@ export default function CmsPostEdit({ post, revisions, media, canPublish }: Prop
 
     return (
         <PortalLayout>
-            <Head title={isNew ? 'ახალი ამბავი' : `რედაქტირება — ${post.title}`} />
+            <Head
+                title={isNew ? 'ახალი ამბავი' : `რედაქტირება — ${post.title}`}
+            />
 
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl">
@@ -347,6 +362,15 @@ export default function CmsPostEdit({ post, revisions, media, canPublish }: Prop
                         </a>
                     </section>
 
+                    {!isNew && post && (
+                        <CategoryPicker
+                            type="posts"
+                            id={post.id}
+                            categories={categories}
+                            placement={placement}
+                        />
+                    )}
+
                     {!isNew && (
                         <section className="rounded-xl border border-slate-200 bg-white p-4">
                             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
@@ -377,9 +401,7 @@ export default function CmsPostEdit({ post, revisions, media, canPublish }: Prop
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    restoreRevision(
-                                                        revision.id,
-                                                    )
+                                                    restoreRevision(revision.id)
                                                 }
                                                 className="mt-1 font-medium text-slate-700 underline"
                                             >

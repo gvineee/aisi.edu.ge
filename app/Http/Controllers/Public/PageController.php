@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Content\CategoryListing;
+use App\Domain\Content\Models\ContentMediaLink;
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
 use App\Domain\Content\Models\Teacher;
@@ -38,6 +40,8 @@ class PageController extends Controller
     private function render(CurrentTenant $currentTenant, string $slug): Response
     {
         $tenant = $currentTenant->get();
+        $categories = app(CategoryListing::class);
+        $url = $slug === 'home' ? '/' : '/'.$slug;
 
         $page = Page::query()
             ->where('tenant_id', $tenant->id)
@@ -62,6 +66,9 @@ class PageController extends Controller
             ],
             'latestPosts' => $this->latestPostsIfNeeded($tenant->id, $page->blocks),
             'featuredTeachers' => $this->featuredTeachersIfNeeded($tenant->id, $page->blocks),
+            'categorySection' => $categories->forHub($tenant->id, $url, $url),
+            'breadcrumb' => $categories->breadcrumbFor($page),
+            'media' => ContentMediaLink::propsFor($page),
         ]);
     }
 

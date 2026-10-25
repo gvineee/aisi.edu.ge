@@ -2,6 +2,7 @@
 
 namespace App\Domain\Content\Models;
 
+use App\Domain\Content\Concerns\HasCategoryPlacement;
 use App\Domain\Tenancy\Concerns\BelongsToTenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -27,6 +28,7 @@ use Illuminate\Support\Carbon;
 class Page extends Model
 {
     use BelongsToTenant;
+    use HasCategoryPlacement;
 
     public const STATUS_DRAFT = 'draft';
 

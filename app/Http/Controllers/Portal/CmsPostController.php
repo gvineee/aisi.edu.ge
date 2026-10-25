@@ -91,6 +91,7 @@ class CmsPostController extends Controller
             'revisions' => $post->revisions->map(fn (PostRevision $revision) => $this->formatRevision($revision))->values(),
             'media' => $this->mediaLibrary($tenant->id),
             'canPublish' => TenantMembership::userHasAnyActiveRole($tenant->id, $request->user()->id, self::PUBLISH_ROLES),
+            ...CmsPlacementController::propsFor($tenant->id, $post),
         ]);
     }
 

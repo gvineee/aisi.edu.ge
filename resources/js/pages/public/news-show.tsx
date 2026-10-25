@@ -1,6 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import PublicLayout from '@/layouts/public/public-layout';
+import ContentMediaBlock, {
+    type ContentMedia,
+} from '@/components/public/content-media';
 
 type Props = {
     post: {
@@ -12,14 +15,29 @@ type Props = {
         seoDescription: string | null;
         coverImageUrl: string | null;
     };
+    /** The section this post is placed in when it is not plain news. */
+    breadcrumb?: { name: string; href: string } | null;
+    /** Images and attachments carried over from the original post. */
+    media?: ContentMedia;
     /** Set only by CmsPostController::preview — see public/page.tsx's Props. */
     preview?: boolean;
 };
 
-export default function NewsShow({ post, preview = false }: Props) {
+export default function NewsShow({
+    post,
+    breadcrumb = null,
+    media,
+    preview = false,
+}: Props) {
     return (
         <PublicLayout>
-            <Head title={preview ? `[წინასწარი ნახვა] ${post.seoTitle ?? post.title}` : (post.seoTitle ?? post.title)}>
+            <Head
+                title={
+                    preview
+                        ? `[წინასწარი ნახვა] ${post.seoTitle ?? post.title}`
+                        : (post.seoTitle ?? post.title)
+                }
+            >
                 {post.seoDescription && (
                     <meta name="description" content={post.seoDescription} />
                 )}
@@ -38,10 +56,13 @@ export default function NewsShow({ post, preview = false }: Props) {
 
             <article className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
                 <Link
-                    href="/news"
-                    className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700"
+                    href={breadcrumb?.href ?? '/news'}
+                    className="mb-8 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700"
                 >
-                    <ArrowLeft size={16} /> აისის ამბებში დაბრუნება
+                    <ArrowLeft size={16} />{' '}
+                    {breadcrumb
+                        ? `${breadcrumb.name} — დაბრუნება`
+                        : 'აისის ამბებში დაბრუნება'}
                 </Link>
 
                 {post.publishedAt && (
@@ -61,6 +82,7 @@ export default function NewsShow({ post, preview = false }: Props) {
                     {post.body}
                 </p>
             </article>
+            {media && <ContentMediaBlock media={media} />}
         </PublicLayout>
     );
 }

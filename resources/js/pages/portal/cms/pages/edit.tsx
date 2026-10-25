@@ -5,6 +5,10 @@ import { toast } from 'sonner';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import CategoryPicker, {
+    type CategoryOption,
+    type Placement,
+} from '@/components/portal/category-picker';
 
 type PageDetail = {
     id: number;
@@ -40,11 +44,21 @@ type Props = {
     revisions: Revision[];
     media: MediaItem[];
     canPublish: boolean;
+    categories?: CategoryOption[];
+    placement?: Placement;
 };
 
-const DEFAULT_BLOCKS = '[\n  { "type": "text", "heading": "სათაური", "body": "ტექსტი" }\n]';
+const DEFAULT_BLOCKS =
+    '[\n  { "type": "text", "heading": "სათაური", "body": "ტექსტი" }\n]';
 
-export default function CmsPageEdit({ page, revisions, media, canPublish }: Props) {
+export default function CmsPageEdit({
+    page,
+    revisions,
+    media,
+    canPublish,
+    categories = [],
+    placement = null,
+}: Props) {
     const [saving, setSaving] = useState(false);
     const [blocksValue, setBlocksValue] = useState(
         page ? JSON.stringify(page.blocks, null, 2) : DEFAULT_BLOCKS,
@@ -92,7 +106,8 @@ export default function CmsPageEdit({ page, revisions, media, canPublish }: Prop
             `/portal/cms/pages/${page.id}/unpublish`,
             {},
             {
-                onSuccess: () => toast.success('გვერდი მოხსნილია გამოქვეყნებიდან.'),
+                onSuccess: () =>
+                    toast.success('გვერდი მოხსნილია გამოქვეყნებიდან.'),
                 onError: () => toast.error('ვერ შესრულდა.'),
             },
         );
@@ -100,7 +115,11 @@ export default function CmsPageEdit({ page, revisions, media, canPublish }: Prop
 
     const restoreRevision = (revisionId: number) => {
         if (!page) return;
-        if (!confirm('აღდგეს ეს ვერსია? მიმდინარე შემცველობა ახალ ვერსიად შეინახება.')) {
+        if (
+            !confirm(
+                'აღდგეს ეს ვერსია? მიმდინარე შემცველობა ახალ ვერსიად შეინახება.',
+            )
+        ) {
             return;
         }
         router.post(
@@ -122,7 +141,9 @@ export default function CmsPageEdit({ page, revisions, media, canPublish }: Prop
 
     return (
         <PortalLayout>
-            <Head title={isNew ? 'ახალი გვერდი' : `რედაქტირება — ${page.title}`} />
+            <Head
+                title={isNew ? 'ახალი გვერდი' : `რედაქტირება — ${page.title}`}
+            />
 
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl">
@@ -262,8 +283,8 @@ export default function CmsPageEdit({ page, revisions, media, canPublish }: Prop
                         >
                             ტიპიზებული ბლოკების მასივი (თითოეულს აქვს{' '}
                             <code>type</code>) — ისე, როგორც საჯარო გვერდზე
-                            გამოისახება. თავისუფალი HTML/JavaScript დაშვებული
-                            არ არის.
+                            გამოისახება. თავისუფალი HTML/JavaScript დაშვებული არ
+                            არის.
                         </p>
                     </div>
 
@@ -341,6 +362,15 @@ export default function CmsPageEdit({ page, revisions, media, canPublish }: Prop
                         </a>
                     </section>
 
+                    {!isNew && page && (
+                        <CategoryPicker
+                            type="pages"
+                            id={page.id}
+                            categories={categories}
+                            placement={placement}
+                        />
+                    )}
+
                     {!isNew && (
                         <section className="rounded-xl border border-slate-200 bg-white p-4">
                             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
@@ -371,9 +401,7 @@ export default function CmsPageEdit({ page, revisions, media, canPublish }: Prop
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    restoreRevision(
-                                                        revision.id,
-                                                    )
+                                                    restoreRevision(revision.id)
                                                 }
                                                 className="mt-1 font-medium text-slate-700 underline"
                                             >

@@ -92,6 +92,7 @@ class CmsPageController extends Controller
             'revisions' => $page->revisions->map(fn (PageRevision $revision) => $this->formatRevision($revision))->values(),
             'media' => $this->mediaLibrary($tenant->id),
             'canPublish' => TenantMembership::userHasAnyActiveRole($tenant->id, $request->user()->id, self::PUBLISH_ROLES),
+            ...CmsPlacementController::propsFor($tenant->id, $page),
         ]);
     }
 

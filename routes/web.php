@@ -14,6 +14,7 @@ use App\Http\Controllers\Portal\BooksController;
 use App\Http\Controllers\Portal\ClubController;
 use App\Http\Controllers\Portal\CmsMediaController;
 use App\Http\Controllers\Portal\CmsPageController;
+use App\Http\Controllers\Portal\CmsPlacementController;
 use App\Http\Controllers\Portal\CmsPostController;
 use App\Http\Controllers\Portal\CompetencyController;
 use App\Http\Controllers\Portal\ConsentController;
@@ -242,6 +243,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('portal/cms/pages/{page}/preview', [CmsPageController::class, 'preview'])->name('cms.pages.preview');
     Route::put('portal/cms/pages/{page}', [CmsPageController::class, 'update'])->name('cms.pages.update');
     Route::post('portal/cms/pages/{page}/publish', [CmsPageController::class, 'publish'])->name('cms.pages.publish');
+    Route::put('portal/cms/placements/{type}/{id}', [CmsPlacementController::class, 'update'])->whereIn('type', ['pages', 'posts'])->whereNumber('id')->name('cms.placements.update');
     Route::post('portal/cms/pages/{page}/unpublish', [CmsPageController::class, 'unpublish'])->name('cms.pages.unpublish');
     Route::post('portal/cms/pages/{page}/revisions/{revision}/restore', [CmsPageController::class, 'restoreRevision'])->name('cms.pages.revisions.restore');
 

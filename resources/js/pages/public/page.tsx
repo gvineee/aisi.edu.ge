@@ -8,6 +8,15 @@ import {
     Users,
 } from 'lucide-react';
 import PublicLayout from '@/layouts/public/public-layout';
+import ContentMediaBlock, {
+    type ContentMedia,
+} from '@/components/public/content-media';
+import {
+    CategoryBreadcrumbNav,
+    CategorySection,
+    type CategoryBreadcrumb,
+    type CategorySectionData,
+} from '@/components/public/category-section';
 import Logo from '@/components/public/logo';
 import { useOpenVisitDialog } from '@/components/public/visit-dialog-context';
 import type { Brand } from '@/types';
@@ -101,6 +110,9 @@ type Props = {
     };
     latestPosts?: LatestPost[];
     featuredTeachers?: FeaturedTeacher[];
+    categorySection?: CategorySectionData | null;
+    breadcrumb?: CategoryBreadcrumb | null;
+    media?: ContentMedia;
     /**
      * Set only by CmsPageController::preview — lets an editor see a
      * draft/unpublished page through the exact same rendering path the
@@ -119,6 +131,9 @@ export default function CmsPage({
     page,
     latestPosts = [],
     featuredTeachers = [],
+    categorySection = null,
+    breadcrumb = null,
+    media,
     preview = false,
 }: Props) {
     const { brand } = usePage<{ brand: Brand | null }>().props;
@@ -150,6 +165,8 @@ export default function CmsPage({
                     გამოქვეყნებული.
                 </div>
             )}
+
+            {breadcrumb && <CategoryBreadcrumbNav breadcrumb={breadcrumb} />}
 
             {/* Every page needs one h1; hero-less CMS pages get the title for assistive tech. */}
             {!page.blocks.some((block) => block.type === 'hero') && (
@@ -803,6 +820,10 @@ export default function CmsPage({
                         return null;
                 }
             })}
+
+            {media && <ContentMediaBlock media={media} />}
+
+            {categorySection && <CategorySection section={categorySection} />}
         </PublicLayout>
     );
 }

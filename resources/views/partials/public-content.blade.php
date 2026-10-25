@@ -37,6 +37,9 @@
     <main>
         @switch($component)
             @case('public/page')
+                @if ($crumb = data_get($props, 'breadcrumb'))
+                    <nav aria-label="breadcrumb"><a href="{{ $crumb['href'] }}">{{ $crumb['name'] }}</a></nav>
+                @endif
                 @php
                     $blocks = data_get($props, 'page.blocks', []);
                     $hasHero = collect($blocks)->contains(fn ($block) => ($block['type'] ?? null) === 'hero');
@@ -113,6 +116,26 @@
                         @endswitch
                     </section>
                 @endforeach
+                @foreach (data_get($props, 'media.images', []) as $image)
+                    <figure><img src="{{ $image['url'] }}" alt="{{ $image['alt'] }}">@if ($image['caption'])<figcaption>{{ $image['caption'] }}</figcaption>@endif</figure>
+                @endforeach
+                @if ($files = data_get($props, 'media.attachments'))
+                    <ul>
+                        @foreach ($files as $file)
+                            <li><a href="{{ $file['url'] }}">{{ $file['label'] }}</a></li>
+                        @endforeach
+                    </ul>
+                @endif
+                @if ($section = data_get($props, 'categorySection'))
+                    <section>
+                        <h2>{{ $section['name'] }}</h2>
+                        <ul>
+                            @foreach ($section['items'] as $item)
+                                <li><a href="{{ $item['url'] }}">{{ $item['title'] }}</a>@if ($item['date']) — <time datetime="{{ $item['date'] }}">{{ $formatDate($item['date']) }}</time>@endif</li>
+                            @endforeach
+                        </ul>
+                    </section>
+                @endif
                 @break
 
             @case('public/news-index')
@@ -135,6 +158,9 @@
                 @break
 
             @case('public/news-show')
+                @if ($crumb = data_get($props, 'breadcrumb'))
+                    <nav aria-label="breadcrumb"><a href="{{ $crumb['href'] }}">{{ $crumb['name'] }}</a></nav>
+                @endif
                 <article>
                     @if ($published = data_get($props, 'post.publishedAt'))
                         <time datetime="{{ $published }}">{{ $formatDate($published) }}</time>
@@ -142,6 +168,16 @@
                     <h1>{{ data_get($props, 'post.title') }}</h1>
                     <p style="white-space: pre-line">{{ data_get($props, 'post.body') }}</p>
                 </article>
+                @foreach (data_get($props, 'media.images', []) as $image)
+                    <figure><img src="{{ $image['url'] }}" alt="{{ $image['alt'] }}">@if ($image['caption'])<figcaption>{{ $image['caption'] }}</figcaption>@endif</figure>
+                @endforeach
+                @if ($files = data_get($props, 'media.attachments'))
+                    <ul>
+                        @foreach ($files as $file)
+                            <li><a href="{{ $file['url'] }}">{{ $file['label'] }}</a></li>
+                        @endforeach
+                    </ul>
+                @endif
                 @break
 
             @case('public/teachers/index')
