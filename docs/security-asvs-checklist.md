@@ -13,7 +13,7 @@
 | V6 Rate limiting | ◐ | login (Fortify), 2FA, admissions lead, pickup codes/verify, invitations, messages/broadcast, payment start, webhooks, report-card verify | გლობალური per-tenant ლიმიტი; abuse monitoring |
 | V7 Session management | ◐ | Laravel session (Redis production), CSRF ყველა web form-ზე (webhooks — ხელმოწერით) | „სხვა მოწყობილობებიდან გასვლა“/device list UI არ არის |
 | V6 Privileged re-auth | ✓ | `RequireRecentPassword` (`reauth`): მოწვევა/როლის გაუქმება, health permission grant/revoke, support access decision; 2FA settings (starter kit) | guardian link-ის რედაქტირება ცალკე UI-ში ჯერ არ არის |
-| V3 Secure headers + CSP | ◐ | `SecurityHeaders`: nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS (HTTPS); CSP nonce-ით (Vite + inline bootstrap script), `SECURITY_CSP=report-only` | `enforce` — მხოლოდ ბრაუზერში ყველა გვერდის გადამოწმების შემდეგ; report-uri endpoint |
+| V3 Secure headers + CSP | ◐ | `SecurityHeaders`: nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS (HTTPS); CSP nonce-ით (Vite + inline script); ნაგულისხმევად `enforce` (2026-10-25: ბრაუზერში 13 production-ის საჯარო და ~70 ლოკალური პორტალის გვერდი, 0 რეალური დარღვევა) | report-uri endpoint; production `.env`-ში `SECURITY_CSP=enforce` |
 | V5 File handling | ✓ | private `local` disk, MIME/size allow-list, sha256, `scan_status` + `ScanStatus::servable`, policy-checked download (portfolio, health care plan, message attachments) | `ClamdFileScanner` (INSTREAM, `UPLOADS_SCANNER=clamd`) მზადაა და ტესტირებულია; სერვერზე clamd-ის დაყენება ღიაა — მანამდე `NullFileScanner` = `skipped` |
 | V5 SVG/brand upload | ✓ | brand logo: SVG უარყოფილი, ფერები ვალიდირდება (`PlatformAdministrationTest`) | — |
 | V11 Cryptography / sensitive data | ◐ | health ველები encrypted cast-ით; pickup codes HMAC; ფული integer | key rotation runbook |
@@ -31,5 +31,5 @@
 1. Production: queue worker (supervisor) + `* * * * * php artisan schedule:run` cron + failed jobs alert.
 2. Backup + restore drill (`clpctl db:export` + storage), შედეგი ჩაიწეროს.
 3. სერვერზე clamd → `UPLOADS_SCANNER=clamd`, შემდეგ `UPLOADS_ALLOW_UNSCANNED=false` (adapter უკვე არის).
-4. CSP: ბრაუზერის console-ში report-only დარღვევების შემოწმება → `SECURITY_CSP=enforce`.
+4. ~~CSP: ბრაუზერის console-ში report-only დარღვევების შემოწმება → `SECURITY_CSP=enforce`~~. შემოწმდა 2026-10-25: კოდის ნაგულისხმევი მნიშვნელობა `enforce`-ია. production-ის `.env`-ში ჩანაწერი ცალკე უნდა შეიცვალოს.
 5. Device/session list.

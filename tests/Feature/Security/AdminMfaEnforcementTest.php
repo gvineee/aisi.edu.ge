@@ -73,15 +73,18 @@ class AdminMfaEnforcementTest extends TestCase
 
     public function test_csp_nonce_matches_the_inline_script_and_mode_is_configurable(): void
     {
+        // Enforced by default (verified in a browser on every page, 2026-10-25).
         $html = $this->get('/login');
-        $policy = (string) $html->headers->get('Content-Security-Policy-Report-Only');
+        $policy = (string) $html->headers->get('Content-Security-Policy');
         $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-([A-Za-z0-9]+)'/", $policy);
         preg_match("/'nonce-([A-Za-z0-9]+)'/", $policy, $m);
         $this->assertStringContainsString('nonce="'.$m[1].'"', (string) $html->getContent());
-        $this->assertNull($html->headers->get('Content-Security-Policy'));
+        $this->assertNull($html->headers->get('Content-Security-Policy-Report-Only'));
 
-        config(['security.csp' => 'enforce']);
-        $this->assertNotNull($this->get('/login')->headers->get('Content-Security-Policy'));
+        config(['security.csp' => 'report-only']);
+        $reportOnly = $this->get('/login');
+        $this->assertNotNull($reportOnly->headers->get('Content-Security-Policy-Report-Only'));
+        $this->assertNull($reportOnly->headers->get('Content-Security-Policy'));
 
         config(['security.csp' => 'off']);
         $off = $this->get('/login');

@@ -11,9 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Baseline secure response headers (CLAUDE-PLATFORM-MODULES §15).
  *
  * Content-Security-Policy uses a per-request nonce shared with Vite's tags
- * and the one inline bootstrap script in app.blade.php. It ships in
- * `report-only` mode (SECURITY_CSP) until it has been verified in a real
- * browser on every page; switch to `enforce` after that. It is skipped
+ * and the inline script in app.blade.php. It is enforced by default;
+ * SECURITY_CSP=report-only turns it back into a report-only header. It is skipped
  * while the Vite dev server is hot. HSTS is sent only over HTTPS so local
  * HTTP development keeps working.
  */

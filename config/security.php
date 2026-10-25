@@ -17,9 +17,10 @@ return [
     'privileged_reauth' => (bool) env('PRIVILEGED_REAUTH', true),
 
     /*
-     * Content-Security-Policy (SecurityHeaders): `report-only` (default,
-     * violations only reported in the browser console), `enforce` once
-     * verified in a real browser, or `off`.
+     * Content-Security-Policy (SecurityHeaders): `enforce` (default; no
+     * violations on any page in a browser check, 2026-10-25),
+     * `report-only` (violations only reported in the browser console, a
+     * quick rollback), or `off`.
      */
-    'csp' => env('SECURITY_CSP', 'report-only'),
+    'csp' => env('SECURITY_CSP', 'enforce'),
 ];
