@@ -549,7 +549,7 @@ draft→submitted→published/returned workflow; მოსწავლე ხე
 
 - **Inertia SSR production-ზე არ არის**, რადგან სერვერზე Node.js არ არის. მის ნაცვლად საჯარო გვერდების ტექსტს Blade არენდერებს (`partials/public-content`), იხ. `docs/decisions/0003-public-rendering-without-ssr.md`.
 - დოკუმენტების ცენტრის მე-5 ეტაპი (retention/restore drills, OCR, გარე editor) დაიწყება მხოლოდ საჭიროების დადასტურების შემდეგ. ასევე ელოდება რეესტრი/ნუმერაცია სკოლის წესს.
-- Content import-ის `documents` ტიპი და ავტომატური merge ჯერ არ გაკეთებულა.
+- ~~Content import-ის `documents` ტიპი~~: დამატებითი import საჭირო არ არის (შემოწმდა 2026-10-25). `cms-import.json`-ის 30 `documents` ჩანაწერიდან 16 WordPress თემის დემოა (Lorem ipsum, `/courses/*`, `/event/*`) და არქივდება. 12 `research/I–XII` გვერდი უკვე ბიბლიოთეკაშია (`content:import-library`, production-ზე 70 რესურსი). 1 (ISM ვებინარი) იმავე სიახლის დუბლიკატია. ავტომატური merge `docs/08` §5-ით განზრახ არ კეთდება: merge-candidate მხოლოდ ინიშნება.
 - portal-ის არცერთი მოდული არ არის `verified_production`, რადგან production-ში მხოლოდ ადმინია. საჭიროა რეალური მომხმარებლების მოწვევა და ერთ კლასზე პილოტი (ეტაპი 6, UAT).
 - Finance production-ready არ არის ბანკის API-სა და ბუღალტრის UAT-მდე.
 - `logo-concept.png`/`school-life.jpg` კვლავ კონცეფციური მასალაა — production-მდე სჭირდება ვექტორიზაცია/სკოლის დადასტურება.
