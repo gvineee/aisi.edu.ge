@@ -195,3 +195,16 @@
   - JS-იანი ბრაუზერის screenshot-ი 1280px-ზე ძველს ემთხვევა: ბლოკი არ ჩანს.
 - შენიშვნა: production HTML მინიფიცირებულია და ატრიბუტებს ბრჭყალები მოხსნილი აქვს (`id=public-content`), ამიტომ `grep 'id="public-content"'` იქ 0-ს აბრუნებს.
 - Rollback: `php artisan down`; `files-…` გახსნა; `view:cache`; `up`.
+
+## Deploy — 2026-10-25 (`2e9be6f..1771421`, `bash deploy/deploy.sh`)
+
+- შინაარსი:
+  - CSP ნაგულისხმევად `enforce`-ია (`config/security.php`);
+  - ამბების სათაურის ბმული 24px-მდე გაიზარდა;
+  - ახალი `public/build`;
+  - 4 ფაილი, migration არ ყოფილა.
+- Backup: `_backups/db-20261025-113757.sql.gz`, `files-20261025-113757.tar.gz`.
+- Smoke: `/`, `/login`, `/up` → 200; `/portal/finance`, `/documents` სტუმრისთვის → 302. scheduler-ის 7 ამოცანა ჩანს. ლოგში ახალი შეცდომა არ არის.
+- production-ის `.env`-ში `SECURITY_CSP` არ ეწერა, ამიტომ კოდის ნაგულისხმევი მნიშვნელობა მოქმედებს. live პასუხი `Content-Security-Policy` ჰედერს აბრუნებს (აღარ არის `-Report-Only`).
+- headless Chrome-ით შემოწმდა 13 საჯარო გვერდი ჩართული CSP-ით: ყველა რენდერდება, `securitypolicyviolation` 0. `/news` ახალ bundle-ს (`news-index-CojFXsG6.js`) ტვირთავს.
+- Rollback მხოლოდ CSP-ისთვის: `.env`-ში `SECURITY_CSP=report-only` → `php artisan config:cache`. სრული rollback: `php artisan down`; `files-…` გახსნა; cache rebuild; `up`.
