@@ -224,3 +224,19 @@
   - ბაზაში ორმაგად დაკავებული მასწავლებელი 0;
   - teacher01-ს კვირაში 30 გაკვეთილი აქვს.
 - წაშლა რეალური გაშვების წინ: `php artisan school:test-fixtures --tenant=aisi --remove --force` (მხოლოდ ამ ბრძანების შექმნილს შლის).
+
+## Deploy — 2026-10-25 (მე-3, `d21cc7b..4a5ee4b`, `bash deploy/deploy.sh`) + კონტენტი + სატესტო სკოლის წაშლა
+
+- **რელიზი:** 80 ფაილი + `public/build`, 6 migration (`2026_10_26_000001…000006`).
+  - backup: `_backups/db-20261025-231043.sql.gz`, `files-20261025-231043.tar.gz`.
+  - smoke: home/login/up 200, finance/documents (guest) 302. ლოგში შეცდომა არ არის.
+- **deploy.sh:** smoke-check ახლა `--resolve aisi.edu.ge:443:127.0.0.1`-ით მიდის, ანუ ჩვენს სერვერს ამოწმებს. საჯარო DNS ჯერ ძველ WordPress-ს (91.212.213.19) უჩვენებს, მისი სერტიფიკატი 2026-10-16-ს გაუვიდა. ძველი check `set -e`-ით წყვეტდა deploy-ს.
+- **CVE mitigation (`public/.user.ini`) აქტიურია:** 26MB POST → 413, 1MB → 419. symfony/http-foundation 8.1.9.
+- **სატესტო სკოლა წაიშალა** (`school:test-fixtures --remove`): 40 კლასი, 48 ანგარიში, 120+1 სატესტო მოსწავლე, 1000 გაკვეთილი.
+  - ასევე წაიშალა სატესტოს შექმნილი 9 გამოუყენებელი საგანი (შექმნის დრო 2026-10-25 08:02:10). სკოლის 4 ადრინდელი საგანი დარჩა.
+  - დარჩა: კლასები „1“, „2“, 1 მოსწავლე, 1 წევრი (ადმინი).
+- **კატეგორიები:** `content:place-categories --commit` → 65 placed, 27 archived, 0 conflict. rerun → unchanged.
+- **სურათები და დანართები:** `content:sync-body-media --commit` → 13 ჩანაწერი, 46 სურათი, 18 დოკუმენტი, 54 უნიკალური ფაილი. rerun → 0 ახალი. 2462-ის გალერეა unresolved (წყაროში ცარიელი `<img/>`).
+  - სერვერზე აიტვირთა `category-placement-plan.json`, `raw/api/posts-1.json`, `raw/api/pages-1.json` (sha256 ემთხვევა).
+- **public check:** /official-documents-ზე დოკუმენტები ჩანს, /news-ში აღარ. PDF 200 `application/pdf`, გალერეა 10 სურათით, ყველა გვერდი 200.
+- **rollback:** `php artisan migrate:rollback --step=6`, მხოლოდ სქემისთვის. მონაცემებისთვის DB backup.
