@@ -1,5 +1,15 @@
 # Implementation Status
 
+### 2026-10-25 — ხელახალი responsive QA (`scripts/responsive-qa.mjs`, 104 გვერდი×სიგანე)
+
+- 360/390/768/1440 სიგანეებზე შემოწმდა საჯარო გვერდები და მშობლის, მასწავლებლის (მათ შორის Gradebook და ტაბელი) და მოსწავლის პორტალი. შედეგი: horizontal overflow **0**, server error **0**.
+- გასწორდა: ამბების სიაში სათაურის ბმული მობილურზე 23px სიმაღლის იყო (WCAG 2.5.8 მოითხოვს ≥24) → `inline-block py-0.5`.
+- false positive-ები:
+  - skip-link 1×1 (sr-only, ფოკუსზე ჩნდება);
+  - შეტყობინებების checkbox (44px `<label>`-ის შიგნითაა);
+  - შესვლის გვერდის Radix checkbox-ის დამალული input.
+- dev-ში ჩნდება „Hydration failed“ console error: `vp dev` SSR-ს რთავს, ხოლო სერვერის (Node) და ბრაუზერის `toLocaleDateString`/დროის ტექსტი ერთმანეთს არ ემთხვევა. production-ზე SSR არ არის და React `createRoot`-ით რენდერავს, ამიტომ ეს შეცდომა იქ ვერ წარმოიქმნება.
+
 ### 2026-10-23 — საჯარო გვერდების ტექსტი initial HTML-ში (Inertia SSR-ის გარეშე) — `verified_local`
 
 - production-ის HTML-ში მხოლოდ title/description იყო, ტექსტი კი JS-ის შემდეგ ჩნდებოდა. სერვერზე Node.js არ არის, ამიტომ Inertia SSR იქ ვერ გაეშვება.

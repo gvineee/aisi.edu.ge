@@ -61,7 +61,7 @@ export default function NewsIndex({ posts }: Props) {
                             <h2 className="mt-2 mb-2 text-xl">
                                 <Link
                                     href={`/news/${post.slug}`}
-                                    className="hover:underline"
+                                    className="inline-block py-0.5 hover:underline"
                                 >
                                     {post.title}
                                 </Link>
