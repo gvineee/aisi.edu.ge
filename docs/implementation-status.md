@@ -1,5 +1,40 @@
 # Implementation Status
 
+### 2026-10-25 (გაგრძელება) — EduPage-ის importer-ის საფუძველი და სტრუქტურა — `verified_local`, import არ შესრულებულა
+
+- 3 additive migration:
+  - ჯგუფები, ჩარიცხვები, მეორე დამრიგებელი, `teacher_assignments.subject_id`;
+  - ცხრილის ვერსიები, ზარები, ჟურნალის თემატიკა;
+  - import batch/identity map/issues.
+- კონფლიქტის წესი ჯგუფებსა და ვერსიებზე გაფართოვდა.
+- `edupage:import` (rooms, subjects, staff, classes, timetable-summary): dry-run by default, idempotent. სახელით გაერთიანება არ ხდება, ანგარიშები არ იქმნება.
+- რეალური განრიგის ფაილი წაიკითხა read-only: 21 კლასი, 661 უჯრა, 38 წარწერა — preview-ს ემთხვევა.
+- დეტალები და რა დარჩა: `docs/edupage-migration-matrix-2026-10-25.md` §8.
+
+### 2026-10-25 — EduPage-ის მიგრაციის წინასწარი ანგარიში (`docs/edupage-migration-matrix-2026-10-25.md`) — preview, import არ შესრულებულა
+
+- EduPage-ის აუდიტი და ექსპორტის preview მიმდინარე კოდს შევადარე. matrix თითო მოდულზე: წყარო → ჩვენი მოდელი → gap → transform → validation → blocker.
+- ნაკლული ფუნქციები:
+  - import batch/identity map/quarantine;
+  - კლასის ჯგუფები; `CheckLessonConflicts` კლასს ერთ დროს ორ გაკვეთილს უკრძალავს, ამიტომ ჯგუფებისთვის კონფლიქტის წესი შესაცვლელია;
+  - ცხრილის ვერსია/validity და ზარების სქემა;
+  - ჩარიცხვების ისტორია;
+  - ჟურნალის თემატიკა;
+  - მეორე დამრიგებელი;
+  - `teacher_assignments.subject_id`.
+- ბლოკერები:
+  - E2–E7 ექსპორტები არ არის მიღებული (Chrome extension არ იყო დაკავშირებული);
+  - production-ის სატესტო კლასები 1ა…10დ რეალურ სახელებს დაეჯახება, ამიტომ import-მდე `school:test-fixtures --remove`;
+  - 38 საგნის წარწერის რუკა, ზარები, cutoff და სამიზნე გარემო სკოლამ უნდა დაადასტუროს.
+
+### 2026-10-25 — EduPage-ის შიდა აუდიტი და მიგრაციის handoff (კოდის ცვლილების გარეშე)
+
+- ადმინისტრატორის UI-დან შემოწმდა timetable/journal/gradebook/Agenda და მიმოხილვების 14 კატეგორიის ეკრანები/წარმომადგენლობითი მონაცემები. ყველა drilldown და როლი სრულად არ აუდიტირებულა.
+- განრიგის summary export მიღებულია private storage-ში: 21 კლასი, 661 არაცარიელი საგნის უჯრედი; checksum/preview შექმნილია, DB import არ შესრულებულა. source-ში teacher/room კავშირები არ არის.
+- მტკიცებულება: `docs/edupage-audit-2026-10-25.md`, `docs/edupage-export-preview-2026-10-25.md`, `docs/edupage-overviews-audit-2026-10-25.md`; ერთიანი handoff: `CLAUDE-EDUPAGE-MIGRATION.md`.
+- შემოწმება: export parser-ის row/width/class assertions გავლილია; private ფაილები Git-იდან გამორიცხულია; დოკუმენტებზე `git diff --check` გამოიყენება. აპლიკაციის კოდი არ შეცვლილა და runtime tests ამ აუდიტის ფარგლებში არ გაშვებულა.
+- მომხმარებლის არჩევანია დაცული ექსპორტი და წინასწარი ანგარიში. production import/deploy არ არის შესრულებული. ნაკლული exports, source mapping, guardian verification და UAT რჩება.
+
 ### 2026-10-25 — სატესტო სკოლა production-ზე (`school:test-fixtures`)
 
 - ახალი, აუდიტირებადი ბრძანება აკეთებს შემდეგს:

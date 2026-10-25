@@ -15,9 +15,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $tenant_id
  * @property int $academic_year_id
  * @property string $name
+ * @property int|null $grade_level
+ * @property string|null $short_name
  * @property int|null $homeroom_teacher_id
+ * @property int|null $home_room_id
  */
-#[Fillable(['academic_year_id', 'name', 'homeroom_teacher_id'])]
+#[Fillable(['academic_year_id', 'name', 'grade_level', 'short_name', 'homeroom_teacher_id', 'home_room_id'])]
 class SchoolClass extends Model
 {
     use BelongsToTenant;
@@ -39,6 +42,24 @@ class SchoolClass extends Model
     public function homeroomTeacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'homeroom_teacher_id');
+    }
+
+    /**
+     * Additional staff on the class, e.g. the second homeroom teacher.
+     *
+     * @return HasMany<ClassStaffRole, $this>
+     */
+    public function staffRoles(): HasMany
+    {
+        return $this->hasMany(ClassStaffRole::class);
+    }
+
+    /**
+     * @return HasMany<StudentGroup, $this>
+     */
+    public function groups(): HasMany
+    {
+        return $this->hasMany(StudentGroup::class);
     }
 
     /**

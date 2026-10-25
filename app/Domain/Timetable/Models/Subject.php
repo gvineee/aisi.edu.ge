@@ -10,8 +10,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $tenant_id
  * @property string $name
+ * @property string|null $short_name
  */
-#[Fillable(['name'])]
+#[Fillable(['name', 'short_name'])]
 class Subject extends Model
 {
     use BelongsToTenant;

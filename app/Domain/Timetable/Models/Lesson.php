@@ -19,19 +19,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int $tenant_id
  * @property int $academic_year_id
+ * @property int|null $timetable_version_id
  * @property int $school_class_id
+ * @property int|null $student_group_id
  * @property int $subject_id
  * @property int $teacher_id
  * @property int|null $room_id
  * @property int $day_of_week
+ * @property int|null $period_number
  * @property string $starts_at
  * @property string $ends_at
  * @property string|null $online_url
  * @property string $status
  */
 #[Fillable([
-    'academic_year_id', 'school_class_id', 'subject_id', 'teacher_id', 'room_id',
-    'day_of_week', 'starts_at', 'ends_at', 'online_url', 'status', 'created_by',
+    'academic_year_id', 'timetable_version_id', 'school_class_id', 'student_group_id', 'subject_id', 'teacher_id', 'room_id',
+    'day_of_week', 'period_number', 'starts_at', 'ends_at', 'online_url', 'status', 'created_by',
 ])]
 class Lesson extends Model
 {

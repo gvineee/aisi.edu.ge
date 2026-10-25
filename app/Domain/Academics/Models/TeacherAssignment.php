@@ -17,8 +17,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $user_id
  * @property int $school_class_id
  * @property string|null $subject
+ * @property int|null $subject_id
+ * @property int|null $student_group_id
  */
-#[Fillable(['user_id', 'school_class_id', 'subject'])]
+#[Fillable(['user_id', 'school_class_id', 'subject', 'subject_id', 'student_group_id'])]
 class TeacherAssignment extends Model
 {
     use BelongsToTenant;
