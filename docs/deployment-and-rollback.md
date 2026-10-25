@@ -181,3 +181,17 @@
 - Smoke: `/`, `/login`, `/up` → 200; `/portal/finance`, `/documents` სტუმრისთვის → 302. scheduler-ში ჩანს `ops-heartbeat` (ყოველ წუთში) და `ops:check` (ყოველ საათში). ლოგში ახალი შეცდომა არ არის.
 - deploy-ის ახალმა ანგარიშმა სწორად აჩვენა: „Migrations run by this deploy: 0“.
 - დარჩენილია (მომხმარებლის ანგარიშით): გარე uptime-მონიტორი `https://aisi.edu.ge/up`-ზე.
+
+## Deploy — 2026-10-23 (მე-2, `1338556..2e9be6f`, მომხმარებელმა გაუშვა `! bash deploy/deploy.sh`)
+
+- შინაარსი: საჯარო გვერდების ტექსტი initial HTML-ში Inertia SSR-ის გარეშე (`resources/views/partials/public-content.blade.php`, `app.blade.php`). 2 ფაილი, migration არ ყოფილა, `public/build` არ შეცვლილა.
+- Backup: `_backups/db-20261023-130149.sql.gz`, `files-20261023-130149.tar.gz`.
+- Smoke: `/`, `/login`, `/up` → 200; `/portal/finance`, `/documents` სტუმრისთვის → 302. scheduler-ის 7 ამოცანა ჩანს. ლოგში ახალი შეცდომა არ არის.
+- შემოწმებული live:
+  - `/about`-ის raw HTML-ში არის `<h1>` და ყველა `<h2>` ბლოკი;
+  - `/news`-ში არის სტატიების ბმულები;
+  - inline script-ს CSP nonce აქვს;
+  - `/login`-ზე ბლოკი არ არის.
+  - JS-იანი ბრაუზერის screenshot-ი 1280px-ზე ძველს ემთხვევა: ბლოკი არ ჩანს.
+- შენიშვნა: production HTML მინიფიცირებულია და ატრიბუტებს ბრჭყალები მოხსნილი აქვს (`id=public-content`), ამიტომ `grep 'id="public-content"'` იქ 0-ს აბრუნებს.
+- Rollback: `php artisan down`; `files-…` გახსნა; `view:cache`; `up`.

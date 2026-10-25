@@ -6,7 +6,7 @@
 - `resources/views/partials/public-content.blade.php` ინდექსირებადი საჯარო გვერდების ტექსტს იმავე props-იდან არენდერებს: CMS ბლოკები, ამბების სია და სტატია, მასწავლებლები, ბიბლიოთეკა, nav და footer-ის კონტაქტი. JS-იან ბრაუზერში ბლოკი იმალება `html.js`-ით (inline script, CSP nonce), ასე რომ ვიზუალი არ იცვლება. გადაწყვეტილება: `docs/decisions/0003-public-rendering-without-ssr.md`.
 - ტესტები: `HomePageSeoTest` (4: ტექსტი raw HTML-ში, `<script>` escape-დება, ამბები, პორტალზე ბლოკი არ ჩნდება). სრული suite: **416/416 passed, 3828 assertions**; Pint სუფთა.
 - ბრაუზერი: `/about` JS-ით ლოკალურად ვიზუალურად ემთხვევა production-ს.
-- production deploy ჯერ არ გაკეთებულა.
+- production-ზე გავიდა 2026-10-23 და live-ზე შემოწმდა (`docs/deployment-and-rollback.md`).
 
 განახლებულია: 2026-10-02 · **მიმდინარე ეტაპის მოკლე სურათი** — საჯარო საიტი (ფაზა 1) production-ზეა; პორტალის მოდულების სტატუსი ცალკე მატრიცაშია: `docs/platform-modules-status.md`. ქვემოთ, ქრონოლოგიურ ჩანაწერებში, უახლესი ზემოთაა. ძველი (2026-09-11) შეჯამება შენარჩუნებულია ისტორიისთვის:
 
