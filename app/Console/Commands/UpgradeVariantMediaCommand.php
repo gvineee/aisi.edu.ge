@@ -21,6 +21,7 @@ class UpgradeVariantMediaCommand extends Command
     protected $signature = 'content:upgrade-variant-media
         {uploads : The old site\'s wp-content/uploads folder}
         {--tenant= : Tenant slug (required)}
+        {--max-edge=0 : Scale photos down to this longest side in px for the web (0 = keep as is; needs Imagick)}
         {--commit : Replace (default is a preview)}';
 
     protected $description = 'Replace resized-only imported images with their originals from the old uploads folder (preview by default)';
@@ -60,6 +61,7 @@ class UpgradeVariantMediaCommand extends Command
                 continue;
             }
 
+            $bytes = $this->webSized($bytes, (int) $this->option('max-edge'));
             $sha256 = hash('sha256', $bytes);
             $diskPath = 'content-migration/body/'.substr($sha256, 0, 16).'-'.basename($original);
             $rows[] = [$link->id, basename($path), $commit ? 'replaced' : 'would_replace', basename($original).' · '.round(strlen($bytes) / 1024).' KB'];
@@ -88,5 +90,31 @@ class UpgradeVariantMediaCommand extends Command
         $this->table(['link', 'ვარიანტი', 'შედეგი', 'დეტალი'], $rows);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Phone photos are several MB: for the page, turn them the way the
+     * camera meant (EXIF orientation) and fit them in `$maxEdge` px.
+     */
+    private function webSized(string $bytes, int $maxEdge): string
+    {
+        if ($maxEdge < 1 || ! class_exists(\Imagick::class)) {
+            return $bytes;
+        }
+
+        $image = new \Imagick;
+        $image->readImageBlob($bytes);
+        $image->autoOrient();
+
+        if (max($image->getImageWidth(), $image->getImageHeight()) > $maxEdge) {
+            $image->thumbnailImage($maxEdge, $maxEdge, true);
+        }
+
+        $image->stripImage(); // no camera/GPS metadata on the public site
+        $image->setImageCompressionQuality(85);
+        $resized = $image->getImageBlob();
+        $image->clear();
+
+        return $resized;
     }
 }
