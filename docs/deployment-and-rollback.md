@@ -250,3 +250,12 @@
   - შედეგი: 21 PDF, სამივე ახალი 200 `application/pdf`.
 - **თარგმანები:** `content:import-translations --commit` → 12 draft (8 EN, 4 RU). გამოქვეყნებული en/ru: 0. ქართული გვერდები უცვლელია.
 - **ბაგი:** MySQL JSON გასაღებებს ხელახლა ალაგებს, ამიტომ rerun შეცდომით `conflict`-ს აჩვენებდა. checksum გასაღებების რიგზე აღარ არის დამოკიდებული. 12 tracking ჩანაწერის checksum თავიდან დაითვალა (მხოლოდ შეუცვლელი draft-ებისთვის, `updated_at = created_at`). rerun → 12 unchanged.
+
+## Deploy — 2026-10-26 (მე-2, `0a12539..55bf74c`) + დომენი Cloudflare-ზე
+
+- **დომენი:** `aisi.edu.ge` და `www` Cloudflare-ის გავლით ახალ სერვერზე მიდის (Google Trust Services სერტიფიკატი, ვადა 2026-12-09). MX და SPF ისევ ძველ ჰოსტზეა (91.212.213.19), ანუ ფოსტა არ შეცვლილა.
+- **რელიზი:** migration-ის გარეშე. backup: `_backups/*-20261026-131921.*`. smoke 200, ლოგი სუფთა.
+- **Cloudflare-ის IP:** PHP-ში `REMOTE_ADDR` Cloudflare-ის edge-ის მისამართი იყო. `.env`-ში ჩაემატა `TRUSTED_PROXIES=cloudflare` (მომხმარებელმა შეიტანა) და `config:cache` განახლდა; კონფიგურაციაში 22 დიაპაზონია. სანდოა მხოლოდ X-Forwarded-For/Proto/Port, X-Forwarded-Host არა.
+  - **rollback:** ხაზის წაშლა + `php artisan config:cache`.
+- **მენიუ:** ზედა „დაგეგმე ვიზიტი“ მოიხსნა. ლაივზე გადამოწმდა, რომ 1024–1440px-ზე ყველა პუნქტი ეტევა.
+- **მომავალი:** Cloudflare-ის IP სია შეიძლება შეიცვალოს, შესამოწმებელია https://www.cloudflare.com/ips/ (`config/trustedproxy.php`).
