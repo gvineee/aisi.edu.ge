@@ -62,6 +62,9 @@ use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\SupportAccessController;
 use App\Http\Controllers\Portal\TeacherController;
 use App\Http\Controllers\Portal\TeacherWorkspaceController;
+use App\Http\Controllers\Portal\TimetableCatalogController;
+use App\Http\Controllers\Portal\TimetableGeneratorController;
+use App\Http\Controllers\Portal\TimetableGridController;
 use App\Http\Controllers\Portal\TimetableSetupController;
 use App\Http\Controllers\Portal\TransportController;
 use App\Http\Controllers\Portal\WorkedHoursController;
@@ -144,6 +147,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // nothing anywhere could create a Subject) — confirmed as the
     // production root blocker in Substitution module verification. ---
     Route::get('portal/timetable', [LessonController::class, 'index'])->name('timetable.index');
+    Route::get('portal/timetable/grid', TimetableGridController::class)->name('timetable.grid');
+    Route::get('portal/timetable/generator', [TimetableGeneratorController::class, 'index'])->name('timetable.generator');
+    Route::post('portal/timetable/generator', [TimetableGeneratorController::class, 'store'])->middleware('throttle:6,1')->name('timetable.generator.store');
+    Route::get('portal/timetable/catalogs', [TimetableCatalogController::class, 'index'])->name('timetable.catalogs');
+    Route::post('portal/timetable/catalogs/subjects', [TimetableCatalogController::class, 'saveSubject'])->name('timetable.catalogs.subjects.store');
+    Route::put('portal/timetable/catalogs/subjects/{subject}', [TimetableCatalogController::class, 'saveSubject'])->name('timetable.catalogs.subjects.update');
+    Route::delete('portal/timetable/catalogs/subjects/{subject}', [TimetableCatalogController::class, 'destroySubject'])->name('timetable.catalogs.subjects.destroy');
+    Route::post('portal/timetable/catalogs/rooms', [TimetableCatalogController::class, 'saveRoom'])->name('timetable.catalogs.rooms.store');
+    Route::put('portal/timetable/catalogs/rooms/{room}', [TimetableCatalogController::class, 'saveRoom'])->name('timetable.catalogs.rooms.update');
+    Route::delete('portal/timetable/catalogs/rooms/{room}', [TimetableCatalogController::class, 'destroyRoom'])->name('timetable.catalogs.rooms.destroy');
     Route::post('portal/timetable/subjects', [LessonController::class, 'storeSubject'])->name('timetable.subjects.store');
     Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
     Route::put('portal/timetable/years/{academicYear}/bell-periods', [TimetableSetupController::class, 'saveBellPeriods'])->name('timetable.bell-periods.save');

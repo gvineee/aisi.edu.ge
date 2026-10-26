@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState, type FormEvent } from 'react';
 import { CalendarClock, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -189,6 +189,21 @@ export default function TimetableIndex({
 
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl">განრიგი</h1>
+                <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline">
+                        <Link href="/portal/timetable/grid">ცხრილის ხედი</Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <Link href="/portal/timetable/generator">
+                            ცხრილის გენერირება
+                        </Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <Link href="/portal/timetable/catalogs">
+                            საგნები და ოთახები
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             {yearId !== undefined && (

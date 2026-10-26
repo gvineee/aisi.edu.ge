@@ -2,9 +2,11 @@
 
 namespace App\Domain\Timetable\Models;
 
+use App\Domain\Academics\Models\AcademicYear;
 use App\Domain\Tenancy\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -21,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $valid_from
  * @property Carbon|null $valid_to
  * @property string $status
+ * @property-read AcademicYear|null $academicYear
  */
 #[Fillable(['academic_year_id', 'label', 'source_version', 'valid_from', 'valid_to', 'status'])]
 class TimetableVersion extends Model
@@ -39,6 +42,14 @@ class TimetableVersion extends Model
             'valid_from' => 'date',
             'valid_to' => 'date',
         ];
+    }
+
+    /**
+     * @return BelongsTo<AcademicYear, $this>
+     */
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
     }
 
     /**

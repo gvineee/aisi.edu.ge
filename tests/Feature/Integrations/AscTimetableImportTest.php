@@ -13,6 +13,7 @@ use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Domain\Timetable\Actions\CalculateWorkedHours;
 use App\Domain\Timetable\Actions\CheckLessonConflicts;
+use App\Domain\Timetable\Actions\GenerateTimetable;
 use App\Domain\Timetable\Models\BellPeriod;
 use App\Domain\Timetable\Models\Lesson;
 use App\Domain\Timetable\Models\LessonException;
@@ -248,6 +249,74 @@ class AscTimetableImportTest extends TestCase
         $this->actingAs($accountant)->post("{$host}/portal/staff", ['full_name' => 'x'])->assertForbidden();
         $this->actingAs($teacher)->get("{$host}/portal/staff")->assertForbidden();
         $this->actingAs($teacher)->get("{$host}/portal/worked-hours")->assertForbidden();
+    }
+
+    public function test_the_generator_builds_a_clash_free_draft_from_the_workloads(): void
+    {
+        $this->import(true);
+        $admin = User::factory()->create();
+        $result = app(GenerateTimetable::class)->handle($this->year, $admin, 'გენერირებული', '2026-09-01');
+
+        $this->assertSame([], $result['unplaced']);
+        $this->assertSame(TimetableVersion::STATUS_DRAFT, $result['version']->status);
+        $rows = Lesson::query()->where('timetable_version_id', $result['version']->id)->get();
+        // 2 maths + joint music (2 rows) + 1 English = 5 rows, 4 teaching events.
+        $this->assertSame(5, $rows->count());
+        $this->assertSame(4, $rows->unique(fn (Lesson $l) => $l->joint_key ?? $l->id)->count());
+        $joint = $rows->whereNotNull('joint_key');
+        $this->assertSame(2, $joint->count());
+        $this->assertSame(1, $joint->unique(fn (Lesson $l) => "{$l->day_of_week}|{$l->period_number}")->count(), 'both classes of the joint lesson meet together');
+
+        // No teacher in two places, no class double-booked.
+        foreach ($rows->groupBy(fn (Lesson $l) => "{$l->staff_member_id}|{$l->day_of_week}|{$l->period_number}") as $same) {
+            $this->assertSame(1, $same->unique(fn (Lesson $l) => $l->joint_key ?? $l->id)->count());
+        }
+        foreach ($rows->groupBy(fn (Lesson $l) => "{$l->school_class_id}|{$l->day_of_week}|{$l->period_number}") as $same) {
+            $this->assertSame(1, $same->count());
+        }
+        // Maths twice a week lands on two different days.
+        $this->assertSame(2, $rows->where('subject_id', Subject::query()->where('name', 'მათემატიკა')->value('id'))->unique('day_of_week')->count());
+    }
+
+    public function test_the_generator_reports_what_does_not_fit_instead_of_double_booking(): void
+    {
+        $this->import(true);
+        // One period a day, five days: 1ა needs 3 whole-class hours from one teacher plus… fits;
+        // give maths 9 hours a week and the class cannot hold it.
+        TeacherAssignment::query()->where('subject', 'მათემატიკა')->update(['weekly_hours' => 9]);
+        $result = app(GenerateTimetable::class)->handle($this->year, User::factory()->create(), 'ცდა', '2026-09-01', null, 1);
+
+        $this->assertNotSame([], $result['unplaced']);
+        $rows = Lesson::query()->where('timetable_version_id', $result['version']->id)->get();
+        foreach ($rows->groupBy(fn (Lesson $l) => "{$l->school_class_id}|{$l->day_of_week}|{$l->period_number}") as $same) {
+            $this->assertSame(1, $same->count());
+        }
+    }
+
+    public function test_the_grid_generator_and_catalog_pages_are_for_timetablers(): void
+    {
+        $this->import(true);
+        $manager = User::factory()->create();
+        TenantMembership::create(['tenant_id' => $this->tenant->id, 'user_id' => $manager->id, 'role' => TenantMembership::ROLE_ACADEMIC_MANAGER, 'is_active' => true]);
+        $teacher = User::factory()->create();
+        TenantMembership::create(['tenant_id' => $this->tenant->id, 'user_id' => $teacher->id, 'role' => TenantMembership::ROLE_TEACHER, 'is_active' => true]);
+        $host = 'http://'.$this->tenant->domains()->value('domain');
+
+        $this->actingAs($manager)->get("{$host}/portal/timetable/grid?by=teacher")->assertOk()
+            ->assertInertia(fn ($page) => $page->component('portal/timetable/grid')->where('summary.lessons', 4)->where('summary.conflicts', 0));
+        $this->actingAs($manager)->get("{$host}/portal/timetable/catalogs")->assertOk();
+        $this->actingAs($manager)->get("{$host}/portal/timetable/generator")->assertOk()->assertInertia(fn ($page) => $page->where('hours', 4));
+        $this->actingAs($manager)->post("{$host}/portal/timetable/generator", ['academic_year_id' => $this->year->id, 'label' => 'ახალი', 'valid_from' => '2026-09-01'])
+            ->assertRedirect();
+        $this->assertSame(2, TimetableVersion::query()->count());
+
+        $used = Subject::query()->where('name', 'მათემატიკა')->firstOrFail();
+        $this->actingAs($manager)->delete("{$host}/portal/timetable/catalogs/subjects/{$used->id}")->assertSessionHasErrors('subject');
+        $this->actingAs($manager)->post("{$host}/portal/timetable/catalogs/rooms", ['name' => 'სპორტდარბაზი'])->assertRedirect();
+
+        foreach (['grid', 'catalogs', 'generator'] as $page) {
+            $this->actingAs($teacher)->get("{$host}/portal/timetable/{$page}")->assertForbidden();
+        }
     }
 
     private function exception(Lesson $lesson, string $date, string $type, ?int $substituteId = null): void
