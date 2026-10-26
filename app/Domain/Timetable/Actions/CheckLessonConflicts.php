@@ -2,6 +2,7 @@
 
 namespace App\Domain\Timetable\Actions;
 
+use App\Domain\Academics\Models\StaffMember;
 use App\Domain\Timetable\Models\Lesson;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -45,8 +46,11 @@ class CheckLessonConflicts
             )
             ->where('starts_at', '<', $endsAt)
             ->where('ends_at', '>', $startsAt)
-            ->where(function ($query) use ($teacherId, $roomId, $schoolClassId, $studentGroupId) {
+            ->where(function ($query) use ($tenantId, $teacherId, $roomId, $schoolClassId, $studentGroupId) {
+                // The teacher's lessons imported before they had a login
+                // carry only their staff-directory entry.
                 $query->where('teacher_id', $teacherId)
+                    ->orWhereIn('staff_member_id', StaffMember::query()->where('tenant_id', $tenantId)->where('user_id', $teacherId)->select('id'))
                     ->orWhere(function ($query) use ($schoolClassId, $studentGroupId) {
                         $query->where('school_class_id', $schoolClassId);
 

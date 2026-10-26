@@ -25,6 +25,8 @@ import {
     Newspaper,
     PenLine,
     Presentation,
+    IdCard,
+    Timer,
     Repeat,
     Scale,
     ScrollText,
@@ -81,6 +83,8 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     finance: Wallet,
     'support-access': LifeBuoy,
     'teacher-workspace': Presentation,
+    staff: IdCard,
+    'worked-hours': Timer,
 };
 
 /**

@@ -131,7 +131,7 @@ class ResolveDailyLessons
         $lessons = $query
             ->where('status', Lesson::STATUS_PUBLISHED)
             ->where('day_of_week', $date->dayOfWeekIso)
-            ->with(['subject', 'teacher', 'room', 'schoolClass', 'studentGroup'])
+            ->with(['subject', 'teacher', 'staffMember', 'room', 'schoolClass', 'studentGroup'])
             ->orderBy('starts_at')
             ->get();
 
@@ -219,8 +219,8 @@ class ResolveDailyLessons
             'lesson' => $lesson,
             'cancelled' => $cancelled,
             'status' => $status,
-            'teacherName' => $substitute->name ?? $lesson->teacher->name,
-            'regularTeacherName' => $lesson->teacher->name,
+            'teacherName' => $substitute->name ?? $lesson->teacherName(),
+            'regularTeacherName' => $lesson->teacherName(),
             'roomName' => $roomName,
         ];
     }

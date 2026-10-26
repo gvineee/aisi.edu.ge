@@ -4,6 +4,7 @@ namespace App\Domain\Timetable\Models;
 
 use App\Domain\Academics\Models\AcademicYear;
 use App\Domain\Academics\Models\SchoolClass;
+use App\Domain\Academics\Models\StaffMember;
 use App\Domain\Academics\Models\Student;
 use App\Domain\Academics\Models\StudentGroup;
 use App\Domain\Tenancy\Concerns\BelongsToTenant;
@@ -27,18 +28,22 @@ use Illuminate\Support\Facades\DB;
  * @property int $school_class_id
  * @property int|null $student_group_id
  * @property int $subject_id
- * @property int $teacher_id
+ * @property int|null $teacher_id the login of the staff member, once they have one
+ * @property int|null $staff_member_id
  * @property int|null $room_id
  * @property int $day_of_week
  * @property int|null $period_number
+ * @property string|null $joint_key shared by the per-class rows of one joint lesson
  * @property string $starts_at
  * @property string $ends_at
  * @property string|null $online_url
  * @property string $status
+ * @property-read User|null $teacher
+ * @property-read StaffMember|null $staffMember
  */
 #[Fillable([
-    'academic_year_id', 'timetable_version_id', 'school_class_id', 'student_group_id', 'subject_id', 'teacher_id', 'room_id',
-    'day_of_week', 'period_number', 'starts_at', 'ends_at', 'online_url', 'status', 'created_by',
+    'academic_year_id', 'timetable_version_id', 'school_class_id', 'student_group_id', 'subject_id', 'teacher_id', 'staff_member_id', 'room_id',
+    'day_of_week', 'period_number', 'joint_key', 'starts_at', 'ends_at', 'online_url', 'status', 'created_by',
 ])]
 class Lesson extends Model
 {
@@ -104,6 +109,23 @@ class Lesson extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    /**
+     * @return BelongsTo<StaffMember, $this>
+     */
+    public function staffMember(): BelongsTo
+    {
+        return $this->belongsTo(StaffMember::class);
+    }
+
+    /**
+     * Who teaches it, for display: the account's name, else the staff
+     * directory's (a teacher without a login yet).
+     */
+    public function teacherName(): string
+    {
+        return $this->teacher->name ?? $this->staffMember->full_name ?? '';
     }
 
     /**

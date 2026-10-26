@@ -56,6 +56,7 @@ use App\Http\Controllers\Portal\SchoolClassProfileController;
 use App\Http\Controllers\Portal\SchoolPulseController;
 use App\Http\Controllers\Portal\SchoolVisitController;
 use App\Http\Controllers\Portal\ServicesController;
+use App\Http\Controllers\Portal\StaffDirectoryController;
 use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\SupportAccessController;
@@ -63,6 +64,7 @@ use App\Http\Controllers\Portal\TeacherController;
 use App\Http\Controllers\Portal\TeacherWorkspaceController;
 use App\Http\Controllers\Portal\TimetableSetupController;
 use App\Http\Controllers\Portal\TransportController;
+use App\Http\Controllers\Portal\WorkedHoursController;
 use App\Http\Controllers\Public\AdmissionLeadController;
 use App\Http\Controllers\Public\InvitationController;
 use App\Http\Controllers\Public\LibraryCatalogController;
@@ -148,6 +150,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/timetable/years/{academicYear}/versions', [TimetableSetupController::class, 'storeVersion'])->name('timetable.versions.store');
     Route::post('portal/timetable/versions/{timetableVersion}/activate', [TimetableSetupController::class, 'activateVersion'])->name('timetable.versions.activate');
     // --- end Timetable ---
+
+    // --- Staff directory, workloads and worked hours (ADR 0006) ---
+    Route::get('portal/staff', [StaffDirectoryController::class, 'index'])->name('staff.index');
+    Route::post('portal/staff', [StaffDirectoryController::class, 'store'])->name('staff.store');
+    Route::put('portal/staff/{staffMember}', [StaffDirectoryController::class, 'update'])->name('staff.update');
+    Route::post('portal/staff/{staffMember}/link', [StaffDirectoryController::class, 'link'])->name('staff.link');
+    Route::delete('portal/staff/{staffMember}/link', [StaffDirectoryController::class, 'unlink'])->name('staff.unlink');
+    Route::get('portal/worked-hours', [WorkedHoursController::class, 'index'])->name('worked-hours.index');
+    Route::get('portal/worked-hours/export', [WorkedHoursController::class, 'export'])->middleware('throttle:20,1')->name('worked-hours.export');
+    Route::post('portal/worked-hours/breaks', [WorkedHoursController::class, 'storeBreak'])->name('worked-hours.breaks.store');
+    Route::delete('portal/worked-hours/breaks/{nonTeachingPeriod}', [WorkedHoursController::class, 'destroyBreak'])->name('worked-hours.breaks.destroy');
 
     Route::get('portal/students/{student}/portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
     Route::post('portal/students/{student}/portfolio', [PortfolioController::class, 'store'])->name('portfolio.store');

@@ -395,6 +395,12 @@ class PortalContext
             $items[] = ['key' => 'timetable', 'label' => 'განრიგი', 'href' => route('timetable.index'), 'icon' => 'timetable'];
         }
 
+        // StaffDirectoryController / WorkedHoursController re-check their roles.
+        if (in_array($activeRole, [TenantMembership::ROLE_ADMIN, TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ACADEMIC_MANAGER, TenantMembership::ROLE_ACCOUNTANT], true)) {
+            $items[] = ['key' => 'staff', 'label' => 'პერსონალი და დატვირთვა', 'href' => route('staff.index'), 'icon' => 'staff'];
+            $items[] = ['key' => 'worked-hours', 'label' => 'ნამუშევარი საათები', 'href' => route('worked-hours.index'), 'icon' => 'worked-hours'];
+        }
+
         if (in_array($activeRole, self::SUBSTITUTION_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'substitutions', 'label' => 'ჩანაცვლებები', 'href' => route('substitutions.index'), 'icon' => 'substitutions'];
         }

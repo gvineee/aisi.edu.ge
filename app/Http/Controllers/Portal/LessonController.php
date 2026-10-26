@@ -89,7 +89,7 @@ class LessonController extends Controller
 
         $lessons = Lesson::query()
             ->where('tenant_id', $tenant->id)
-            ->with(['academicYear', 'schoolClass', 'subject', 'teacher', 'room', 'studentGroup'])
+            ->with(['academicYear', 'schoolClass', 'subject', 'teacher', 'staffMember', 'room', 'studentGroup'])
             ->orderByDesc('day_of_week')
             ->orderBy('starts_at')
             ->get();
@@ -138,7 +138,7 @@ class LessonController extends Controller
                 'id' => $lesson->id,
                 'schoolClassName' => $lesson->schoolClass->name,
                 'subjectName' => $lesson->subject->name,
-                'teacherName' => $lesson->teacher->name,
+                'teacherName' => $lesson->teacherName(),
                 'roomName' => $lesson->room?->name,
                 'groupName' => $lesson->studentGroup?->name,
                 'timetableVersionId' => $lesson->timetable_version_id,

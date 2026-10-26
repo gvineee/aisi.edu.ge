@@ -12,7 +12,8 @@ use Throwable;
 /**
  * Previews (default) or applies one EduPage export for one tenant. Import
  * in this order, so later types can resolve earlier ones: rooms → subjects
- * → staff → classes; `timetable-summary` is a preview only.
+ * → staff → classes; `timetable-summary` is a preview only. `asc-timetable`
+ * (EduPage's complete regular timetable as JSON) brings everything at once.
  *
  * The file should sit in private storage (storage/app/private/…), never in
  * public/ or the repository. Issues are printed with row numbers and field
@@ -21,7 +22,7 @@ use Throwable;
 class EduPageImportCommand extends Command
 {
     protected $signature = 'edupage:import
-        {type : rooms | subjects | staff | classes | timetable-summary}
+        {type : rooms | subjects | staff | classes | timetable-summary | asc-timetable}
         {file : Path to the exported file}
         {--tenant= : Tenant slug (required)}
         {--year= : Academic year name, e.g. 2026-2027 (required for classes / timetable-summary)}
@@ -30,6 +31,8 @@ class EduPageImportCommand extends Command
         {--valid-from= : Export validity start, Y-m-d}
         {--valid-to= : Export validity end, Y-m-d}
         {--scope= : Filters/scope the export was taken with}
+        {--label= : asc-timetable: name of the timetable version it creates}
+        {--adopt-same-named : asc-timetable: reuse subjects/rooms the school already entered under the same name}
         {--force : Skip the confirmation prompt for --apply}';
 
     protected $description = 'Preview (default) or apply an EduPage export: rooms, subjects, staff, classes, timetable summary';
@@ -75,6 +78,8 @@ class EduPageImportCommand extends Command
             'valid_from' => $this->option('valid-from'),
             'valid_to' => $this->option('valid-to'),
             'scope' => $this->option('scope'),
+            'label' => $this->option('label'),
+            'adopt_same_named' => $this->option('adopt-same-named') ?: null,
         ], fn ($value) => $value !== null);
 
         try {

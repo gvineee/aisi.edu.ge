@@ -45,12 +45,14 @@ use Throwable;
  */
 class EduPageImporter
 {
+    use ImportsAscTimetable;
+
     public const SOURCE = 'edupage';
 
-    public const TYPES = ['rooms', 'subjects', 'staff', 'classes', 'timetable-summary'];
+    public const TYPES = ['rooms', 'subjects', 'staff', 'classes', 'timetable-summary', 'asc-timetable'];
 
     /** Types whose source key is scoped to one academic year. */
-    private const YEAR_SCOPED = ['classes', 'timetable-summary'];
+    private const YEAR_SCOPED = ['classes', 'timetable-summary', 'asc-timetable'];
 
     /** Recognised header spellings per field (compared case-insensitively). */
     private const COLUMNS = [
@@ -124,7 +126,13 @@ class EduPageImporter
             throw new InvalidArgumentException('კლასების შეჯამებული ცხრილი მასწავლებელს, ოთახსა და ჯგუფს არ შეიცავს — მისი იმპორტი მხოლოდ preview-ია.');
         }
 
-        $table = SourceTable::fromFile($path);
+        $table = $type === 'asc-timetable' ? null : SourceTable::fromFile($path);
+        $asc = $type === 'asc-timetable' ? json_decode((string) file_get_contents($path), true) : null;
+
+        if ($type === 'asc-timetable' && ! is_array($asc)) {
+            throw new InvalidArgumentException('ფაილი JSON არ არის.');
+        }
+
         $this->counts = ['rows' => 0, 'created' => 0, 'updated' => 0, 'unchanged' => 0, 'skipped' => 0];
         $this->issues = [];
         $this->seenKeys = [];
@@ -145,13 +153,17 @@ class EduPageImporter
         DB::beginTransaction();
 
         try {
-            match ($type) {
-                'rooms' => $this->importNamed($tenant, $table, 'rooms', 'room', Room::class),
-                'subjects' => $this->importNamed($tenant, $table, 'subjects', 'subject', Subject::class),
-                'staff' => $this->importStaff($tenant, $table),
-                'classes' => $this->importClasses($tenant, $table, $year),
-                'timetable-summary' => $this->previewTimetableSummary($tenant, $table, $year),
-            };
+            if (is_array($asc)) {
+                $this->importAscTimetable($tenant, $asc, $year, $context);
+            } elseif ($table !== null) {
+                match ($type) {
+                    'rooms' => $this->importNamed($tenant, $table, 'rooms', 'room', Room::class),
+                    'subjects' => $this->importNamed($tenant, $table, 'subjects', 'subject', Subject::class),
+                    'staff' => $this->importStaff($tenant, $table),
+                    'classes' => $this->importClasses($tenant, $table, $year),
+                    default => $this->previewTimetableSummary($tenant, $table, $year),
+                };
+            }
 
             $apply ? DB::commit() : DB::rollBack();
         } catch (Throwable $exception) {
