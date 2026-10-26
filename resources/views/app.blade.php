@@ -56,8 +56,14 @@
             @endif
             @if ($canonicalUrl)
                 <link rel="canonical" href="{{ $canonicalUrl }}">
-                <link rel="alternate" hreflang="{{ $seoTenant->locale }}" href="{{ $canonicalUrl }}">
-                <link rel="alternate" hreflang="x-default" href="{{ $canonicalUrl }}">
+                @php
+                    // Only languages that really have this page; x-default is the school's own.
+                    $alternates = data_get($page, 'props.publicLocale.alternates') ?: [$seoTenant->locale => request()->getPathInfo()];
+                @endphp
+                @foreach ($alternates as $hreflang => $alternatePath)
+                    <link rel="alternate" hreflang="{{ $hreflang }}" href="{{ $seoTenant->canonicalUrl($alternatePath) }}">
+                @endforeach
+                <link rel="alternate" hreflang="x-default" href="{{ $seoTenant->canonicalUrl($alternates[$seoTenant->locale] ?? '/') }}">
             @endif
         </x-inertia::head>
     </head>

@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public/public-layout';
+import { usePublicLocale } from '@/lib/public-i18n';
 
 type PostSummary = {
     slug: string;
@@ -22,20 +23,23 @@ type Props = {
 };
 
 export default function NewsIndex({ posts }: Props) {
+    const { t, isDefault, dateLocale, path } = usePublicLocale();
+    const title = isDefault ? 'აისის ამბები' : t('newsTitle');
+
     return (
         <PublicLayout>
-            <Head title="აისის ამბები" />
+            <Head title={title} />
 
             <section className="mx-auto max-w-4xl px-6 py-16 sm:py-24">
-                <p className="mb-4 text-xs font-bold tracking-widest text-slate-500">
-                    სასკოლო ცხოვრება
-                </p>
-                <h1 className="mb-12 text-3xl sm:text-4xl">აისის ამბები</h1>
+                {isDefault && (
+                    <p className="mb-4 text-xs font-bold tracking-widest text-slate-500">
+                        სასკოლო ცხოვრება
+                    </p>
+                )}
+                <h1 className="mb-12 text-3xl sm:text-4xl">{title}</h1>
 
                 {posts.data.length === 0 && (
-                    <p className="text-slate-600">
-                        ამ ეტაპზე გამოქვეყნებული ამბავი არ არის.
-                    </p>
+                    <p className="text-slate-600">{t('noNews')}</p>
                 )}
 
                 <div className="space-y-8">
@@ -55,12 +59,12 @@ export default function NewsIndex({ posts }: Props) {
                                 <time className="text-xs text-slate-500">
                                     {new Date(
                                         post.publishedAt,
-                                    ).toLocaleDateString('ka-GE')}
+                                    ).toLocaleDateString(dateLocale)}
                                 </time>
                             )}
                             <h2 className="mt-2 mb-2 text-xl">
                                 <Link
-                                    href={`/news/${post.slug}`}
+                                    href={path(`/news/${post.slug}`)}
                                     className="inline-block py-0.5 hover:underline"
                                 >
                                     {post.title}
@@ -76,18 +80,18 @@ export default function NewsIndex({ posts }: Props) {
                 {(posts.prev_page_url || posts.next_page_url) && (
                     <nav
                         className="mt-10 flex justify-between text-sm font-medium"
-                        aria-label="გვერდები"
+                        aria-label={t('pages')}
                     >
                         {posts.prev_page_url ? (
                             <Link href={posts.prev_page_url}>
-                                ← წინა გვერდი
+                                {t('previousPage')}
                             </Link>
                         ) : (
                             <span />
                         )}
                         {posts.next_page_url && (
                             <Link href={posts.next_page_url}>
-                                შემდეგი გვერდი →
+                                {t('nextPage')}
                             </Link>
                         )}
                     </nav>

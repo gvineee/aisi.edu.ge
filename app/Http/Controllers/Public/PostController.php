@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Domain\Content\CategoryListing;
 use App\Domain\Content\Models\ContentMediaLink;
 use App\Domain\Content\Models\Post;
+use App\Domain\Content\PublicLocales;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
@@ -15,11 +16,31 @@ class PostController extends Controller
 {
     public function index(CurrentTenant $currentTenant, CategoryListing $categories): Response
     {
+        return $this->list($currentTenant, $categories, $currentTenant->get()->locale);
+    }
+
+    public function localeIndex(CurrentTenant $currentTenant, CategoryListing $categories, PublicLocales $locales, string $locale): Response
+    {
+        abort_unless($locales->isSecondary($currentTenant->get(), $locale), 404);
+
+        return $this->list($currentTenant, $categories, $locale);
+    }
+
+    public function localeShow(CurrentTenant $currentTenant, CategoryListing $categories, PublicLocales $locales, string $locale, string $slug): Response
+    {
+        abort_unless($locales->isSecondary($currentTenant->get(), $locale), 404);
+
+        return $this->render($currentTenant, $categories, $slug, $locale);
+    }
+
+    private function list(CurrentTenant $currentTenant, CategoryListing $categories, string $locale): Response
+    {
         $tenant = $currentTenant->get();
 
         // Posts placed in another section (e.g. documents) are listed there.
         $posts = Post::query()
             ->where('tenant_id', $tenant->id)
+            ->where('locale', $locale)
             ->where('status', Post::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
             ->whereNotIn('id', $categories->postIdsOutsideNews($tenant->id))
@@ -40,11 +61,17 @@ class PostController extends Controller
 
     public function show(CurrentTenant $currentTenant, CategoryListing $categories, string $slug): Response
     {
+        return $this->render($currentTenant, $categories, $slug, $currentTenant->get()->locale);
+    }
+
+    private function render(CurrentTenant $currentTenant, CategoryListing $categories, string $slug, string $locale): Response
+    {
         $tenant = $currentTenant->get();
 
         $post = Post::query()
             ->where('tenant_id', $tenant->id)
             ->where('slug', $slug)
+            ->where('locale', $locale)
             ->where('status', Post::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
             ->first();
@@ -63,7 +90,7 @@ class PostController extends Controller
                 'seoDescription' => $post->seo_description,
                 'coverImageUrl' => $post->coverImageUrl(),
             ],
-            'breadcrumb' => $categories->breadcrumbFor($post),
+            'breadcrumb' => $locale === $tenant->locale ? $categories->breadcrumbFor($post) : null,
             'media' => ContentMediaLink::propsFor($post),
         ]);
     }

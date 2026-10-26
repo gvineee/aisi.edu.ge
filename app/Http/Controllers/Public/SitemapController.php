@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
 use App\Domain\Content\Models\Teacher;
+use App\Domain\Content\PublicLocales;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Response;
@@ -16,31 +17,36 @@ use Illuminate\Http\Response;
  */
 class SitemapController extends Controller
 {
-    public function __invoke(CurrentTenant $currentTenant): Response
+    public function __invoke(CurrentTenant $currentTenant, PublicLocales $locales): Response
     {
         $tenant = $currentTenant->get();
 
+        $languages = [$tenant->locale, ...PublicLocales::PREFIXED];
+
         $pages = Page::query()
             ->where('tenant_id', $tenant->id)
+            ->whereIn('locale', $languages)
             ->where('status', Page::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
             ->orderBy('slug')
-            ->get(['slug', 'updated_at']);
+            ->get(['slug', 'locale', 'updated_at']);
 
+        // Every language's own URL: the school's locale at the root, others under /{locale}.
         $pageUrls = $pages->map(fn (Page $page) => [
-            'loc' => $tenant->canonicalUrl($page->slug === 'home' ? '/' : '/'.$page->slug),
+            'loc' => $tenant->canonicalUrl($locales->url($tenant, $page->locale, $page->slug === 'home' ? '/' : '/'.$page->slug)),
             'lastmod' => $page->updated_at?->toAtomString(),
         ]);
 
         $posts = Post::query()
             ->where('tenant_id', $tenant->id)
+            ->whereIn('locale', $languages)
             ->where('status', Post::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
             ->orderBy('slug')
-            ->get(['slug', 'updated_at']);
+            ->get(['slug', 'locale', 'updated_at']);
 
         $postUrls = $posts->map(fn (Post $post) => [
-            'loc' => $tenant->canonicalUrl('/news/'.$post->slug),
+            'loc' => $tenant->canonicalUrl($locales->url($tenant, $post->locale, '/news/'.$post->slug)),
             'lastmod' => $post->updated_at?->toAtomString(),
         ]);
 

@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import PublicLayout from '@/layouts/public/public-layout';
+import { usePublicLocale } from '@/lib/public-i18n';
 import ContentMediaBlock, {
     type ContentMedia,
 } from '@/components/public/content-media';
@@ -29,6 +30,8 @@ export default function NewsShow({
     media,
     preview = false,
 }: Props) {
+    const { t, isDefault, dateLocale, path } = usePublicLocale();
+
     return (
         <PublicLayout>
             <Head
@@ -56,18 +59,22 @@ export default function NewsShow({
 
             <article className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
                 <Link
-                    href={breadcrumb?.href ?? '/news'}
+                    href={breadcrumb?.href ?? path('/news')}
                     className="mb-8 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700"
                 >
                     <ArrowLeft size={16} />{' '}
                     {breadcrumb
                         ? `${breadcrumb.name} — დაბრუნება`
-                        : 'აისის ამბებში დაბრუნება'}
+                        : isDefault
+                          ? 'აისის ამბებში დაბრუნება'
+                          : t('backToNews')}
                 </Link>
 
                 {post.publishedAt && (
                     <time className="block text-xs text-slate-500">
-                        {new Date(post.publishedAt).toLocaleDateString('ka-GE')}
+                        {new Date(post.publishedAt).toLocaleDateString(
+                            dateLocale,
+                        )}
                     </time>
                 )}
                 <h1 className="mt-3 mb-6 text-3xl sm:text-4xl">{post.title}</h1>

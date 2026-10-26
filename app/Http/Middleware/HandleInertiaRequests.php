@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Content\PublicLocales;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\PortalContext;
 use Illuminate\Http\Request;
@@ -11,6 +12,9 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    /** Routes that render public content in a language (see PublicLocales). */
+    private const PUBLIC_ROUTES = ['home', 'page.show', 'news.index', 'news.show', 'locale.home', 'locale.page.show', 'locale.news.index', 'locale.news.show'];
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -74,6 +78,23 @@ class HandleInertiaRequests extends Middleware
             ];
         }
 
+        // Public pages: the language the visitor reads and the switcher.
+        $publicLocale = null;
+
+        if ($tenant !== null && in_array((string) $request->route()?->getName(), self::PUBLIC_ROUTES, true)) {
+            $locales = app(PublicLocales::class);
+            $current = $locales->current($request, $tenant);
+            app()->setLocale($current);
+            $publicLocale = [
+                'current' => $current,
+                'default' => $tenant->locale,
+                'switcher' => $locales->switcher($request, $tenant),
+                'alternates' => $locales->alternates($request, $tenant),
+                'nav' => $locales->nav($tenant, $current),
+                'homeUrl' => $locales->url($tenant, $current, '/'),
+            ];
+        }
+
         $user = $request->user();
         $portalProp = null;
 
@@ -89,6 +110,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'portal' => $portalProp,
+            'publicLocale' => $publicLocale,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

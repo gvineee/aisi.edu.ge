@@ -108,6 +108,8 @@ class RouteInventoryTest extends TestCase
         '#^(news|teachers)(/\{slug\})?$#',
         '#^library$#',
         '#^\{slug\}$#',
+        // The same public pages in the site's other languages (/en, /ru).
+        '#^\{locale\}(/news(/\{slug\})?|/\{slug\})?$#',
         '#^\{fallbackPlaceholder\}$#',
         '#^(sitemap\.xml|robots\.txt)$#',
         // Admissions enquiry and visit booking; cancellation is a signed link.

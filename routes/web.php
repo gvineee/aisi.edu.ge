@@ -106,6 +106,14 @@ Route::get('/library', [LibraryCatalogController::class, 'index'])->name('librar
 Route::get('/teachers', [PublicTeacherController::class, 'index'])->name('teachers.public-index');
 Route::get('/teachers/{slug}', [PublicTeacherController::class, 'show'])->name('teachers.public-show');
 
+// The public site in its other languages (PublicLocales): /en, /ru.
+Route::prefix('{locale}')->where(['locale' => 'en|ru'])->name('locale.')->group(function () {
+    Route::get('/', [PageController::class, 'localeHome'])->name('home');
+    Route::get('/news', [PostController::class, 'localeIndex'])->name('news.index');
+    Route::get('/news/{slug}', [PostController::class, 'localeShow'])->name('news.show');
+    Route::get('/{slug}', [PageController::class, 'localeShow'])->where('slug', '[a-z0-9-]+')->name('page.show');
+});
+
 // --- Tenant invitation accept flow (public, unauthenticated) — members/invite
 // feature. Added at the end of the public route block so parallel agent
 // edits above are easy to merge around. ---

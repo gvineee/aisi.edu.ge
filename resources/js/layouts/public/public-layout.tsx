@@ -1,10 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren, useState } from 'react';
-import { ArrowUpRight, Menu, X } from 'lucide-react';
+import { ArrowUpRight, Globe, Menu, X } from 'lucide-react';
 import { login } from '@/routes';
 import Logo from '@/components/public/logo';
 import VisitRequestDialog from '@/components/public/visit-request-dialog';
 import { VisitDialogContext } from '@/components/public/visit-dialog-context';
+import { usePublicLocale } from '@/lib/public-i18n';
 import type { Brand } from '@/types';
 
 /**
@@ -17,6 +18,13 @@ export default function PublicLayout({ children }: PropsWithChildren) {
     const { brand } = usePage<{ brand: Brand | null }>().props;
     const [menuOpen, setMenuOpen] = useState(false);
     const [visitOpen, setVisitOpen] = useState(false);
+    const {
+        t,
+        switcher,
+        nav: localeNav,
+        homeUrl,
+        isDefault,
+    } = usePublicLocale();
 
     const name = brand?.name ?? '';
     const colors = brand?.colors ?? {};
@@ -28,7 +36,8 @@ export default function PublicLayout({ children }: PropsWithChildren) {
         '--brand-muted': colors.muted ?? '#526579',
     } as CSSProperties;
 
-    const nav = [
+    // Another language has only its own translated pages (server-side list).
+    const nav = localeNav ?? [
         { href: '/about', label: 'სკოლის შესახებ' },
         { href: '/learning', label: 'სწავლა' },
         { href: '/school-life', label: 'სასკოლო ცხოვრება' },
@@ -36,6 +45,42 @@ export default function PublicLayout({ children }: PropsWithChildren) {
         { href: '/library', label: 'ბიბლიოთეკა' },
         { href: '/contact', label: 'კონტაქტი' },
     ];
+
+    const languages = switcher.length > 1 && (
+        <nav
+            aria-label={t('language')}
+            className="flex items-center gap-1 text-xs"
+        >
+            <Globe
+                size={14}
+                aria-hidden
+                className="mr-1 text-[var(--brand-muted)]"
+            />
+            {switcher.map((item) =>
+                item.current ? (
+                    <span
+                        key={item.code}
+                        aria-current="true"
+                        lang={item.code}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 font-semibold"
+                    >
+                        {item.label}
+                    </span>
+                ) : (
+                    <a
+                        key={item.code}
+                        href={item.url}
+                        lang={item.code}
+                        hrefLang={item.code}
+                        title={item.sameContent ? undefined : t('untranslated')}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-[var(--brand-muted)] hover:bg-slate-100 hover:text-[var(--brand-primary)]"
+                    >
+                        {item.label}
+                    </a>
+                ),
+            )}
+        </nav>
+    );
 
     const openVisitDialog = () => setVisitOpen(true);
 
@@ -46,11 +91,18 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                 className="min-h-screen overflow-x-hidden bg-white text-[var(--brand-primary)]"
             >
                 <header className="relative overflow-x-hidden border-b border-slate-200 bg-white">
+                    {languages && (
+                        <div className="border-b border-slate-100">
+                            <div className="mx-auto flex max-w-6xl justify-end px-6">
+                                {languages}
+                            </div>
+                        </div>
+                    )}
                     <div className="mx-auto flex h-[76px] max-w-6xl items-center gap-6 px-6">
                         <Link
-                            href="/"
+                            href={homeUrl}
                             className="shrink-0"
-                            aria-label={`${name} — მთავარი`}
+                            aria-label={`${name} — ${t('home')}`}
                         >
                             <Logo brand={brand} />
                         </Link>
@@ -72,11 +124,12 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                                 href={login()}
                                 className="hidden min-h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold whitespace-nowrap lg:inline-flex"
                             >
-                                ჩემი {name} <ArrowUpRight size={16} />
+                                {t('myPortal', { name })}{' '}
+                                <ArrowUpRight size={16} />
                             </Link>
                             <button
                                 type="button"
-                                aria-label="მენიუ"
+                                aria-label={t('menu')}
                                 aria-expanded={menuOpen}
                                 className="flex h-11 w-11 items-center justify-center rounded-lg lg:hidden"
                                 onClick={() => setMenuOpen((open) => !open)}
@@ -102,8 +155,17 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                                 href={login()}
                                 className="min-h-11 py-2 font-semibold"
                             >
-                                ჩემი {name}
+                                {t('myPortal', { name })}
                             </Link>
+                            {!isDefault && (
+                                <a
+                                    href="/"
+                                    lang="ka"
+                                    className="min-h-11 py-2 text-sm"
+                                >
+                                    {t('inOriginal')}
+                                </a>
+                            )}
                         </nav>
                     )}
                 </header>
@@ -137,31 +199,43 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                     </div>
                     <div className="mx-auto max-w-6xl px-6">
                         <div className="flex flex-wrap gap-x-6 gap-y-0 border-t border-slate-200 py-2 text-xs text-[var(--brand-muted)]">
-                            <Link
-                                href="/admissions"
-                                className="inline-flex min-h-11 items-center hover:underline"
-                            >
-                                მიღება
-                            </Link>
-                            <Link
-                                href="/official-documents"
-                                className="inline-flex min-h-11 items-center hover:underline"
-                            >
-                                დოკუმენტები
-                            </Link>
+                            {isDefault ? (
+                                <>
+                                    <Link
+                                        href="/admissions"
+                                        className="inline-flex min-h-11 items-center hover:underline"
+                                    >
+                                        {t('admissions')}
+                                    </Link>
+                                    <Link
+                                        href="/official-documents"
+                                        className="inline-flex min-h-11 items-center hover:underline"
+                                    >
+                                        {t('documents')}
+                                    </Link>
+                                </>
+                            ) : (
+                                <a
+                                    href="/"
+                                    lang="ka"
+                                    className="inline-flex min-h-11 items-center hover:underline"
+                                >
+                                    {t('inOriginal')}
+                                </a>
+                            )}
                             <a
                                 href="https://aisi.edupage.org"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex min-h-11 items-center hover:underline"
                             >
-                                ელექტრონული ჟურნალი
+                                {t('journal')}
                             </a>
                         </div>
                     </div>
                     <div className="mx-auto max-w-6xl px-6">
                         <p className="border-t border-slate-200 py-4 text-xs text-[var(--brand-muted)]">
-                            დამზადებულია{' '}
+                            {t('madeByBefore')}
                             <a
                                 href="https://syslab.ge"
                                 target="_blank"
@@ -170,7 +244,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             >
                                 syslab.ge
                             </a>
-                            -ში, 2026
+                            {t('madeByAfter')}
                         </p>
                     </div>
                 </footer>
