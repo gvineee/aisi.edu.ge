@@ -25,6 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // Which proxies: config/trustedproxy.php. Never X-Forwarded-Host —
+        // the tenant comes from the Host header.
+        $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO);
+
         // Provider notifications are authenticated by their body signature,
         // not by a session, so they carry no CSRF token.
         $middleware->validateCsrfTokens(except: ['webhooks/*']);

@@ -2,7 +2,6 @@ import { Link, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren, useState } from 'react';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { login } from '@/routes';
-import { Button } from '@/components/ui/button';
 import Logo from '@/components/public/logo';
 import VisitRequestDialog from '@/components/public/visit-request-dialog';
 import { VisitDialogContext } from '@/components/public/visit-dialog-context';
@@ -56,7 +55,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             <Logo brand={brand} />
                         </Link>
 
-                        <nav className="hidden min-w-0 flex-1 [scrollbar-width:none] gap-3 overflow-x-auto lg:flex xl:gap-8 [&::-webkit-scrollbar]:hidden">
+                        <nav className="hidden min-w-0 flex-1 [scrollbar-width:none] gap-3 overflow-x-auto lg:flex xl:gap-6 [&::-webkit-scrollbar]:hidden">
                             {nav.map((item) => (
                                 <Link
                                     key={item.href}
@@ -75,12 +74,6 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             >
                                 ჩემი {name} <ArrowUpRight size={16} />
                             </Link>
-                            <Button
-                                className="hidden bg-[var(--brand-accent)] text-[var(--brand-primary)] hover:brightness-95 lg:inline-flex"
-                                onClick={() => setVisitOpen(true)}
-                            >
-                                დაგეგმე ვიზიტი
-                            </Button>
                             <button
                                 type="button"
                                 aria-label="მენიუ"
@@ -111,15 +104,6 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             >
                                 ჩემი {name}
                             </Link>
-                            <Button
-                                className="mt-2 bg-[var(--brand-accent)] text-[var(--brand-primary)]"
-                                onClick={() => {
-                                    setMenuOpen(false);
-                                    setVisitOpen(true);
-                                }}
-                            >
-                                დაგეგმე ვიზიტი
-                            </Button>
                         </nav>
                     )}
                 </header>
