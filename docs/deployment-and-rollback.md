@@ -240,3 +240,13 @@
   - სერვერზე აიტვირთა `category-placement-plan.json`, `raw/api/posts-1.json`, `raw/api/pages-1.json` (sha256 ემთხვევა).
 - **public check:** /official-documents-ზე დოკუმენტები ჩანს, /news-ში აღარ. PDF 200 `application/pdf`, გალერეა 10 სურათით, ყველა გვერდი 200.
 - **rollback:** `php artisan migrate:rollback --step=6`, მხოლოდ სქემისთვის. მონაცემებისთვის DB backup.
+
+## Deploy — 2026-10-26 (`553161c..f938fc1` და ფიქსი) + თარგმანები და 3 დოკუმენტი
+
+- **რელიზი:** 2 deploy, migration-ის გარეშე. backup: `_backups/*-20261026-082843.*`. smoke 200, ლოგი სუფთა.
+- **დოკუმენტები:** სკოლის დებულება, ლაბორატორიის გამოყენების წესი, სამედიცინო პოლიტიკის წესი.
+  - sha256-ით შემოწმებული ასლი → `storage/app/public/tenants/aisi/documents/`.
+  - `content:refresh-documents`: გვერდი 2026-09-13-ის შემდეგ ხელით არ შეცვლილა (blocks = blueprint, 0 ვერსია).
+  - შედეგი: 21 PDF, სამივე ახალი 200 `application/pdf`.
+- **თარგმანები:** `content:import-translations --commit` → 12 draft (8 EN, 4 RU). გამოქვეყნებული en/ru: 0. ქართული გვერდები უცვლელია.
+- **ბაგი:** MySQL JSON გასაღებებს ხელახლა ალაგებს, ამიტომ rerun შეცდომით `conflict`-ს აჩვენებდა. checksum გასაღებების რიგზე აღარ არის დამოკიდებული. 12 tracking ჩანაწერის checksum თავიდან დაითვალა (მხოლოდ შეუცვლელი draft-ებისთვის, `updated_at = created_at`). rerun → 12 unchanged.
