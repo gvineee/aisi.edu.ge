@@ -8,6 +8,7 @@ use App\Domain\Content\Models\Page;
 use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantDomain;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -68,6 +69,19 @@ class ImportLegacyTranslationsTest extends TestCase
 
         // The public page is still the Georgian one.
         $this->get('/import-wp-pages-2371')->assertOk()->assertInertia(fn ($page) => $page->where('page.title', 'სკოლის ისტორია'));
+
+        $this->assertSame('unchanged', $this->import(true)[0]['disposition']);
+    }
+
+    public function test_a_database_that_reorders_json_keys_still_reruns_unchanged(): void
+    {
+        $this->import(true);
+        $english = Page::query()->where('locale', 'en')->sole();
+
+        // What MySQL's JSON column does: same content, keys re-sorted.
+        DB::table('pages')->where('id', $english->id)->update(['blocks' => json_encode([[
+            'body' => $english->blocks[0]['body'], 'type' => 'text', 'heading' => $english->blocks[0]['heading'],
+        ]])]);
 
         $this->assertSame('unchanged', $this->import(true)[0]['disposition']);
     }

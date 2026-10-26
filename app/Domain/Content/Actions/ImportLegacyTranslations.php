@@ -132,8 +132,27 @@ class ImportLegacyTranslations
         return ['disposition' => 'imported_draft'] + $row;
     }
 
-    private function checksum(Model $target): string
+    /**
+     * Independent of JSON key order: MySQL's JSON type re-sorts object
+     * keys on save, so a block read back is equal but not identical.
+     */
+    public function checksum(Model $target): string
     {
-        return hash('sha256', (string) json_encode($target instanceof Page ? [$target->title, $target->blocks] : [$target->getAttribute('title'), $target->getAttribute('body')]));
+        $content = $target instanceof Page ? [$target->title, $target->blocks] : [$target->getAttribute('title'), $target->getAttribute('body')];
+
+        return hash('sha256', (string) json_encode($this->canonical($content)));
+    }
+
+    private function canonical(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return array_map(fn ($item) => $this->canonical($item), $value);
     }
 }
