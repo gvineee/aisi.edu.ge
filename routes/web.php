@@ -47,6 +47,7 @@ use App\Http\Controllers\Portal\MessageController;
 use App\Http\Controllers\Portal\MyAssignmentsController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\MyTimetableController;
+use App\Http\Controllers\Portal\PaymentClaimController;
 use App\Http\Controllers\Portal\PickupController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
@@ -513,6 +514,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('portal/finance/invoices/{invoice}', [FinanceController::class, 'showInvoice'])->name('finance.invoices.show');
         Route::post('portal/finance/invoices/{invoice}/void', [FinanceController::class, 'voidInvoice'])->name('finance.invoices.void');
         Route::post('portal/finance/invoices/{invoice}/pay', [FinanceController::class, 'pay'])->middleware('throttle:10,1')->name('finance.invoices.pay');
+        Route::post('portal/finance/invoices/{invoice}/claims', [PaymentClaimController::class, 'store'])->middleware('throttle:10,1')->name('finance.claims.store');
+        Route::post('portal/finance/claims/{paymentClaim}/confirm', [PaymentClaimController::class, 'confirm'])->name('finance.claims.confirm');
+        Route::post('portal/finance/claims/{paymentClaim}/reject', [PaymentClaimController::class, 'reject'])->name('finance.claims.reject');
         Route::get('portal/finance/return/{intent}', [FinanceController::class, 'returnPage'])->name('finance.return');
         Route::post('portal/finance/payments/{payment}/allocate', [FinanceController::class, 'allocate'])->name('finance.payments.allocate');
         Route::post('portal/finance/payments/{payment}/refund', [FinanceController::class, 'refund'])->name('finance.payments.refund');

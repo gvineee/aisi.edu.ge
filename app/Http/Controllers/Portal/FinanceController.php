@@ -17,6 +17,7 @@ use App\Domain\Finance\Models\InvoiceItem;
 use App\Domain\Finance\Models\InvoiceReminder;
 use App\Domain\Finance\Models\Payment;
 use App\Domain\Finance\Models\PaymentAllocation;
+use App\Domain\Finance\Models\PaymentClaim;
 use App\Domain\Finance\Models\PaymentIntent;
 use App\Domain\Finance\Models\Refund;
 use App\Domain\Finance\Providers\ProviderRegistry;
@@ -99,6 +100,12 @@ class FinanceController extends Controller
                 'students' => Student::query()->where('tenant_id', $tenant->id)->where('is_active', true)->orderBy('last_name')->get()
                     ->map(fn (Student $s) => ['id' => $s->id, 'name' => $s->fullName()])->values(),
                 'billableClubFees' => $this->billableClubFees($tenant->id),
+                'pendingClaims' => PaymentClaim::query()->where('tenant_id', $tenant->id)->where('status', PaymentClaim::STATUS_PENDING)
+                    ->with(['invoice.account.student', 'submitter'])->oldest('id')->get()
+                    ->map(fn (PaymentClaim $c) => $this->claimRow($c, true) + [
+                        'invoiceNumber' => $c->invoice->number ?? '',
+                        'studentName' => $c->invoice?->account?->student?->fullName(),
+                    ])->values(),
             ];
         }
 
@@ -218,6 +225,10 @@ class FinanceController extends Controller
             'onlinePayments' => (bool) config('finance.online_payments'),
             'sandboxEnabled' => (bool) config('finance.providers.sandbox.enabled'),
             'isStaff' => $isStaff,
+            // Staff see every notice; a guardian sees their own.
+            'claims' => PaymentClaim::query()->where('tenant_id', $tenant->id)->where('invoice_id', $invoice->id)
+                ->when(! $isStaff, fn ($q) => $q->where('submitted_by', $user->id))
+                ->with('submitter')->latest('id')->get()->map(fn (PaymentClaim $c) => $this->claimRow($c, $isStaff))->values(),
             'paymentInfo' => $isStaff ? null : FinanceSetting::forTenant($tenant->id)?->toPublicArray(),
             'invoice' => $this->invoiceRow($invoice) + [
                 'studentId' => $invoice->account->student_id,
@@ -366,6 +377,26 @@ class FinanceController extends Controller
             'creditedMinor' => $invoice->credited_minor,
             'paidMinor' => $invoice->paid_minor,
             'outstandingMinor' => $invoice->outstandingMinor(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function claimRow(PaymentClaim $claim, bool $forStaff): array
+    {
+        return [
+            'id' => $claim->id,
+            'invoiceId' => $claim->invoice_id,
+            'amountMinor' => $claim->amount_minor,
+            'method' => $claim->method,
+            'paidOn' => $claim->paid_on->toDateString(),
+            'reference' => $claim->reference,
+            'note' => $claim->note,
+            'status' => $claim->status,
+            'reviewNote' => $claim->review_note,
+            'submittedAt' => $claim->created_at?->toIso8601String(),
+            'submittedBy' => $forStaff ? $claim->submitter?->name : null,
         ];
     }
 

@@ -5,6 +5,9 @@ import { ArrowLeft, Download, Mail } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import SandboxBanner from '@/components/portal/sandbox-banner';
 import PaymentInstructions from '@/components/finance/payment-instructions';
+import PaymentClaims, {
+    type PaymentClaimRow,
+} from '@/components/finance/payment-claims';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { firstError, formatDateTime, formatDay } from '@/lib/assessment';
@@ -20,6 +23,7 @@ type Props = {
     sandboxEnabled: boolean;
     isStaff: boolean;
     paymentInfo: PaymentInfo;
+    claims: PaymentClaimRow[];
     invoice: {
         id: number;
         number: string;
@@ -89,6 +93,7 @@ export default function FinanceInvoice({
     sandboxEnabled,
     isStaff,
     paymentInfo,
+    claims,
     invoice,
     payments,
 }: Props) {
@@ -308,6 +313,18 @@ export default function FinanceInvoice({
                     purpose={`ინვოისი № ${invoice.number}, ${invoice.studentName ?? ''}`}
                 />
             )}
+
+            <PaymentClaims
+                invoiceId={invoice.id}
+                outstandingMinor={invoice.outstandingMinor}
+                claims={claims}
+                money={money}
+                canSubmit={open && !isStaff}
+                canReview={isStaff}
+                today={new Date().toLocaleDateString('en-CA', {
+                    timeZone: 'Asia/Tbilisi',
+                })}
+            />
 
             {invoice.creditNotes.length > 0 && (
                 <section className="mb-6" aria-labelledby="credit-notes">

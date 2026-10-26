@@ -5,6 +5,10 @@ import PortalLayout from '@/layouts/portal/portal-layout';
 import SandboxBanner from '@/components/portal/sandbox-banner';
 import FinanceNav from '@/components/finance/finance-nav';
 import PaymentInstructions from '@/components/finance/payment-instructions';
+import {
+    PaymentClaimItem,
+    type PaymentClaimRow,
+} from '@/components/finance/payment-claims';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatDay } from '@/lib/assessment';
@@ -46,6 +50,7 @@ type Props = {
             studentName: string;
             feeMinor: number;
         }[];
+        pendingClaims: PaymentClaimRow[];
     } | null;
     children: {
         id: number;
@@ -297,6 +302,33 @@ export default function FinanceIndex({
                             </Link>
                             .
                         </p>
+                    )}
+                    {staff.pendingClaims.length > 0 && (
+                        <section
+                            className="mb-8"
+                            aria-labelledby="pending-claims"
+                        >
+                            <h2 id="pending-claims" className="mb-2 text-lg">
+                                დასადასტურებელი გადახდები (
+                                {staff.pendingClaims.length})
+                            </h2>
+                            <p className="mb-3 text-sm text-slate-600">
+                                მშობლებმა შეგვატყობინეს გადახდა. შეამოწმეთ
+                                ბანკის ამონაწერთან და დაადასტურეთ.
+                                დადასტურებისას გადახდა ინვოისზე ავტომატურად
+                                გატარდება.
+                            </p>
+                            <ul className="space-y-2">
+                                {staff.pendingClaims.map((claim) => (
+                                    <PaymentClaimItem
+                                        key={claim.id}
+                                        claim={claim}
+                                        money={(minor) => formatMoney(minor)}
+                                        canReview
+                                    />
+                                ))}
+                            </ul>
+                        </section>
                     )}
                 </>
             )}
