@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Domain\Documents\Actions\CreateDraftDocument;
 use App\Domain\Documents\Actions\ListPendingApprovalRequests;
+use App\Domain\Documents\Actions\ManageDocumentLibrary;
 use App\Domain\Documents\Actions\UpdateDocumentDetails;
 use App\Domain\Documents\DocumentAccess;
 use App\Domain\Documents\DocumentFileStorage;
@@ -50,7 +51,7 @@ class DocumentController extends Controller
 
     public function __construct(private readonly DocumentAccess $access) {}
 
-    public function index(Request $request, CurrentTenant $currentTenant): Response
+    public function index(Request $request, CurrentTenant $currentTenant, ManageDocumentLibrary $library): Response
     {
         $tenant = $currentTenant->get();
         $user = $request->user();
@@ -58,6 +59,20 @@ class DocumentController extends Controller
         abort_unless($this->access->isStaff($tenant->id, $user), 403);
 
         $isOversight = $this->access->isOversight($tenant->id, $user);
+
+        // A school with no workspace yet would show no upload form at all:
+        // the first director/administrator visit opens a general one.
+        if ($isOversight && ! DocumentWorkspace::query()->where('tenant_id', $tenant->id)->exists()) {
+            $library->saveWorkspace($tenant->id, null, [
+                'title' => 'სკოლის დოკუმენტები',
+                'description' => 'საერთო სივრცე. სხვა სივრცეები და წვდომა — „სივრცეები და წვდომა“.',
+                'classification' => DocumentWorkspace::CLASSIFICATION_INTERNAL,
+                'visibility' => DocumentWorkspace::VISIBILITY_ALL_STAFF,
+                'requires_approval' => false,
+                'is_confidential' => false,
+            ], $user);
+        }
+
         $workspaceLevels = $this->access->workspaceLevels($tenant->id, $user);
         $filters = $this->filters($request);
         $today = Carbon::now('Asia/Tbilisi')->startOfDay();

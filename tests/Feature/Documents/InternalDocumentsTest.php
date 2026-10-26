@@ -116,6 +116,22 @@ class InternalDocumentsTest extends TestCase
         return $titles;
     }
 
+    public function test_a_school_without_workspaces_gets_a_general_one_so_uploading_is_possible(): void
+    {
+        DocumentWorkspace::query()->delete();
+
+        // A teacher's visit does not create anything; the director's does.
+        $this->actingAs($this->teacher)->get('/documents')->assertOk();
+        $this->assertSame(0, DocumentWorkspace::query()->count());
+
+        $this->actingAs($this->director)->get('/documents')->assertOk()
+            ->assertInertia(fn ($page) => $page->where('workspaces.0.canCreate', true));
+        $this->assertSame(['სკოლის დოკუმენტები'], DocumentWorkspace::query()->pluck('title')->all());
+
+        $this->actingAs($this->director)->get('/documents')->assertOk();
+        $this->assertSame(1, DocumentWorkspace::query()->count());
+    }
+
     public function test_upload_to_a_workspace_without_approval_is_immediately_current_for_all_staff(): void
     {
         $this->actingAs($this->teacher)->post('/documents', [
