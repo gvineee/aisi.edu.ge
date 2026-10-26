@@ -259,3 +259,20 @@
   - **rollback:** ხაზის წაშლა + `php artisan config:cache`.
 - **მენიუ:** ზედა „დაგეგმე ვიზიტი“ მოიხსნა. ლაივზე გადამოწმდა, რომ 1024–1440px-ზე ყველა პუნქტი ეტევა.
 - **მომავალი:** Cloudflare-ის IP სია შეიძლება შეიცვალოს, შესამოწმებელია https://www.cloudflare.com/ips/ (`config/trustedproxy.php`).
+
+## Deploy — 2026-10-26 (მე-3–მე-5, `55bf74c..66cfd91`) + EduPage-ის ცხრილი, ენები
+
+- **რელიზები:** 3 deploy, ყველა backup-ით: `_backups/*-20261026-153625.*`, `*-154156.*`, `*-155724.*`.
+  - migration-ები (MySQL-ზე გავიდა): `2026_10_27_000001` (staff_members, workload, joint_key, nullable teacher_id) და `000002` (non_teaching_periods).
+  - **rollback:** `php artisan migrate:rollback --step=2`. `teacher_id`/`user_id` nullable რჩება.
+- **სასწავლო წელი:** შეიქმნა „2026-2027“ (03.09.2026–01.07.2027, `is_current=false`). წლის ჩანაწერი აუდიტშია.
+- **EduPage-ის ცხრილი:** `edupage:import asc-timetable … --adopt-same-named`. preview → batch #1, apply → batch #2.
+  - შედეგი: 9 ზარი, 38 საგანი (3 არსებული გამოყენებულია), 20 ოთახი, 35 თანამშრომელი, 21 კლასი, 276 დატვირთვა, 661 გაკვეთილის სტრიქონი (604 გაკვეთილი), 0 კონფლიქტი.
+  - ვერსია „EduPage v210 — 2026/2027“ **draft-ია**.
+  - rerun → 1061 unchanged.
+  - ფაილი: `storage/app/private/edupage-timetable-2026-2027.json` (600, მოსწავლეების სახელები არ არის).
+- **დოკუმენტები:** პირველი ადმინის ვიზიტისას იქმნება საერთო სივრცე, რომ ატვირთვის ფორმა გამოჩნდეს.
+- **ფუნქციები:** ჩაირთო library, clubs, transport, meals (აუდიტი `feature.enabled`). finance გამორთული რჩება, სანამ გადაწყვეტილება არ იქნება.
+- **ენები:** გამოქვეყნდა 5 EN, 3 RU გვერდი და 1 EN სიახლე, მხოლოდ ის, რომლის ქართული ორიგინალიც გამოქვეყნებულია. 3 გამოტოვდა, რადგან ორიგინალი draft-ია.
+  - ორი სათაური ქართული ორიგინალიდან ითარგმნა: 2315 → „Partnership with the University of Warsaw“, სიახლე 2284 → „School Aisi and the University of Economics and Human Sciences in Warsaw sign a partnership agreement“.
+  - smoke: `/en`, `/ru`, თარგმნილი გვერდები, `/en/news` — 200. სწორია `<html lang>` და hreflang. sitemap-ში 9 EN/RU მისამართია.
