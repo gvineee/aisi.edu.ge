@@ -85,6 +85,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     'teacher-workspace': Presentation,
     staff: IdCard,
     'worked-hours': Timer,
+    students: GraduationCap,
 };
 
 /**
@@ -111,6 +112,46 @@ export default function PortalLayout({ children }: PropsWithChildren) {
     } as CSSProperties;
 
     const navItems = portal?.navItems ?? [];
+    const { url } = usePage();
+    const currentPath = url.split('?')[0];
+    const isActive = (href: string) => {
+        const path = new URL(href, 'http://x').pathname;
+        return (
+            currentPath === path ||
+            (path !== '/dashboard' && currentPath.startsWith(`${path}/`))
+        );
+    };
+    // Consecutive items of one section (the server sends them in order).
+    const sections = navItems.reduce<
+        { key: string; label: string | null; items: typeof navItems }[]
+    >((all, item) => {
+        const last = all[all.length - 1];
+        if (last && last.key === item.group) {
+            last.items.push(item);
+        } else {
+            all.push({
+                key: item.group,
+                label: item.groupLabel,
+                items: [item],
+            });
+        }
+        return all;
+    }, []);
+    const navLink = (item: (typeof navItems)[number], className: string) => {
+        const Icon = NAV_ICONS[item.icon] ?? House;
+        const active = isActive(item.href);
+        return (
+            <Link
+                key={item.key}
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={`${className} ${active ? 'bg-slate-100 font-semibold' : ''}`}
+            >
+                <Icon size={18} aria-hidden />
+                {item.label}
+            </Link>
+        );
+    };
     // docs/04 §5: the mobile bottom bar holds at most 5 entries. Past that,
     // the first 4 stay pinned and the rest move into a "მეტი" sheet so
     // nothing overflows at 360px.
@@ -203,25 +244,56 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                     collapsible="none"
                     className="sticky top-0 hidden h-[calc(100vh-76px)] w-56 shrink-0 border-r border-slate-200 bg-white md:flex"
                 >
-                    <SidebarContent className="gap-1 p-3">
+                    <SidebarContent className="gap-1 overflow-y-auto p-3">
                         <nav
                             aria-label="პორტალის ნავიგაცია"
-                            className="flex flex-col gap-1"
+                            className="flex flex-col gap-3"
                         >
-                            {navItems.map((item) => {
-                                const Icon = NAV_ICONS[item.icon];
-
-                                return (
-                                    <Link
-                                        key={item.key}
-                                        href={item.href}
-                                        className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none"
+                            {sections.map((section) =>
+                                section.label === null ? (
+                                    <div
+                                        key={section.key}
+                                        className="flex flex-col gap-0.5"
                                     >
-                                        <Icon size={20} />
-                                        {item.label}
-                                    </Link>
-                                );
-                            })}
+                                        {section.items.map((item) =>
+                                            navLink(
+                                                item,
+                                                'flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none',
+                                            ),
+                                        )}
+                                    </div>
+                                ) : (
+                                    <details
+                                        key={section.key}
+                                        open={
+                                            section.items.some((item) =>
+                                                isActive(item.href),
+                                            ) ||
+                                            section.items.length <= 3 ||
+                                            undefined
+                                        }
+                                        className="group"
+                                    >
+                                        <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between rounded-md px-3 text-xs font-semibold tracking-wide text-slate-500 uppercase hover:text-slate-700 [&::-webkit-details-marker]:hidden">
+                                            {section.label}
+                                            <span
+                                                aria-hidden
+                                                className="transition group-open:rotate-90"
+                                            >
+                                                ›
+                                            </span>
+                                        </summary>
+                                        <div className="mt-0.5 flex flex-col gap-0.5">
+                                            {section.items.map((item) =>
+                                                navLink(
+                                                    item,
+                                                    'flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none',
+                                                ),
+                                            )}
+                                        </div>
+                                    </details>
+                                ),
+                            )}
                         </nav>
                     </SidebarContent>
                 </Sidebar>
@@ -278,23 +350,34 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                                 <SheetTitle className="px-4 pt-4">
                                     სხვა განყოფილებები
                                 </SheetTitle>
-                                <ul className="grid gap-1 p-2">
-                                    {mobileOverflow.map((item) => {
-                                        const Icon = NAV_ICONS[item.icon];
-
+                                <div className="grid gap-3 p-2">
+                                    {sections.map((section) => {
+                                        const items = section.items.filter(
+                                            (item) =>
+                                                mobileOverflow.includes(item),
+                                        );
+                                        if (items.length === 0) return null;
                                         return (
-                                            <li key={item.key}>
-                                                <Link
-                                                    href={item.href}
-                                                    className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none"
-                                                >
-                                                    <Icon size={20} />
-                                                    {item.label}
-                                                </Link>
-                                            </li>
+                                            <section key={section.key}>
+                                                {section.label && (
+                                                    <h3 className="px-3 pb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                                        {section.label}
+                                                    </h3>
+                                                )}
+                                                <ul className="grid gap-0.5">
+                                                    {items.map((item) => (
+                                                        <li key={item.key}>
+                                                            {navLink(
+                                                                item,
+                                                                'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none',
+                                                            )}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </section>
                                         );
                                     })}
-                                </ul>
+                                </div>
                             </SheetContent>
                         </Sheet>
                     )}

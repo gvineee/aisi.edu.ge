@@ -272,7 +272,7 @@ class PortalContext
 
     /**
      * @param  array<int, string>  $enabledFeatures  feature entitlements switched on for the tenant
-     * @return array<int, array{key: string, label: string, href: string, icon: string}>
+     * @return array<int, array{key: string, label: string, href: string, icon: string, group: string, groupLabel: string|null}>
      */
     public function navItemsFor(string $activeRole, array $enabledFeatures = []): array
     {
@@ -418,7 +418,72 @@ class PortalContext
             $items[] = ['key' => 'consents', 'label' => 'თანხმობები', 'href' => route('consents.index'), 'icon' => 'consents'];
         }
 
-        return $items;
+        if (in_array($activeRole, self::STUDENT_DIRECTORY_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'students', 'label' => 'მოსწავლეები', 'href' => route('students.index'), 'icon' => 'students'];
+        }
+
+        return $this->grouped($items);
+    }
+
+    /**
+     * Roles that get the "მოსწავლეები" list — StudentDirectoryController
+     * checks the same list itself.
+     *
+     * @var list<string>
+     */
+    public const STUDENT_DIRECTORY_ACCESS_ROLES = [
+        TenantMembership::ROLE_ADMIN,
+        TenantMembership::ROLE_DIRECTOR,
+        TenantMembership::ROLE_ACADEMIC_MANAGER,
+    ];
+
+    /**
+     * Sidebar sections, in display order; anything unlisted lands in "სხვა".
+     *
+     * @var array<string, array{label: string|null, keys: list<string>}>
+     */
+    private const NAV_GROUPS = [
+        'main' => ['label' => null, 'keys' => ['dashboard', 'messages', 'pulse', 'my-timetable', 'teacher-workspace', 'progress']],
+        'learning' => ['label' => 'სწავლება', 'keys' => ['timetable', 'substitutions', 'assignments', 'gradebook', 'competencies', 'report-cards', 'assessment-settings', 'absence-notes']],
+        'students' => ['label' => 'მოსწავლეები და ოჯახები', 'keys' => ['students', 'admissions-pipeline', 'school-visits', 'appointments', 'consents', 'pickup', 'pickup-desk', 'health']],
+        'staff' => ['label' => 'პერსონალი', 'keys' => ['staff', 'worked-hours', 'members']],
+        'school' => ['label' => 'სკოლის მართვა', 'keys' => ['academic-structure', 'documents', 'finance', 'services', 'books', 'book-lists', 'library-desk']],
+        'website' => ['label' => 'საიტი და სისტემა', 'keys' => ['cms', 'teachers', 'support-access']],
+    ];
+
+    /**
+     * Tags each item with its section and orders the list by section (and
+     * by the order above within one), dropping duplicate keys.
+     *
+     * @param  array<int, array{key: string, label: string, href: string, icon: string}>  $items
+     * @return array<int, array{key: string, label: string, href: string, icon: string, group: string, groupLabel: string|null}>
+     */
+    private function grouped(array $items): array
+    {
+        $position = [];
+        $groupOf = [];
+        $index = 0;
+
+        foreach (self::NAV_GROUPS as $group => $definition) {
+            foreach ($definition['keys'] as $key) {
+                $position[$key] = $index++;
+                $groupOf[$key] = $group;
+            }
+        }
+
+        $unique = [];
+
+        foreach ($items as $item) {
+            $unique[$item['key']] ??= $item + [
+                'group' => $groupOf[$item['key']] ?? 'other',
+                'groupLabel' => isset($groupOf[$item['key']]) ? self::NAV_GROUPS[$groupOf[$item['key']]]['label'] : 'სხვა',
+            ];
+        }
+
+        $sorted = array_values($unique);
+        usort($sorted, fn (array $a, array $b) => ($position[$a['key']] ?? PHP_INT_MAX) <=> ($position[$b['key']] ?? PHP_INT_MAX));
+
+        return $sorted;
     }
 
     /**

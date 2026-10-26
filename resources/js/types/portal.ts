@@ -29,13 +29,17 @@ export type PortalNavIconKey =
     | 'support-access'
     | 'teacher-workspace'
     | 'staff'
-    | 'worked-hours';
+    | 'worked-hours'
+    | 'students';
 
 export interface PortalNavItem {
     key: string;
     label: string;
     href: string;
     icon: PortalNavIconKey;
+    /** Sidebar section; `groupLabel` null for the unheaded first section. */
+    group: string;
+    groupLabel: string | null;
 }
 
 export interface PortalRoleOption {

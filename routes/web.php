@@ -58,6 +58,7 @@ use App\Http\Controllers\Portal\SchoolPulseController;
 use App\Http\Controllers\Portal\SchoolVisitController;
 use App\Http\Controllers\Portal\ServicesController;
 use App\Http\Controllers\Portal\StaffDirectoryController;
+use App\Http\Controllers\Portal\StudentDirectoryController;
 use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\SupportAccessController;
@@ -184,6 +185,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/worked-hours/breaks', [WorkedHoursController::class, 'storeBreak'])->name('worked-hours.breaks.store');
     Route::delete('portal/worked-hours/breaks/{nonTeachingPeriod}', [WorkedHoursController::class, 'destroyBreak'])->name('worked-hours.breaks.destroy');
 
+    Route::get('portal/students', StudentDirectoryController::class)->name('students.index');
     Route::get('portal/students/{student}/portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
     Route::post('portal/students/{student}/portfolio', [PortfolioController::class, 'store'])->name('portfolio.store');
     Route::get('portal/portfolio/review-queue', [PortfolioController::class, 'reviewQueue'])->name('portfolio.review-queue');
