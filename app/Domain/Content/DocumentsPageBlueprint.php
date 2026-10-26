@@ -56,6 +56,12 @@ class DocumentsPageBlueprint
                             ['title' => 'უსაფრთხოების პოლიტიკის დოკუმენტი', 'url' => '/storage/tenants/aisi/documents/უსაფრთხოების-პოლიტიკის-დოკუმენტი.pdf'],
                             ['title' => 'სტრატეგიული დაგეგმარების მეთოდოლოგია', 'url' => '/storage/tenants/aisi/documents/სტრატეგიული-დაგეგმარების-მეთოდოლოგია.pdf'],
                             ['title' => 'სამედიცინო დახმარების წესი', 'url' => '/storage/tenants/aisi/documents/სამედიცინო-დახმარების-წესი.pdf'],
+                            // These three were in the old site's collection, but its captions
+                            // linked them to the internal-rules PDF by mistake; titles are from
+                            // each PDF's own first page.
+                            ['title' => 'სკოლის დებულება', 'url' => '/storage/tenants/aisi/documents/სკოლის-დებულება-1.pdf'],
+                            ['title' => 'ლაბორატორიის გამოყენების წესი', 'url' => '/storage/tenants/aisi/documents/ლაბორატორიის-წესი-1.pdf'],
+                            ['title' => 'სამედიცინო პოლიტიკის წესი', 'url' => '/storage/tenants/aisi/documents/სამედიცინო-პოლიტიკის-წესი.pdf'],
                         ],
                     ],
                 ],
