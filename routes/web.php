@@ -53,6 +53,7 @@ use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
 use App\Http\Controllers\Portal\PortfolioExtrasController;
 use App\Http\Controllers\Portal\ReportCardController;
+use App\Http\Controllers\Portal\SchoolCalendarController;
 use App\Http\Controllers\Portal\SchoolClassProfileController;
 use App\Http\Controllers\Portal\SchoolPulseController;
 use App\Http\Controllers\Portal\SchoolVisitController;
@@ -173,6 +174,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/timetable/years/{academicYear}/versions', [TimetableSetupController::class, 'storeVersion'])->name('timetable.versions.store');
     Route::post('portal/timetable/versions/{timetableVersion}/activate', [TimetableSetupController::class, 'activateVersion'])->name('timetable.versions.activate');
     // --- end Timetable ---
+
+    // --- School calendar (ADR 0007) ---
+    Route::get('portal/calendar', [SchoolCalendarController::class, 'index'])->name('calendar.index');
+    Route::post('portal/calendar/events', [SchoolCalendarController::class, 'store'])->name('calendar.events.store');
+    Route::put('portal/calendar/events/{schoolEvent}', [SchoolCalendarController::class, 'update'])->name('calendar.events.update');
+    Route::delete('portal/calendar/events/{schoolEvent}', [SchoolCalendarController::class, 'destroy'])->name('calendar.events.destroy');
 
     // --- Staff directory, workloads and worked hours (ADR 0006) ---
     Route::get('portal/staff', [StaffDirectoryController::class, 'index'])->name('staff.index');

@@ -279,6 +279,8 @@ class PortalContext
         $items = [
             ['key' => 'dashboard', 'label' => 'დღეს', 'href' => route('dashboard'), 'icon' => 'home'],
             ['key' => 'messages', 'label' => 'შეტყობინებები', 'href' => route('messages.index'), 'icon' => 'messages'],
+            // SchoolCalendarController shows each role only its own events.
+            ['key' => 'calendar', 'label' => 'კალენდარი', 'href' => route('calendar.index'), 'icon' => 'calendar'],
         ];
 
         if (in_array($activeRole, [TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ADMIN], true)) {
@@ -443,7 +445,7 @@ class PortalContext
      * @var array<string, array{label: string|null, keys: list<string>}>
      */
     private const NAV_GROUPS = [
-        'main' => ['label' => null, 'keys' => ['dashboard', 'messages', 'pulse', 'my-timetable', 'teacher-workspace', 'progress']],
+        'main' => ['label' => null, 'keys' => ['dashboard', 'messages', 'pulse', 'my-timetable', 'teacher-workspace', 'progress', 'calendar']],
         'learning' => ['label' => 'სწავლება', 'keys' => ['timetable', 'substitutions', 'assignments', 'gradebook', 'competencies', 'report-cards', 'assessment-settings', 'absence-notes']],
         'students' => ['label' => 'მოსწავლეები და ოჯახები', 'keys' => ['students', 'admissions-pipeline', 'school-visits', 'appointments', 'consents', 'pickup', 'pickup-desk', 'health']],
         'staff' => ['label' => 'პერსონალი', 'keys' => ['staff', 'worked-hours', 'members']],

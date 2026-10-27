@@ -27,6 +27,7 @@ import {
     Presentation,
     IdCard,
     Timer,
+    CalendarDays,
     Repeat,
     Scale,
     ScrollText,
@@ -85,6 +86,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     'teacher-workspace': Presentation,
     staff: IdCard,
     'worked-hours': Timer,
+    calendar: CalendarDays,
     students: GraduationCap,
 };
 
