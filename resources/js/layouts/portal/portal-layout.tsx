@@ -29,6 +29,7 @@ import {
     Timer,
     CalendarDays,
     BookOpenCheck,
+    ChartColumn,
     Repeat,
     Scale,
     ScrollText,
@@ -89,6 +90,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     'worked-hours': Timer,
     calendar: CalendarDays,
     curriculum: BookOpenCheck,
+    'academic-overview': ChartColumn,
     students: GraduationCap,
 };
 

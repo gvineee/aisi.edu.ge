@@ -393,6 +393,11 @@ class PortalContext
             $items[] = ['key' => 'competencies', 'label' => 'კომპეტენციები', 'href' => route('competencies.index'), 'icon' => 'progress'];
         }
 
+        // AcademicOverviewController re-checks the same roles.
+        if (in_array($activeRole, [TenantMembership::ROLE_ADMIN, TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ACADEMIC_MANAGER], true)) {
+            $items[] = ['key' => 'academic-overview', 'label' => 'აკადემიური მიმოხილვა', 'href' => route('academic-overview'), 'icon' => 'academic-overview'];
+        }
+
         // CurriculumController re-checks CurriculumAccess itself.
         if (in_array($activeRole, [TenantMembership::ROLE_TEACHER, TenantMembership::ROLE_ADMIN, TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ACADEMIC_MANAGER], true)) {
             $items[] = ['key' => 'curriculum', 'label' => 'სასწავლო გეგმები', 'href' => route('curriculum.index'), 'icon' => 'curriculum'];
@@ -451,7 +456,7 @@ class PortalContext
      */
     private const NAV_GROUPS = [
         'main' => ['label' => null, 'keys' => ['dashboard', 'messages', 'pulse', 'my-timetable', 'teacher-workspace', 'progress', 'calendar']],
-        'learning' => ['label' => 'სწავლება', 'keys' => ['timetable', 'curriculum', 'substitutions', 'assignments', 'gradebook', 'competencies', 'report-cards', 'assessment-settings', 'absence-notes']],
+        'learning' => ['label' => 'სწავლება', 'keys' => ['academic-overview', 'timetable', 'curriculum', 'substitutions', 'assignments', 'gradebook', 'competencies', 'report-cards', 'assessment-settings', 'absence-notes']],
         'students' => ['label' => 'მოსწავლეები და ოჯახები', 'keys' => ['students', 'admissions-pipeline', 'school-visits', 'appointments', 'consents', 'pickup', 'pickup-desk', 'health']],
         'staff' => ['label' => 'პერსონალი', 'keys' => ['staff', 'worked-hours', 'members']],
         'school' => ['label' => 'სკოლის მართვა', 'keys' => ['academic-structure', 'documents', 'finance', 'services', 'books', 'book-lists', 'library-desk']],

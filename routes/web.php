@@ -3,6 +3,7 @@
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\Platform\PlatformAdminController;
 use App\Http\Controllers\Portal\AbsenceNoteController;
+use App\Http\Controllers\Portal\AcademicOverviewController;
 use App\Http\Controllers\Portal\AcademicStructureController;
 use App\Http\Controllers\Portal\AdmissionsPipelineController;
 use App\Http\Controllers\Portal\AppointmentController;
@@ -175,6 +176,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/timetable/years/{academicYear}/versions', [TimetableSetupController::class, 'storeVersion'])->name('timetable.versions.store');
     Route::post('portal/timetable/versions/{timetableVersion}/activate', [TimetableSetupController::class, 'activateVersion'])->name('timetable.versions.activate');
     // --- end Timetable ---
+
+    Route::get('portal/academic-overview', AcademicOverviewController::class)->name('academic-overview');
 
     // --- Curriculum plans and topic progress (ADR 0008) ---
     Route::get('portal/curriculum', [CurriculumController::class, 'index'])->name('curriculum.index');
