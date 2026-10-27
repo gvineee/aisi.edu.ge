@@ -12,6 +12,8 @@ use App\Domain\Communications\Models\ConversationParticipant;
 use App\Domain\Learning\Models\Assignment;
 use App\Domain\Learning\Models\AssignmentSubmission;
 use App\Domain\Learning\Models\AttendanceRecord;
+use App\Domain\Learning\Models\CurriculumPlan;
+use App\Domain\Learning\Models\CurriculumTopic;
 use App\Domain\Learning\Models\LessonRecord;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\Models\TenantMembership;
@@ -101,6 +103,12 @@ class TeacherWorkspaceController extends Controller
                 ->latest('id')->limit(10)->get()->map(fn (Assignment $a) => ['id' => $a->id, 'title' => $a->title, 'status' => $a->status, 'dueAt' => $a->due_at?->toIso8601String()])->values()
             : [];
 
+        // The class's plan in this subject, to name the topic covered.
+        $plan = CurriculumPlan::query()->where('tenant_id', $tenant->id)->where('school_class_id', $lesson->school_class_id)
+            ->where('subject_id', $lesson->subject_id)->with('topics')->first();
+        $coveredTopicIds = $plan === null ? [] : LessonRecord::query()->where('tenant_id', $tenant->id)
+            ->whereIn('curriculum_topic_id', $plan->topics->pluck('id'))->distinct()->pluck('curriculum_topic_id')->all();
+
         return Inertia::render('portal/teacher/lesson', [
             'lesson' => [
                 'id' => $lesson->id,
@@ -114,10 +122,19 @@ class TeacherWorkspaceController extends Controller
                 'heldToday' => Carbon::parse($today)->isoWeekday() === $lesson->day_of_week,
             ],
             'todayTopic' => $todayRecord?->topic,
+            'todayTopicId' => $todayRecord?->curriculum_topic_id,
+            'planTopics' => $plan === null ? [] : $plan->topics->map(fn (CurriculumTopic $topic) => [
+                'id' => $topic->id,
+                'title' => $topic->title,
+                'covered' => in_array($topic->id, $coveredTopicIds, true),
+            ])->values(),
             // A substitute sees only today's entry, never the class's history.
             'recentTopics' => $isOwner
-                ? $records->filter(fn (LessonRecord $record) => $record->topic !== null)
-                    ->map(fn (LessonRecord $record) => ['date' => $record->occurs_on->toDateString(), 'topic' => $record->topic])->values()
+                ? $records->filter(fn (LessonRecord $record) => $record->topic !== null || $record->curriculum_topic_id !== null)
+                    ->map(fn (LessonRecord $record) => ['date' => $record->occurs_on->toDateString(), 'topic' => implode(' — ', array_filter([
+                        $plan?->topics->firstWhere('id', $record->curriculum_topic_id)?->title,
+                        $record->topic,
+                    ]))])->values()
                 : [],
             'isSubstitute' => ! $isOwner,
             'date' => $today,

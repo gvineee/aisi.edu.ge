@@ -25,6 +25,7 @@ class LessonRecordController extends Controller
         $data = $request->validate([
             'occurs_on' => ['required', 'date_format:Y-m-d'],
             'topic' => ['nullable', 'string', 'max:2000'],
+            'curriculum_topic_id' => ['nullable', 'integer'],
         ]);
 
         $occursOn = Carbon::parse($data['occurs_on'], $tenant->timezone)->startOfDay();
@@ -40,7 +41,7 @@ class LessonRecordController extends Controller
         abort_unless($lesson->teacher_id === $userId || $isSubstitute, 403);
 
         $topic = trim((string) ($data['topic'] ?? ''));
-        $action->handle($lesson, $request->user(), $occursOn, Carbon::now($tenant->timezone)->startOfDay(), $topic === '' ? null : $topic);
+        $action->handle($lesson, $request->user(), $occursOn, Carbon::now($tenant->timezone)->startOfDay(), $topic === '' ? null : $topic, empty($data['curriculum_topic_id']) ? null : (int) $data['curriculum_topic_id']);
 
         return back()->with('toast', ['type' => 'success', 'message' => 'გაკვეთილის თემა შენახულია.']);
     }

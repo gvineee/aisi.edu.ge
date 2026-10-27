@@ -18,6 +18,8 @@ type Props = {
         heldToday: boolean;
     };
     todayTopic: string | null;
+    todayTopicId: number | null;
+    planTopics: { id: number; title: string; covered: boolean }[];
     recentTopics: { date: string; topic: string }[];
     isSubstitute: boolean;
     date: string;
@@ -55,8 +57,14 @@ export default function TeacherLesson({
     assignments,
     handoff,
     todayTopic,
+    todayTopicId,
+    planTopics,
     recentTopics,
 }: Props) {
+    // The first topic not yet covered is the likely one today.
+    const suggestedTopicId =
+        todayTopicId ?? planTopics.find((topic) => !topic.covered)?.id ?? null;
+
     const [saving, setSaving] = useState(false);
 
     const saveTopic = (event: FormEvent<HTMLFormElement>) => {
@@ -147,8 +155,41 @@ export default function TeacherLesson({
                         onSubmit={saveTopic}
                         className="space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200"
                     >
-                        <label htmlFor="topic" className="sr-only">
-                            დღევანდელი გაკვეთილის თემა
+                        {planTopics.length > 0 && (
+                            <div>
+                                <label
+                                    htmlFor="curriculum_topic_id"
+                                    className="mb-1 block text-sm font-medium"
+                                >
+                                    სასწავლო გეგმის თემა
+                                </label>
+                                <select
+                                    id="curriculum_topic_id"
+                                    name="curriculum_topic_id"
+                                    defaultValue={suggestedTopicId ?? ''}
+                                    className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                >
+                                    <option value="">გეგმის გარეშე</option>
+                                    {planTopics.map((topic) => (
+                                        <option key={topic.id} value={topic.id}>
+                                            {topic.covered ? '✓ ' : ''}
+                                            {topic.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <label
+                            htmlFor="topic"
+                            className={
+                                planTopics.length > 0
+                                    ? 'block text-sm font-medium'
+                                    : 'sr-only'
+                            }
+                        >
+                            {planTopics.length > 0
+                                ? 'შენიშვნა / ქვეთემა'
+                                : 'დღევანდელი გაკვეთილის თემა'}
                         </label>
                         <textarea
                             id="topic"

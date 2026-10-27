@@ -19,6 +19,7 @@ use App\Http\Controllers\Portal\CmsPostController;
 use App\Http\Controllers\Portal\CompetencyController;
 use App\Http\Controllers\Portal\ConsentController;
 use App\Http\Controllers\Portal\CoverageController;
+use App\Http\Controllers\Portal\CurriculumController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\DirectorDocumentWorklistController;
 use App\Http\Controllers\Portal\DocumentAccessGrantController;
@@ -174,6 +175,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('portal/timetable/years/{academicYear}/versions', [TimetableSetupController::class, 'storeVersion'])->name('timetable.versions.store');
     Route::post('portal/timetable/versions/{timetableVersion}/activate', [TimetableSetupController::class, 'activateVersion'])->name('timetable.versions.activate');
     // --- end Timetable ---
+
+    // --- Curriculum plans and topic progress (ADR 0008) ---
+    Route::get('portal/curriculum', [CurriculumController::class, 'index'])->name('curriculum.index');
+    Route::post('portal/curriculum', [CurriculumController::class, 'store'])->name('curriculum.store');
+    Route::get('portal/curriculum/{curriculumPlan}', [CurriculumController::class, 'show'])->name('curriculum.show');
+    Route::post('portal/curriculum/{curriculumPlan}/status', [CurriculumController::class, 'setStatus'])->name('curriculum.status');
+    Route::post('portal/curriculum/{curriculumPlan}/topics', [CurriculumController::class, 'storeTopics'])->name('curriculum.topics.store');
+    Route::put('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}', [CurriculumController::class, 'updateTopic'])->name('curriculum.topics.update');
+    Route::post('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}/move', [CurriculumController::class, 'moveTopic'])->name('curriculum.topics.move');
+    Route::delete('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}', [CurriculumController::class, 'destroyTopic'])->name('curriculum.topics.destroy');
 
     // --- School calendar (ADR 0007) ---
     Route::get('portal/calendar', [SchoolCalendarController::class, 'index'])->name('calendar.index');

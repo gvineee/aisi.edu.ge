@@ -3,6 +3,7 @@
 namespace App\Domain\Learning\Actions;
 
 use App\Domain\Governance\AuditLogger;
+use App\Domain\Learning\Models\CurriculumTopic;
 use App\Domain\Learning\Models\LessonRecord;
 use App\Domain\Timetable\Models\Lesson;
 use App\Models\User;
@@ -18,8 +19,12 @@ class SaveLessonRecord
 {
     public function __construct(private readonly AuditLogger $auditLogger) {}
 
-    public function handle(Lesson $lesson, User $actor, Carbon $occursOn, Carbon $today, ?string $topic): LessonRecord
+    public function handle(Lesson $lesson, User $actor, Carbon $occursOn, Carbon $today, ?string $topic, ?int $curriculumTopicId = null): LessonRecord
     {
+        if ($curriculumTopicId !== null && ! $this->topicBelongsTo($lesson, $curriculumTopicId)) {
+            throw ValidationException::withMessages(['curriculum_topic_id' => 'ეს თემა ამ კლასისა და საგნის გეგმაში არ არის.']);
+        }
+
         if ($occursOn->greaterThan($today)) {
             throw ValidationException::withMessages(['occurs_on' => 'მომავალი გაკვეთილის თემა ჯერ ვერ ჩაიწერება.']);
         }
@@ -37,6 +42,7 @@ class SaveLessonRecord
         $created = ! $record->exists;
         $record->tenant_id = $lesson->tenant_id;
         $record->topic = $topic;
+        $record->curriculum_topic_id = $curriculumTopicId;
         $record->recorded_by = $actor->id;
 
         if ($record->isDirty()) {
@@ -44,9 +50,21 @@ class SaveLessonRecord
             $this->auditLogger->record($lesson->tenant_id, $created ? 'lesson_record.created' : 'lesson_record.updated', $record, $actor->id, [
                 'lesson_id' => $lesson->id,
                 'occurs_on' => $occursOn->toDateString(),
+                'curriculum_topic_id' => $curriculumTopicId,
             ]);
         }
 
         return $record;
+    }
+
+    /**
+     * A plan topic can be named only by a lesson of that plan's class and
+     * subject.
+     */
+    private function topicBelongsTo(Lesson $lesson, int $curriculumTopicId): bool
+    {
+        return CurriculumTopic::query()->where('tenant_id', $lesson->tenant_id)->whereKey($curriculumTopicId)
+            ->whereHas('plan', fn ($query) => $query->where('school_class_id', $lesson->school_class_id)->where('subject_id', $lesson->subject_id))
+            ->exists();
     }
 }

@@ -31,6 +31,7 @@ export type PortalNavIconKey =
     | 'staff'
     | 'worked-hours'
     | 'calendar'
+    | 'curriculum'
     | 'students';
 
 export interface PortalNavItem {

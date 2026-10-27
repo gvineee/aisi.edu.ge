@@ -17,9 +17,10 @@ use Illuminate\Support\Carbon;
  * @property int $lesson_id
  * @property Carbon $occurs_on
  * @property string|null $topic
+ * @property int|null $curriculum_topic_id the plan topic this lesson covered
  * @property int|null $recorded_by
  */
-#[Fillable(['lesson_id', 'occurs_on', 'topic', 'recorded_by'])]
+#[Fillable(['lesson_id', 'occurs_on', 'topic', 'curriculum_topic_id', 'recorded_by'])]
 class LessonRecord extends Model
 {
     use BelongsToTenant;
