@@ -276,3 +276,8 @@
 - **ენები:** გამოქვეყნდა 5 EN, 3 RU გვერდი და 1 EN სიახლე, მხოლოდ ის, რომლის ქართული ორიგინალიც გამოქვეყნებულია. 3 გამოტოვდა, რადგან ორიგინალი draft-ია.
   - ორი სათაური ქართული ორიგინალიდან ითარგმნა: 2315 → „Partnership with the University of Warsaw“, სიახლე 2284 → „School Aisi and the University of Economics and Human Sciences in Warsaw sign a partnership agreement“.
   - smoke: `/en`, `/ru`, თარგმნილი გვერდები, `/en/news` — 200. სწორია `<html lang>` და hreflang. sitemap-ში 9 EN/RU მისამართია.
+- **მოსწავლეები (2026-10-27):** `edupage:import asc-students`, batch #4 preview → #5 apply.
+  - 253 შეიქმნა, 21 კლასში. ჩარიცხვა 2026-09-03-დან, issues 0.
+  - ჯგუფის წევრობა 0, რადგან EduPage-ში მოსწავლეები მხოლოდ მთელ კლასს ეკუთვნის და ცალკე ჯგუფში არავინაა.
+  - ფაილი სერვერიდან წაიშალა (`shred -u`). ასლი მხოლოდ `aisi-private`-შია, repository-სა და OneDrive-ის გარეთ.
+  - EduPage-ს არ ეკუთვნის ერთი ადრინდელი ჩანაწერი: student #1, კლასი „1“, ძველი წლიდან (2026-10-16). ის არ წაშლილა და ხელით შესამოწმებელია.
