@@ -66,6 +66,7 @@ use App\Http\Controllers\Portal\StudentDirectoryController;
 use App\Http\Controllers\Portal\StudentProgressController;
 use App\Http\Controllers\Portal\SubstitutionController;
 use App\Http\Controllers\Portal\SupportAccessController;
+use App\Http\Controllers\Portal\SurveyController;
 use App\Http\Controllers\Portal\TeacherController;
 use App\Http\Controllers\Portal\TeacherWorkspaceController;
 use App\Http\Controllers\Portal\TimetableCatalogController;
@@ -189,6 +190,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}', [CurriculumController::class, 'updateTopic'])->name('curriculum.topics.update');
     Route::post('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}/move', [CurriculumController::class, 'moveTopic'])->name('curriculum.topics.move');
     Route::delete('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}', [CurriculumController::class, 'destroyTopic'])->name('curriculum.topics.destroy');
+
+    // --- Surveys ---
+    Route::get('portal/surveys', [SurveyController::class, 'index'])->name('surveys.index');
+    Route::get('portal/surveys/create', [SurveyController::class, 'create'])->name('surveys.create');
+    Route::post('portal/surveys', [SurveyController::class, 'store'])->name('surveys.store');
+    Route::get('portal/surveys/{survey}', [SurveyController::class, 'show'])->name('surveys.show');
+    Route::get('portal/surveys/{survey}/edit', [SurveyController::class, 'edit'])->name('surveys.edit');
+    Route::put('portal/surveys/{survey}', [SurveyController::class, 'update'])->name('surveys.update');
+    Route::delete('portal/surveys/{survey}', [SurveyController::class, 'destroy'])->name('surveys.destroy');
+    Route::post('portal/surveys/{survey}/status', [SurveyController::class, 'setStatus'])->name('surveys.status');
+    Route::post('portal/surveys/{survey}/responses', [SurveyController::class, 'respond'])->middleware('throttle:20,1')->name('surveys.respond');
+    Route::get('portal/surveys/{survey}/export', [SurveyController::class, 'export'])->middleware('throttle:20,1')->name('surveys.export');
 
     // --- School calendar (ADR 0007) ---
     Route::get('portal/calendar', [SchoolCalendarController::class, 'index'])->name('calendar.index');

@@ -31,6 +31,7 @@ import {
     BookOpenCheck,
     ChartColumn,
     ShieldCheck,
+    Vote,
     Repeat,
     Scale,
     ScrollText,
@@ -93,6 +94,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     curriculum: BookOpenCheck,
     'academic-overview': ChartColumn,
     permissions: ShieldCheck,
+    surveys: Vote,
     students: GraduationCap,
 };
 
