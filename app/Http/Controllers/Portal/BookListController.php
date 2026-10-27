@@ -8,6 +8,7 @@ use App\Domain\Library\LibraryAccess;
 use App\Domain\Library\Models\BookListItem;
 use App\Domain\Library\Models\LibraryResource;
 use App\Domain\Tenancy\CurrentTenant;
+use App\Domain\Tenancy\Models\TenantMembership;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,8 +28,10 @@ class BookListController extends Controller
     public function index(Request $request, CurrentTenant $currentTenant): Response
     {
         $tenant = $currentTenant->get();
+        // Desk staff and teachers get the page (empty until they have classes).
+        abort_unless($this->access->isDesk($tenant->id, $request->user())
+            || TenantMembership::userHasActiveRole($tenant->id, $request->user()->id, TenantMembership::ROLE_TEACHER), 403);
         $ids = $this->access->editableClassIds($tenant->id, $request->user());
-        abort_if($ids->isEmpty(), 403);
 
         $classes = SchoolClass::query()->where('tenant_id', $tenant->id)->whereIn('id', $ids)
             ->with('academicYear')->withCount(['bookListItems'])->get()

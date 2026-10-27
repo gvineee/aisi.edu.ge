@@ -33,6 +33,7 @@ export type PortalNavIconKey =
     | 'calendar'
     | 'curriculum'
     | 'academic-overview'
+    | 'permissions'
     | 'students';
 
 export interface PortalNavItem {

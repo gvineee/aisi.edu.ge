@@ -23,7 +23,7 @@ class EnsureAdminMfa
      *
      * @var array<int, string>
      */
-    private const PRIVILEGED_ROLES = [
+    public const PRIVILEGED_ROLES = [
         TenantMembership::ROLE_ADMIN,
         TenantMembership::ROLE_DIRECTOR,
         TenantMembership::ROLE_ACCOUNTANT,

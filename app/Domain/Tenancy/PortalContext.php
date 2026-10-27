@@ -97,7 +97,7 @@ class PortalContext
      *
      * @var array<int, string>
      */
-    private const MEMBER_ACCESS_ROLES = [
+    public const MEMBER_ACCESS_ROLES = [
         TenantMembership::ROLE_DIRECTOR,
         TenantMembership::ROLE_ADMIN,
     ];
@@ -430,6 +430,11 @@ class PortalContext
             $items[] = ['key' => 'consents', 'label' => 'თანხმობები', 'href' => route('consents.index'), 'icon' => 'consents'];
         }
 
+        // PermissionMatrixController re-checks the same roles.
+        if (in_array($activeRole, self::MEMBER_ACCESS_ROLES, true)) {
+            $items[] = ['key' => 'permissions', 'label' => 'როლები და უფლებები', 'href' => route('permissions.index'), 'icon' => 'permissions'];
+        }
+
         if (in_array($activeRole, self::STUDENT_DIRECTORY_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'students', 'label' => 'მოსწავლეები', 'href' => route('students.index'), 'icon' => 'students'];
         }
@@ -458,7 +463,7 @@ class PortalContext
         'main' => ['label' => null, 'keys' => ['dashboard', 'messages', 'pulse', 'my-timetable', 'teacher-workspace', 'progress', 'calendar']],
         'learning' => ['label' => 'სწავლება', 'keys' => ['academic-overview', 'timetable', 'curriculum', 'substitutions', 'assignments', 'gradebook', 'competencies', 'report-cards', 'assessment-settings', 'absence-notes']],
         'students' => ['label' => 'მოსწავლეები და ოჯახები', 'keys' => ['students', 'admissions-pipeline', 'school-visits', 'appointments', 'consents', 'pickup', 'pickup-desk', 'health']],
-        'staff' => ['label' => 'პერსონალი', 'keys' => ['staff', 'worked-hours', 'members']],
+        'staff' => ['label' => 'პერსონალი', 'keys' => ['staff', 'worked-hours', 'members', 'permissions']],
         'school' => ['label' => 'სკოლის მართვა', 'keys' => ['academic-structure', 'documents', 'finance', 'services', 'books', 'book-lists', 'library-desk']],
         'website' => ['label' => 'საიტი და სისტემა', 'keys' => ['cms', 'teachers', 'support-access']],
     ];
@@ -496,6 +501,36 @@ class PortalContext
         usort($sorted, fn (array $a, array $b) => ($position[$a['key']] ?? PHP_INT_MAX) <=> ($position[$b['key']] ?? PHP_INT_MAX));
 
         return $sorted;
+    }
+
+    /**
+     * A nav key's place in the sidebar order (unlisted keys last).
+     */
+    public function navPosition(string $key): int
+    {
+        $index = 0;
+
+        foreach (self::NAV_GROUPS as $definition) {
+            foreach ($definition['keys'] as $listed) {
+                if ($listed === $key) {
+                    return $index;
+                }
+
+                $index++;
+            }
+        }
+
+        return PHP_INT_MAX;
+    }
+
+    /**
+     * Every portal role with its Georgian name, in ROLE_PRIORITY order.
+     *
+     * @return array<string, string>
+     */
+    public function roleLabels(): array
+    {
+        return array_combine(self::ROLE_PRIORITY, array_map(fn (string $role) => self::ROLE_LABELS[$role], self::ROLE_PRIORITY));
     }
 
     /**

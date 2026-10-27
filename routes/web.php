@@ -50,6 +50,7 @@ use App\Http\Controllers\Portal\MyAssignmentsController;
 use App\Http\Controllers\Portal\MyDocumentWorkController;
 use App\Http\Controllers\Portal\MyTimetableController;
 use App\Http\Controllers\Portal\PaymentClaimController;
+use App\Http\Controllers\Portal\PermissionMatrixController;
 use App\Http\Controllers\Portal\PickupController;
 use App\Http\Controllers\Portal\PortalRoleController;
 use App\Http\Controllers\Portal\PortfolioController;
@@ -585,6 +586,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- Member management (admin/director) — added at the end of this
     // group so parallel agent edits above are easy to merge around. ---
     Route::get('portal/members', [MemberController::class, 'index'])->name('members.index');
+    Route::get('portal/permissions', PermissionMatrixController::class)->name('permissions.index');
     Route::post('portal/members/invite', [MemberController::class, 'store'])->middleware('reauth')->name('members.invite');
     Route::post('portal/members/{membership}/revoke', [MemberController::class, 'revoke'])->middleware('reauth')->name('members.revoke');
     Route::delete('portal/members/invitations/{invitation}', [MemberController::class, 'cancelInvitation'])->name('members.invitations.cancel');

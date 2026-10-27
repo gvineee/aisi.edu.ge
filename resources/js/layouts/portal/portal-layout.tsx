@@ -30,6 +30,7 @@ import {
     CalendarDays,
     BookOpenCheck,
     ChartColumn,
+    ShieldCheck,
     Repeat,
     Scale,
     ScrollText,
@@ -91,6 +92,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     calendar: CalendarDays,
     curriculum: BookOpenCheck,
     'academic-overview': ChartColumn,
+    permissions: ShieldCheck,
     students: GraduationCap,
 };
 
