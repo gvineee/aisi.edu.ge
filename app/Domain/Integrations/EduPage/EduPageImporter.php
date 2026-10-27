@@ -45,14 +45,15 @@ use Throwable;
  */
 class EduPageImporter
 {
+    use ImportsAscStudents;
     use ImportsAscTimetable;
 
     public const SOURCE = 'edupage';
 
-    public const TYPES = ['rooms', 'subjects', 'staff', 'classes', 'timetable-summary', 'asc-timetable'];
+    public const TYPES = ['rooms', 'subjects', 'staff', 'classes', 'timetable-summary', 'asc-timetable', 'asc-students'];
 
     /** Types whose source key is scoped to one academic year. */
-    private const YEAR_SCOPED = ['classes', 'timetable-summary', 'asc-timetable'];
+    private const YEAR_SCOPED = ['classes', 'timetable-summary', 'asc-timetable', 'asc-students'];
 
     /** Recognised header spellings per field (compared case-insensitively). */
     private const COLUMNS = [
@@ -126,10 +127,11 @@ class EduPageImporter
             throw new InvalidArgumentException('კლასების შეჯამებული ცხრილი მასწავლებელს, ოთახსა და ჯგუფს არ შეიცავს — მისი იმპორტი მხოლოდ preview-ია.');
         }
 
-        $table = $type === 'asc-timetable' ? null : SourceTable::fromFile($path);
-        $asc = $type === 'asc-timetable' ? json_decode((string) file_get_contents($path), true) : null;
+        $isAsc = in_array($type, ['asc-timetable', 'asc-students'], true);
+        $table = $isAsc ? null : SourceTable::fromFile($path);
+        $asc = $isAsc ? json_decode((string) file_get_contents($path), true) : null;
 
-        if ($type === 'asc-timetable' && ! is_array($asc)) {
+        if ($isAsc && ! is_array($asc)) {
             throw new InvalidArgumentException('ფაილი JSON არ არის.');
         }
 
@@ -153,7 +155,9 @@ class EduPageImporter
         DB::beginTransaction();
 
         try {
-            if (is_array($asc)) {
+            if (is_array($asc) && $type === 'asc-students') {
+                $this->importAscStudents($tenant, $asc, $year);
+            } elseif (is_array($asc)) {
                 $this->importAscTimetable($tenant, $asc, $year, $context);
             } elseif ($table !== null) {
                 match ($type) {

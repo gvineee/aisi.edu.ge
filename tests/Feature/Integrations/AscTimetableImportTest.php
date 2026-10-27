@@ -6,6 +6,8 @@ use App\Domain\Academics\Actions\LinkStaffAccount;
 use App\Domain\Academics\Models\AcademicYear;
 use App\Domain\Academics\Models\SchoolClass;
 use App\Domain\Academics\Models\StaffMember;
+use App\Domain\Academics\Models\Student;
+use App\Domain\Academics\Models\StudentEnrollment;
 use App\Domain\Academics\Models\StudentGroup;
 use App\Domain\Academics\Models\TeacherAssignment;
 use App\Domain\Integrations\Models\ImportIssue;
@@ -24,6 +26,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -317,6 +320,36 @@ class AscTimetableImportTest extends TestCase
         foreach (['grid', 'catalogs', 'generator'] as $page) {
             $this->actingAs($teacher)->get("{$host}/portal/timetable/{$page}")->assertForbidden();
         }
+    }
+
+    public function test_pupils_join_their_class_and_teaching_group_and_a_later_year_moves_them(): void
+    {
+        $this->import(true);
+        $data = $this->source();
+        $data['students'] = [
+            ['id' => '-500', 'name' => 'ანა ტესტიშვილი', 'classid' => '-10'],
+            ['id' => '-501', 'name' => 'ბექა ტესტაძე', 'classid' => '-11'],
+            ['id' => '-502', 'name' => '', 'classid' => '-11'],
+            ['id' => '-503', 'name' => 'უცნობი კლასი', 'classid' => '-99'],
+        ];
+        $data['lessons'][2]['studentids'] = ['-501'];
+        file_put_contents($this->path, (string) json_encode($data));
+        $run = fn (bool $apply) => Artisan::call('edupage:import', ['type' => 'asc-students', 'file' => $this->path, '--tenant' => 'test-tenant', '--year' => '2026-2027', '--force' => true] + ($apply ? ['--apply' => true] : []));
+
+        $run(false);
+        $this->assertSame(0, Student::query()->count(), 'preview writes nothing');
+
+        $run(true);
+        $ana = Student::query()->where('first_name', 'ანა')->sole();
+        $this->assertSame(['ტესტიშვილი', '1ა'], [$ana->last_name, $ana->schoolClass->name]);
+        $this->assertSame(2, Student::query()->count(), 'nameless and class-less rows are reported, not created');
+        $this->assertSame(1, StudentEnrollment::query()->where('student_id', $ana->id)->where('status', StudentEnrollment::STATUS_ACTIVE)->count());
+        $beka = Student::query()->where('first_name', 'ბექა')->sole();
+        $this->assertTrue(DB::table('student_group_members')->where('student_id', $beka->id)->exists(), 'the group lesson puts him in group 1');
+        $this->assertNull($beka->user_id, 'no accounts');
+
+        $run(true);
+        $this->assertSame(2, Student::query()->count(), 'a rerun creates nobody twice');
     }
 
     private function exception(Lesson $lesson, string $date, string $type, ?int $substituteId = null): void

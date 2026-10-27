@@ -22,7 +22,7 @@ use Throwable;
 class EduPageImportCommand extends Command
 {
     protected $signature = 'edupage:import
-        {type : rooms | subjects | staff | classes | timetable-summary | asc-timetable}
+        {type : rooms | subjects | staff | classes | timetable-summary | asc-timetable | asc-students}
         {file : Path to the exported file}
         {--tenant= : Tenant slug (required)}
         {--year= : Academic year name, e.g. 2026-2027 (required for classes / timetable-summary)}
