@@ -33,6 +33,7 @@ import {
     ShieldCheck,
     Vote,
     Award,
+    Clock,
     Repeat,
     Scale,
     ScrollText,
@@ -97,6 +98,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     permissions: ShieldCheck,
     surveys: Vote,
     certificates: Award,
+    'time-clock': Clock,
     students: GraduationCap,
 };
 

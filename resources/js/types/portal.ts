@@ -36,6 +36,7 @@ export type PortalNavIconKey =
     | 'permissions'
     | 'surveys'
     | 'certificates'
+    | 'time-clock'
     | 'students';
 
 export interface PortalNavItem {

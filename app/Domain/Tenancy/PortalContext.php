@@ -437,6 +437,11 @@ class PortalContext
             $items[] = ['key' => 'consents', 'label' => 'თანხმობები', 'href' => route('consents.index'), 'icon' => 'consents'];
         }
 
+        // TimeClockController re-checks its staff roles.
+        if (! in_array($activeRole, [TenantMembership::ROLE_GUARDIAN, TenantMembership::ROLE_STUDENT], true)) {
+            $items[] = ['key' => 'time-clock', 'label' => 'სამუშაო დრო', 'href' => route('time-clock.index'), 'icon' => 'time-clock'];
+        }
+
         // PermissionMatrixController re-checks the same roles.
         if (in_array($activeRole, self::MEMBER_ACCESS_ROLES, true)) {
             $items[] = ['key' => 'permissions', 'label' => 'როლები და უფლებები', 'href' => route('permissions.index'), 'icon' => 'permissions'];
@@ -470,7 +475,7 @@ class PortalContext
         'main' => ['label' => null, 'keys' => ['dashboard', 'messages', 'pulse', 'my-timetable', 'teacher-workspace', 'progress', 'calendar', 'surveys']],
         'learning' => ['label' => 'სწავლება', 'keys' => ['academic-overview', 'timetable', 'curriculum', 'substitutions', 'assignments', 'gradebook', 'competencies', 'report-cards', 'assessment-settings', 'absence-notes']],
         'students' => ['label' => 'მოსწავლეები და ოჯახები', 'keys' => ['students', 'admissions-pipeline', 'school-visits', 'appointments', 'consents', 'pickup', 'pickup-desk', 'health']],
-        'staff' => ['label' => 'პერსონალი', 'keys' => ['staff', 'worked-hours', 'members', 'permissions']],
+        'staff' => ['label' => 'პერსონალი', 'keys' => ['staff', 'time-clock', 'worked-hours', 'members', 'permissions']],
         'school' => ['label' => 'სკოლის მართვა', 'keys' => ['academic-structure', 'documents', 'certificates', 'finance', 'services', 'books', 'book-lists', 'library-desk']],
         'website' => ['label' => 'საიტი და სისტემა', 'keys' => ['cms', 'teachers', 'support-access']],
     ];
