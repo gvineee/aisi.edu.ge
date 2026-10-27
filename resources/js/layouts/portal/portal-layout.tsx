@@ -32,6 +32,7 @@ import {
     ChartColumn,
     ShieldCheck,
     Vote,
+    Award,
     Repeat,
     Scale,
     ScrollText,
@@ -95,6 +96,7 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     'academic-overview': ChartColumn,
     permissions: ShieldCheck,
     surveys: Vote,
+    certificates: Award,
     students: GraduationCap,
 };
 

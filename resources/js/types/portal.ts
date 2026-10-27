@@ -35,6 +35,7 @@ export type PortalNavIconKey =
     | 'academic-overview'
     | 'permissions'
     | 'surveys'
+    | 'certificates'
     | 'students';
 
 export interface PortalNavItem {

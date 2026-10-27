@@ -12,6 +12,7 @@ use App\Http\Controllers\Portal\AssignmentController;
 use App\Http\Controllers\Portal\AttendanceController;
 use App\Http\Controllers\Portal\BookListController;
 use App\Http\Controllers\Portal\BooksController;
+use App\Http\Controllers\Portal\CertificateController;
 use App\Http\Controllers\Portal\ClubController;
 use App\Http\Controllers\Portal\CmsMediaController;
 use App\Http\Controllers\Portal\CmsPageController;
@@ -76,6 +77,7 @@ use App\Http\Controllers\Portal\TimetableSetupController;
 use App\Http\Controllers\Portal\TransportController;
 use App\Http\Controllers\Portal\WorkedHoursController;
 use App\Http\Controllers\Public\AdmissionLeadController;
+use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\InvitationController;
 use App\Http\Controllers\Public\LibraryCatalogController;
 use App\Http\Controllers\Public\PageController;
@@ -138,6 +140,12 @@ Route::get('verify/report-card/{code}', ReportCardVerificationController::class)
     ->middleware('throttle:30,1')
     ->name('report-cards.verify');
 
+// Public check that a printed certificate/diploma/letter is genuine (no text shown).
+Route::get('verify/document/{code}', CertificateVerificationController::class)
+    ->where('code', '[A-Za-z0-9]{6,16}')
+    ->middleware('throttle:30,1')
+    ->name('certificates.verify');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     // CLAUDE-PLATFORM-MODULES §3 names the day centre /portal/today; it is
@@ -190,6 +198,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}', [CurriculumController::class, 'updateTopic'])->name('curriculum.topics.update');
     Route::post('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}/move', [CurriculumController::class, 'moveTopic'])->name('curriculum.topics.move');
     Route::delete('portal/curriculum/{curriculumPlan}/topics/{curriculumTopic}', [CurriculumController::class, 'destroyTopic'])->name('curriculum.topics.destroy');
+
+    // --- Certificates, diplomas and letters ---
+    Route::get('portal/certificates', [CertificateController::class, 'index'])->name('certificates.index');
+    Route::post('portal/certificates/templates', [CertificateController::class, 'saveTemplate'])->name('certificates.templates.store');
+    Route::put('portal/certificates/templates/{certificateTemplate}', [CertificateController::class, 'saveTemplate'])->name('certificates.templates.update');
+    Route::post('portal/certificates/issue', [CertificateController::class, 'issue'])->middleware('throttle:30,1')->name('certificates.issue');
+    Route::post('portal/certificates/{issuedCertificate}/revoke', [CertificateController::class, 'revoke'])->name('certificates.revoke');
+    Route::get('portal/certificates/{issuedCertificate}/pdf', [CertificateController::class, 'download'])->middleware('throttle:60,1')->name('certificates.pdf');
 
     // --- Surveys ---
     Route::get('portal/surveys', [SurveyController::class, 'index'])->name('surveys.index');

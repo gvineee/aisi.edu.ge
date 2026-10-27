@@ -115,9 +115,10 @@ class RouteInventoryTest extends TestCase
         // Admissions enquiry and visit booking; cancellation is a signed link.
         '#^admissions/(leads|visit-slots)$#',
         '#^admissions/visits/\{booking\}/cancel$#',
-        // Invitation acceptance (unguessable token) and report-card authenticity check (code).
+        // Invitation acceptance (unguessable token), report-card and certificate authenticity checks (code).
         '#^invitations/\{token\}(/accept)?$#',
         '#^verify/report-card/\{code\}$#',
+        '#^verify/document/\{code\}$#',
         // Payment provider webhooks — verified by signature, not by session.
         '#^webhooks/payments/\{provider\}$#',
     ];

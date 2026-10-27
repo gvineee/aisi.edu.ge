@@ -395,6 +395,11 @@ class PortalContext
             $items[] = ['key' => 'competencies', 'label' => 'კომპეტენციები', 'href' => route('competencies.index'), 'icon' => 'progress'];
         }
 
+        // CertificateController re-checks the same roles.
+        if (in_array($activeRole, [TenantMembership::ROLE_ADMIN, TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ACADEMIC_MANAGER], true)) {
+            $items[] = ['key' => 'certificates', 'label' => 'ცნობები და დიპლომები', 'href' => route('certificates.index'), 'icon' => 'certificates'];
+        }
+
         // AcademicOverviewController re-checks the same roles.
         if (in_array($activeRole, [TenantMembership::ROLE_ADMIN, TenantMembership::ROLE_DIRECTOR, TenantMembership::ROLE_ACADEMIC_MANAGER], true)) {
             $items[] = ['key' => 'academic-overview', 'label' => 'აკადემიური მიმოხილვა', 'href' => route('academic-overview'), 'icon' => 'academic-overview'];
@@ -466,7 +471,7 @@ class PortalContext
         'learning' => ['label' => 'სწავლება', 'keys' => ['academic-overview', 'timetable', 'curriculum', 'substitutions', 'assignments', 'gradebook', 'competencies', 'report-cards', 'assessment-settings', 'absence-notes']],
         'students' => ['label' => 'მოსწავლეები და ოჯახები', 'keys' => ['students', 'admissions-pipeline', 'school-visits', 'appointments', 'consents', 'pickup', 'pickup-desk', 'health']],
         'staff' => ['label' => 'პერსონალი', 'keys' => ['staff', 'worked-hours', 'members', 'permissions']],
-        'school' => ['label' => 'სკოლის მართვა', 'keys' => ['academic-structure', 'documents', 'finance', 'services', 'books', 'book-lists', 'library-desk']],
+        'school' => ['label' => 'სკოლის მართვა', 'keys' => ['academic-structure', 'documents', 'certificates', 'finance', 'services', 'books', 'book-lists', 'library-desk']],
         'website' => ['label' => 'საიტი და სისტემა', 'keys' => ['cms', 'teachers', 'support-access']],
     ];
 
