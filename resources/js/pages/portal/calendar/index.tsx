@@ -13,7 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { formatDay } from '@/lib/assessment';
+import { formatDay, formatMonth } from '@/lib/assessment';
 
 type Entry = {
     key: string;
@@ -68,13 +68,6 @@ const shiftMonth = (month: string, by: number) => {
 
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
-
-const monthTitle = (month: string) =>
-    new Date(`${month}-01T12:00:00Z`).toLocaleDateString('ka-GE', {
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'Asia/Tbilisi',
-    });
 
 const onDay = (entry: Entry, day: string) =>
     entry.startsOn <= day && entry.endsOn >= day;
@@ -155,7 +148,7 @@ export default function CalendarIndex({
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <h2 className="min-w-44 text-center text-lg capitalize">
-                    {monthTitle(month)}
+                    {formatMonth(month)}
                 </h2>
                 <Button
                     variant="outline"

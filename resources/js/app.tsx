@@ -3,8 +3,11 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
+import { installGeorgianDates } from '@/lib/ka-dates';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+
+installGeorgianDates();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatTime, formatWeekdayDay } from '@/lib/assessment';
 
 type Entry = {
     id: number;
@@ -71,19 +72,8 @@ export default function TimeClockIndex({
 }: Props) {
     const [busy, setBusy] = useState(false);
     const [editing, setEditing] = useState<Entry | 'new' | null>(null);
-    const time = (iso: string) =>
-        new Date(iso).toLocaleTimeString('ka-GE', {
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: timezone,
-        });
-    const day = (iso: string) =>
-        new Date(iso).toLocaleDateString('ka-GE', {
-            day: 'numeric',
-            month: 'long',
-            weekday: 'short',
-            timeZone: timezone,
-        });
+    const time = (iso: string) => formatTime(iso, timezone);
+    const day = (iso: string) => formatWeekdayDay(iso, timezone);
 
     const post = (url: string) => {
         setBusy(true);

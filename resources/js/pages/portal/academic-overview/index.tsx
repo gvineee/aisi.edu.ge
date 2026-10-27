@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, ChartColumn } from 'lucide-react';
 import PortalLayout from '@/layouts/portal/portal-layout';
-import { formatDay } from '@/lib/assessment';
+import { formatDateTime, formatDay } from '@/lib/assessment';
 
 type Attendance = {
     marked: number;
@@ -90,7 +90,8 @@ export default function AcademicOverviewIndex({
             ...change,
         };
         Object.entries(next).forEach(([key, value]) => {
-            if (value !== null && String(value) !== '') params[key] = String(value);
+            if (value !== null && String(value) !== '')
+                params[key] = String(value);
         });
 
         return params;
@@ -106,9 +107,7 @@ export default function AcademicOverviewIndex({
             <h1 className="mb-2 text-2xl">აკადემიური მიმოხილვა</h1>
             <p className="mb-6 text-sm text-slate-500">
                 {formatDay(range.from)} – {formatDay(range.to)} · გამოთვლილია{' '}
-                {new Date(computedAt).toLocaleString('ka-GE', {
-                    timeZone: 'Asia/Tbilisi',
-                })}
+                {formatDateTime(computedAt)}
             </p>
 
             <div className="mb-6 flex flex-wrap items-end gap-4">

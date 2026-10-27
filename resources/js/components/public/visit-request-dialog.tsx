@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { formatGeorgian } from '@/lib/ka-dates';
 
 type Props = {
     open: boolean;
@@ -29,12 +30,16 @@ type VisitSlot = {
     remaining: number;
 };
 
-const dayFormat = new Intl.DateTimeFormat('ka-GE', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'Asia/Tbilisi',
-});
+const dayFormat = {
+    // Georgian even without the browser's ka-GE data.
+    format: (date: Date) =>
+        formatGeorgian(date, {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            timeZone: 'Asia/Tbilisi',
+        }),
+};
 const timeFormat = new Intl.DateTimeFormat('ka-GE', {
     hour: '2-digit',
     minute: '2-digit',
