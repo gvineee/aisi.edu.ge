@@ -122,10 +122,17 @@ class MemberController extends Controller
                 'className' => $invitation->schoolClass?->name,
                 'expiresAt' => $invitation->expires_at->toIso8601String(),
                 'isExpired' => $invitation->isExpired(),
+                // Shown to the admin so the link can be handed over another
+                // way (message, in person) while school mail is not set up.
+                'acceptUrl' => $invitation->isExpired() ? null : route('invitations.show', $invitation->token),
             ])->values(),
+            'mailEnabled' => self::mailDelivers(),
+            'preselectStudentId' => $request->integer('invite_student') ?: null,
+            // By class, then surname: same-named pupils are told apart by class.
             'students' => Student::query()->where('tenant_id', $tenant->id)->where('is_active', true)
-                ->orderBy('first_name')->get(['id', 'first_name', 'last_name', 'user_id'])
-                ->map(fn (Student $student) => ['id' => $student->id, 'name' => $student->fullName(), 'hasAccount' => $student->user_id !== null])->values(),
+                ->with('schoolClass:id,name')->get(['id', 'first_name', 'last_name', 'user_id', 'school_class_id'])
+                ->sortBy([fn (Student $a, Student $b) => strnatcmp($a->schoolClass->name ?? '', $b->schoolClass->name ?? ''), fn (Student $a, Student $b) => strcmp($a->last_name.$a->first_name, $b->last_name.$b->first_name)])
+                ->map(fn (Student $student) => ['id' => $student->id, 'name' => $student->fullName(), 'className' => $student->schoolClass?->name, 'hasAccount' => $student->user_id !== null])->values(),
             'schoolClasses' => SchoolClass::query()->where('tenant_id', $tenant->id)
                 ->orderBy('name')->get(['id', 'name']),
             'enrollmentRequests' => $enrollmentRequests->map(fn (EnrollmentVerificationRequest $request) => [
@@ -189,10 +196,9 @@ class MemberController extends Controller
 
         $this->sendInvitationMail($invitation, $tenant->name);
 
-        return redirect()->route('members.index')->with('toast', [
-            'type' => 'success',
-            'message' => 'მოწვევა გაიგზავნა.',
-        ]);
+        return redirect()->route('members.index')->with('toast', self::mailDelivers()
+            ? ['type' => 'success', 'message' => 'მოწვევა გაიგზავნა.']
+            : ['type' => 'warning', 'message' => 'მოწვევა შეიქმნა, მაგრამ ფოსტა ჯერ ჩართული არ არის — დააკოპირეთ ბმული „მოწვევებში“ და გადაეცით თავად.']);
     }
 
     public function resendInvitation(Request $request, CurrentTenant $currentTenant, TenantInvitation $invitation, ResendTenantInvitation $action): RedirectResponse
@@ -203,10 +209,9 @@ class MemberController extends Controller
 
         $this->sendInvitationMail($action->handle($invitation, $request->user()), $tenant->name);
 
-        return redirect()->route('members.index')->with('toast', [
-            'type' => 'success',
-            'message' => 'მოწვევა ხელახლა გაიგზავნა.',
-        ]);
+        return redirect()->route('members.index')->with('toast', self::mailDelivers()
+            ? ['type' => 'success', 'message' => 'მოწვევა ხელახლა გაიგზავნა.']
+            : ['type' => 'warning', 'message' => 'მოწვევის ვადა განახლდა. ფოსტა ჯერ ჩართული არ არის — ბმული გადაეცით თავად.']);
     }
 
     public function storeGuardianLink(Request $request, CurrentTenant $currentTenant, TenantMembership $membership, ManageGuardianLinks $action): RedirectResponse
@@ -347,6 +352,15 @@ class MemberController extends Controller
     private function authorizeAdmin(int $tenantId, User $user): void
     {
         abort_unless(TenantMembership::userHasAnyActiveRole($tenantId, $user->id, self::ADMIN_ROLES), 403);
+    }
+
+    /**
+     * Whether invitation mail actually leaves the server (the `log` and
+     * `array` mailers only record it).
+     */
+    private static function mailDelivers(): bool
+    {
+        return ! in_array(config('mail.default'), ['log', 'array'], true);
     }
 
     private function sendInvitationMail(TenantInvitation $invitation, string $tenantName): void

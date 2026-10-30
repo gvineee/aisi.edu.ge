@@ -1,12 +1,12 @@
-import { Head, router } from "@inertiajs/react";
-import { useMemo, useState, type FormEvent } from "react";
-import { Search, UserPlus, Users } from "lucide-react";
-import { toast } from "sonner";
-import PortalLayout from "@/layouts/portal/portal-layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { formatDay } from "@/lib/assessment";
-import * as MemberController from "@/actions/App/Http/Controllers/Portal/MemberController";
+import { Head, router } from '@inertiajs/react';
+import { useMemo, useState, type FormEvent } from 'react';
+import { Search, UserPlus, Users } from 'lucide-react';
+import { toast } from 'sonner';
+import PortalLayout from '@/layouts/portal/portal-layout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { formatDay } from '@/lib/assessment';
+import * as MemberController from '@/actions/App/Http/Controllers/Portal/MemberController';
 
 type GuardianLinkRow = {
     id: number;
@@ -43,11 +43,35 @@ type PendingInvitation = {
     className: string | null;
     expiresAt: string;
     isExpired: boolean;
+    acceptUrl: string | null;
 };
 
 type Option = { id: number; name: string };
 
-type StudentOption = Option & { hasAccount: boolean };
+type StudentOption = Option & { className: string | null; hasAccount: boolean };
+
+/** Pupils grouped by class, so same-named pupils are told apart. */
+function StudentOptions({ students }: { students: StudentOption[] }) {
+    const groups = new Map<string, StudentOption[]>();
+    students.forEach((student) => {
+        const key = student.className ?? 'კლასის გარეშე';
+        groups.set(key, [...(groups.get(key) ?? []), student]);
+    });
+
+    return (
+        <>
+            {[...groups].map(([className, list]) => (
+                <optgroup key={className} label={className}>
+                    {list.map((student) => (
+                        <option key={student.id} value={student.id}>
+                            {student.name} ({className})
+                        </option>
+                    ))}
+                </optgroup>
+            ))}
+        </>
+    );
+}
 
 type EnrollmentRequest = {
     id: number;
@@ -70,43 +94,45 @@ type Props = {
     students: StudentOption[];
     schoolClasses: Option[];
     enrollmentRequests: EnrollmentRequest[];
+    mailEnabled: boolean;
+    preselectStudentId: number | null;
 };
 
 const ROLE_LABELS: Record<string, string> = {
-    student: "მოსწავლე",
-    guardian: "მშობელი",
-    teacher: "მასწავლებელი",
-    academic_manager: "აკადემიური მენეჯერი",
-    accountant: "ბუღალტერი",
-    editor: "რედაქტორი",
-    librarian: "ბიბლიოთეკარი",
-    admin: "ადმინისტრატორი",
-    director: "დირექტორი",
+    student: 'მოსწავლე',
+    guardian: 'მშობელი',
+    teacher: 'მასწავლებელი',
+    academic_manager: 'აკადემიური მენეჯერი',
+    accountant: 'ბუღალტერი',
+    editor: 'რედაქტორი',
+    librarian: 'ბიბლიოთეკარი',
+    admin: 'ადმინისტრატორი',
+    director: 'დირექტორი',
 };
 
 const ROLE_OPTIONS = Object.entries(ROLE_LABELS);
 
 const PERMISSIONS = [
     {
-        name: "can_view_academic",
-        key: "canViewAcademic",
-        label: "აკადემიური ინფორმაცია",
+        name: 'can_view_academic',
+        key: 'canViewAcademic',
+        label: 'აკადემიური ინფორმაცია',
     },
     {
-        name: "can_view_financial",
-        key: "canViewFinancial",
-        label: "ფინანსური ინფორმაცია",
+        name: 'can_view_financial',
+        key: 'canViewFinancial',
+        label: 'ფინანსური ინფორმაცია',
     },
-    { name: "can_pickup", key: "canPickup", label: "აყვანის უფლება" },
+    { name: 'can_pickup', key: 'canPickup', label: 'აყვანის უფლება' },
     {
-        name: "can_receive_notifications",
-        key: "canReceiveNotifications",
-        label: "შეტყობინებები",
+        name: 'can_receive_notifications',
+        key: 'canReceiveNotifications',
+        label: 'შეტყობინებები',
     },
 ] as const;
 
 const SELECT_CLASS =
-    "h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm";
+    'h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm';
 
 function PermissionCheckboxes({
     idPrefix,
@@ -152,7 +178,7 @@ const post = (
             onDone?.();
         },
         onError: (errors) =>
-            toast.error(Object.values(errors)[0] ?? "შემოწმეთ ფორმის ველები."),
+            toast.error(Object.values(errors)[0] ?? 'შემოწმეთ ფორმის ველები.'),
     });
 
 function GuardianPanel({
@@ -172,12 +198,12 @@ function GuardianPanel({
         isActive: boolean,
     ) => {
         const form = new FormData(target);
-        form.set("is_active", isActive ? "1" : "0");
-        form.set("_method", "put");
+        form.set('is_active', isActive ? '1' : '0');
+        form.set('_method', 'put');
         post(
             MemberController.updateGuardianLink.url(link.id),
             form,
-            isActive ? "მშობლის უფლებები შენახულია." : "კავშირი გაუქმდა.",
+            isActive ? 'მშობლის უფლებები შენახულია.' : 'კავშირი გაუქმდა.',
         );
     };
 
@@ -187,7 +213,7 @@ function GuardianPanel({
         post(
             MemberController.storeGuardianLink.url(member.id),
             new FormData(target),
-            "მოსწავლე დაუკავშირდა მშობელს.",
+            'მოსწავლე დაუკავშირდა მშობელს.',
             () => target.reset(),
         );
     };
@@ -209,7 +235,7 @@ function GuardianPanel({
                     className="rounded-lg border border-slate-200 p-4"
                 >
                     <p className="mb-2 font-medium">
-                        {link.studentName}{" "}
+                        {link.studentName}{' '}
                         {!link.isActive && (
                             <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                                 გაუქმებული კავშირი
@@ -228,7 +254,7 @@ function GuardianPanel({
                     />
                     <div className="mt-3 flex flex-wrap gap-2">
                         <Button type="submit" size="sm" className="min-h-11">
-                            {link.isActive ? "შენახვა" : "აღდგენა"}
+                            {link.isActive ? 'შენახვა' : 'აღდგენა'}
                         </Button>
                         {link.isActive && (
                             <Button
@@ -239,7 +265,7 @@ function GuardianPanel({
                                 onClick={(event) => {
                                     if (
                                         !confirm(
-                                            "გავაუქმოთ მშობლის კავშირი ამ მოსწავლესთან?",
+                                            'გავაუქმოთ მშობლის კავშირი ამ მოსწავლესთან?',
                                         )
                                     ) {
                                         return;
@@ -276,13 +302,11 @@ function GuardianPanel({
                     className={SELECT_CLASS}
                 >
                     <option value="">აირჩიეთ მოსწავლე</option>
-                    {students
-                        .filter((student) => !linkedIds.has(student.id))
-                        .map((student) => (
-                            <option key={student.id} value={student.id}>
-                                {student.name}
-                            </option>
-                        ))}
+                    <StudentOptions
+                        students={students.filter(
+                            (student) => !linkedIds.has(student.id),
+                        )}
+                    />
                 </select>
                 <div className="mt-3">
                     <PermissionCheckboxes
@@ -311,7 +335,7 @@ function TeacherPanel({
     const remove = (assignment: TeacherAssignmentRow) => {
         if (
             !confirm(
-                `მოვხსნათ მინიჭება: ${assignment.className}${assignment.subject ? ` · ${assignment.subject}` : ""}?`,
+                `მოვხსნათ მინიჭება: ${assignment.className}${assignment.subject ? ` · ${assignment.subject}` : ''}?`,
             )
         ) {
             return;
@@ -321,9 +345,9 @@ function TeacherPanel({
             MemberController.destroyTeacherAssignment.url(assignment.id),
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success("მინიჭება მოიხსნა."),
+                onSuccess: () => toast.success('მინიჭება მოიხსნა.'),
                 onError: (errors) =>
-                    toast.error(Object.values(errors)[0] ?? "ვერ მოიხსნა."),
+                    toast.error(Object.values(errors)[0] ?? 'ვერ მოიხსნა.'),
             },
         );
     };
@@ -334,7 +358,7 @@ function TeacherPanel({
         post(
             MemberController.storeTeacherAssignment.url(member.id),
             new FormData(target),
-            "კლასი მიენიჭა.",
+            'კლასი მიენიჭა.',
             () => target.reset(),
         );
     };
@@ -424,26 +448,31 @@ export default function MembersIndex({
     students,
     schoolClasses,
     enrollmentRequests,
+    mailEnabled,
+    preselectStudentId,
 }: Props) {
-    const [showInvite, setShowInvite] = useState(false);
-    const [role, setRole] = useState("teacher");
+    // From a pupil's "add a parent": open the form for that pupil.
+    const [showInvite, setShowInvite] = useState(preselectStudentId !== null);
+    const [role, setRole] = useState(
+        preselectStudentId !== null ? 'guardian' : 'teacher',
+    );
     const [sending, setSending] = useState(false);
     const [manualStudent, setManualStudent] = useState<Record<number, string>>(
         {},
     );
-    const [query, setQuery] = useState("");
-    const [roleFilter, setRoleFilter] = useState("");
+    const [query, setQuery] = useState('');
+    const [roleFilter, setRoleFilter] = useState('');
     const [openMember, setOpenMember] = useState<number | null>(null);
 
     const visibleMembers = useMemo(() => {
-        const needle = query.trim().toLocaleLowerCase("ka-GE");
+        const needle = query.trim().toLocaleLowerCase('ka-GE');
 
         return members.filter((member) => {
-            if (roleFilter !== "" && member.role !== roleFilter) {
+            if (roleFilter !== '' && member.role !== roleFilter) {
                 return false;
             }
 
-            if (needle === "") {
+            if (needle === '') {
                 return true;
             }
 
@@ -452,11 +481,11 @@ export default function MembersIndex({
                 member.userEmail,
                 ...member.guardianLinks.map((link) => link.studentName),
                 ...member.teacherAssignments.map(
-                    (a) => `${a.className} ${a.subject ?? ""}`,
+                    (a) => `${a.className} ${a.subject ?? ''}`,
                 ),
             ]
-                .join(" ")
-                .toLocaleLowerCase("ka-GE");
+                .join(' ')
+                .toLocaleLowerCase('ka-GE');
 
             return haystack.includes(needle);
         });
@@ -468,13 +497,13 @@ export default function MembersIndex({
         setSending(true);
         router.post(MemberController.store.url(), form, {
             onSuccess: () => {
-                toast.success("მოწვევა გაიგზავნა.");
+                toast.success('მოწვევა გაიგზავნა.');
                 setShowInvite(false);
                 (event.target as HTMLFormElement).reset();
             },
             onError: (errors) =>
                 toast.error(
-                    Object.values(errors)[0] ?? "შემოწმეთ ფორმის ველები.",
+                    Object.values(errors)[0] ?? 'შემოწმეთ ფორმის ველები.',
                 ),
             onFinish: () => setSending(false),
         });
@@ -482,7 +511,7 @@ export default function MembersIndex({
 
     const revoke = (membershipId: number) => {
         if (
-            !confirm("დარწმუნებული ხართ, რომ გსურთ ამ წევრის წვდომის გაუქმება?")
+            !confirm('დარწმუნებული ხართ, რომ გსურთ ამ წევრის წვდომის გაუქმება?')
         ) {
             return;
         }
@@ -492,7 +521,7 @@ export default function MembersIndex({
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success("წვდომა გაუქმდა."),
+                onSuccess: () => toast.success('წვდომა გაუქმდა.'),
             },
         );
     };
@@ -507,7 +536,7 @@ export default function MembersIndex({
         post(
             MemberController.resendInvitation.url(invitationId),
             {},
-            "მოწვევა ხელახლა გაიგზავნა.",
+            'მოწვევა ხელახლა გაიგზავნა.',
         );
     };
 
@@ -515,31 +544,31 @@ export default function MembersIndex({
         const studentId = manualStudent[requestId];
 
         if (!matched && !studentId) {
-            toast.error("აირჩიეთ მოსწავლე ხელით.");
+            toast.error('აირჩიეთ მოსწავლე ხელით.');
 
             return;
         }
 
         router.post(
             MemberController.decideEnrollment.url(requestId),
-            { decision: "approve", student_id: studentId ?? "" },
+            { decision: 'approve', student_id: studentId ?? '' },
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success("მოთხოვნა დამტკიცდა."),
-                onError: () => toast.error("ვერ დამტკიცდა — გადაამოწმეთ."),
+                onSuccess: () => toast.success('მოთხოვნა დამტკიცდა.'),
+                onError: () => toast.error('ვერ დამტკიცდა — გადაამოწმეთ.'),
             },
         );
     };
 
     const rejectEnrollment = (requestId: number) => {
-        const reason = prompt("უარყოფის მიზეზი (არასავალდებულო):") ?? "";
+        const reason = prompt('უარყოფის მიზეზი (არასავალდებულო):') ?? '';
 
         router.post(
             MemberController.decideEnrollment.url(requestId),
-            { decision: "reject", reason },
+            { decision: 'reject', reason },
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success("მოთხოვნა უარყოფილია."),
+                onSuccess: () => toast.success('მოთხოვნა უარყოფილია.'),
             },
         );
     };
@@ -557,6 +586,18 @@ export default function MembersIndex({
                     <UserPlus size={16} /> ახალი წევრის მოწვევა
                 </Button>
             </div>
+
+            {!mailEnabled && (
+                <p
+                    role="status"
+                    className="mb-6 rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+                >
+                    საიტის ფოსტა ჯერ ჩართული არ არის, ამიტომ მოწვევის წერილი არ
+                    იგზავნება. მოწვევის შექმნის შემდეგ ქვემოთ, „მოწვევებში“
+                    დააკოპირეთ ბმული და გაუგზავნეთ ადამიანს თავად (მაგ.
+                    შეტყობინებით). ბმული პირადია და 7 დღე მოქმედებს.
+                </p>
+            )}
 
             {showInvite && (
                 <form
@@ -602,7 +643,7 @@ export default function MembersIndex({
                         </select>
                     </div>
 
-                    {role === "student" && (
+                    {role === 'student' && (
                         <div>
                             <label
                                 htmlFor="invite-student-account"
@@ -619,16 +660,11 @@ export default function MembersIndex({
                                     — მიბმის გარეშე (მოსწავლე თავად დაადასტურებს
                                     ვინაობას) —
                                 </option>
-                                {students
-                                    .filter((student) => !student.hasAccount)
-                                    .map((student) => (
-                                        <option
-                                            key={student.id}
-                                            value={student.id}
-                                        >
-                                            {student.name}
-                                        </option>
-                                    ))}
+                                <StudentOptions
+                                    students={students.filter(
+                                        (student) => !student.hasAccount,
+                                    )}
+                                />
                             </select>
                             <p className="mt-1 text-xs text-slate-500">
                                 სიაში ჩანს მხოლოდ მოსწავლეები, რომლებსაც
@@ -637,7 +673,7 @@ export default function MembersIndex({
                         </div>
                     )}
 
-                    {role === "guardian" && (
+                    {role === 'guardian' && (
                         <>
                             <div>
                                 <label
@@ -650,18 +686,16 @@ export default function MembersIndex({
                                     id="invite-student"
                                     name="student_id"
                                     required
+                                    defaultValue={preselectStudentId ?? ''}
                                     className={SELECT_CLASS}
                                 >
                                     <option value="">აირჩიეთ მოსწავლე</option>
-                                    {students.map((student) => (
-                                        <option
-                                            key={student.id}
-                                            value={student.id}
-                                        >
-                                            {student.name}
-                                        </option>
-                                    ))}
+                                    <StudentOptions students={students} />
                                 </select>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    მეორე შვილს მშობლის შემოსვლის შემდეგ მის
+                                    ჩანაწერში „სხვა მოსწავლის მიბმით“ დაამატებთ.
+                                </p>
                             </div>
                             <PermissionCheckboxes
                                 idPrefix="invite"
@@ -673,7 +707,7 @@ export default function MembersIndex({
                         </>
                     )}
 
-                    {role === "teacher" && (
+                    {role === 'teacher' && (
                         <>
                             <div>
                                 <label
@@ -732,7 +766,7 @@ export default function MembersIndex({
 
             {pendingInvitations.length > 0 && (
                 <div className="mb-8">
-                    <h2 className="mb-3 text-lg">გაგზავნილი მოწვევები</h2>
+                    <h2 className="mb-3 text-lg">მოწვევები (ჯერ არ მიუღიათ)</h2>
                     <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
                         {pendingInvitations.map((invitation) => (
                             <li
@@ -750,7 +784,7 @@ export default function MembersIndex({
                                             ` · ${invitation.studentName}`}
                                         {invitation.className &&
                                             ` · ${invitation.className}`}
-                                        {" · "}
+                                        {' · '}
                                         {invitation.isExpired ? (
                                             <span className="font-medium text-amber-700">
                                                 ვადა ამოიწურა
@@ -761,6 +795,32 @@ export default function MembersIndex({
                                     </p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
+                                    {invitation.acceptUrl && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="min-h-11"
+                                            onClick={() => {
+                                                const url =
+                                                    invitation.acceptUrl ?? '';
+                                                navigator.clipboard
+                                                    .writeText(url)
+                                                    .then(
+                                                        () =>
+                                                            toast.success(
+                                                                'ბმული დაკოპირდა.',
+                                                            ),
+                                                        () =>
+                                                            window.prompt(
+                                                                'დააკოპირეთ ბმული:',
+                                                                url,
+                                                            ),
+                                                    );
+                                            }}
+                                        >
+                                            ბმულის კოპირება
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -801,21 +861,21 @@ export default function MembersIndex({
                             >
                                 <div>
                                     <p className="font-medium">
-                                        {request.userName}{" "}
+                                        {request.userName}{' '}
                                         <span className="text-sm text-slate-500">
                                             {request.userEmail}
                                         </span>
                                     </p>
                                     <p className="text-sm text-slate-500">
                                         {ROLE_LABELS[request.requestedRole] ??
-                                            request.requestedRole}{" "}
+                                            request.requestedRole}{' '}
                                         · აცხადებს: {request.submittedName}
                                         {request.submittedNationalId &&
                                             ` (${request.submittedNationalId})`}
                                     </p>
                                     {request.matchedStudent ? (
                                         <p className="mt-1 text-sm text-emerald-700">
-                                            დამთხვევა:{" "}
+                                            დამთხვევა:{' '}
                                             {request.matchedStudent.name}
                                             {request.matchedStudent.className &&
                                                 ` · ${request.matchedStudent.className}`}
@@ -832,7 +892,7 @@ export default function MembersIndex({
                                             aria-label="მოსწავლე ხელით"
                                             className="h-11 rounded-md border border-slate-300 px-2 text-sm"
                                             value={
-                                                manualStudent[request.id] ?? ""
+                                                manualStudent[request.id] ?? ''
                                             }
                                             onChange={(event) =>
                                                 setManualStudent((prev) => ({
@@ -933,17 +993,17 @@ export default function MembersIndex({
                     {visibleMembers.map((member) => {
                         const manageable =
                             member.isActive &&
-                            (member.role === "guardian" ||
-                                member.role === "teacher");
+                            (member.role === 'guardian' ||
+                                member.role === 'teacher');
                         const isOpen = openMember === member.id;
                         const summary =
-                            member.role === "guardian"
+                            member.role === 'guardian'
                                 ? member.guardianLinks
                                       .filter((link) => link.isActive)
                                       .map((link) => link.studentName)
                                 : member.teacherAssignments.map(
                                       (a) =>
-                                          `${a.className}${a.subject ? ` · ${a.subject}` : ""}`,
+                                          `${a.className}${a.subject ? ` · ${a.subject}` : ''}`,
                                   );
 
                         return (
@@ -951,7 +1011,7 @@ export default function MembersIndex({
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="min-w-0">
                                         <p className="font-medium">
-                                            {member.userName}{" "}
+                                            {member.userName}{' '}
                                             <span className="text-sm break-all text-slate-500">
                                                 {member.userEmail}
                                             </span>
@@ -960,20 +1020,20 @@ export default function MembersIndex({
                                             {ROLE_LABELS[member.role] ??
                                                 member.role}
                                             {summary.length > 0 &&
-                                                ` · ${summary.join(", ")}`}
+                                                ` · ${summary.join(', ')}`}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                         <span
                                             className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium ${
                                                 member.isActive
-                                                    ? "bg-emerald-100 text-emerald-800"
-                                                    : "bg-slate-100 text-slate-500"
+                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                    : 'bg-slate-100 text-slate-500'
                                             }`}
                                         >
                                             {member.isActive
-                                                ? "აქტიური"
-                                                : "გაუქმებული"}
+                                                ? 'აქტიური'
+                                                : 'გაუქმებული'}
                                         </span>
                                         {manageable && (
                                             <Button
@@ -990,9 +1050,9 @@ export default function MembersIndex({
                                                     )
                                                 }
                                             >
-                                                {member.role === "guardian"
-                                                    ? "მოსწავლეები და უფლებები"
-                                                    : "კლასები და საგნები"}
+                                                {member.role === 'guardian'
+                                                    ? 'მოსწავლეები და უფლებები'
+                                                    : 'კლასები და საგნები'}
                                             </Button>
                                         )}
                                         {member.isActive && (
@@ -1014,7 +1074,7 @@ export default function MembersIndex({
                                         id={`member-panel-${member.id}`}
                                         className="mt-4"
                                     >
-                                        {member.role === "guardian" ? (
+                                        {member.role === 'guardian' ? (
                                             <GuardianPanel
                                                 member={member}
                                                 students={students}

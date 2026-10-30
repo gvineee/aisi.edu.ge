@@ -62,6 +62,8 @@ class StudentDirectoryController extends Controller
                 'groups' => $groups->get($s->id, collect())->pluck('name')->values(),
                 'guardians' => $s->guardianLinks->map(fn (GuardianLink $l) => $l->guardian->name ?? '')->filter()->values(),
             ])->values(),
+            // Inviting a guardian happens on the members page (admin, director).
+            'canInviteGuardians' => TenantMembership::userHasAnyActiveRole($tenantId, $request->user()->id, PortalContext::MEMBER_ACCESS_ROLES),
         ]);
     }
 }

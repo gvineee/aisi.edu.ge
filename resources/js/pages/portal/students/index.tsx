@@ -22,6 +22,7 @@ type Props = {
     filters: { class: number | null; q: string; inactive: boolean };
     total: number;
     students: Student[];
+    canInviteGuardians: boolean;
 };
 
 /**
@@ -37,6 +38,7 @@ export default function StudentsIndex({
     filters,
     total,
     students,
+    canInviteGuardians,
 }: Props) {
     const [q, setQ] = useState(filters.q);
 
@@ -231,6 +233,14 @@ export default function StudentsIndex({
                                             <span className="text-amber-800">
                                                 მიუბმელი
                                             </span>
+                                        )}
+                                        {canInviteGuardians && (
+                                            <Link
+                                                href={`/portal/members?invite_student=${student.id}`}
+                                                className="ml-2 text-xs whitespace-nowrap underline underline-offset-4"
+                                            >
+                                                + მშობელი
+                                            </Link>
                                         )}
                                     </td>
                                     <td className="px-4 py-2.5">
