@@ -203,7 +203,13 @@
      * by a component or utility rule later in the cascade.
      */
     .public-navigation-link {
-        color: var(--brand-accent, #f5683c);
+        /*
+         * The brand accent itself (#F5683C) is only 3.03:1 on white, too
+         * light for 16px text (WCAG 1.4.3 needs 4.5:1). Text uses the same
+         * hue darkened (≈5.4:1); the pure accent stays for the underline.
+         */
+        color: color-mix(in srgb, var(--brand-accent, #f5683c) 72%, #000);
+        text-decoration-color: var(--brand-accent, #f5683c);
         font-family: var(--font-heading);
         font-size: 1rem;
         font-weight: 700;
@@ -219,9 +225,10 @@
     }
 
     .public-navigation-link:hover,
-    .public-navigation-link:focus-visible {
-        color: color-mix(in srgb, var(--brand-accent, #f5683c) 82%, #132b45);
-        text-decoration: underline;
+    .public-navigation-link:focus-visible,
+    .public-navigation-link[aria-current='page'] {
+        color: color-mix(in srgb, var(--brand-accent, #f5683c) 60%, #000);
+        text-decoration-line: underline;
         text-decoration-thickness: 2px;
         text-underline-offset: 0.35rem;
     }
@@ -242,6 +249,160 @@
     @media (min-width: 1024px) and (max-width: 1279px) {
         .public-navigation-link {
             font-size: 0.8125rem;
+        }
+    }
+
+    /*
+     * Public page geometry ported from design/app/globals.css (`.wrap`,
+     * `.hero`, `.photo-frame`, `.floating-card`, `.program-card`) so the
+     * live pages keep the reference's container, type scale and photo
+     * proportions at every width instead of an approximation.
+     */
+    .public-wrap {
+        width: min(1280px, calc(100% - 112px));
+        margin-inline: auto;
+    }
+
+    .public-hero {
+        display: grid;
+        grid-template-columns: 1.04fr 1fr;
+        gap: 66px;
+        align-items: center;
+        padding-block: 52px 86px;
+    }
+
+    .public-eyebrow {
+        margin-bottom: 25px;
+        color: #596b7b;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    .public-hero-title {
+        margin-bottom: 24px;
+        font-size: clamp(2.6rem, 4vw, 3.8rem);
+        line-height: 1.2;
+        letter-spacing: 0.005em;
+    }
+
+    .public-hero-lead {
+        max-width: 490px;
+        color: #596b7b;
+        font-size: 17px;
+        line-height: 1.95;
+    }
+
+    .public-hero-visual {
+        position: relative;
+        padding-right: 24px;
+        padding-bottom: 26px;
+    }
+
+    .public-photo-frame {
+        position: relative;
+        height: 440px;
+        overflow: hidden;
+        border-radius: 130px 14px 14px 14px;
+        background: #cbdce0;
+    }
+
+    .public-floating-card {
+        position: absolute;
+        bottom: 0;
+        left: -32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 22px 26px;
+        border: 1px solid #e6ebef;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 12px 45px #132b4512;
+    }
+
+    .public-program-card {
+        transition: transform 0.2s;
+    }
+
+    .public-program-card:is(a):hover {
+        transform: translateY(-5px);
+    }
+
+    .public-program-card:is(a):focus-visible {
+        outline: 3px solid #cc4821;
+        outline-offset: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .public-program-card {
+            transition: none;
+        }
+
+        .public-program-card:is(a):hover {
+            transform: none;
+        }
+    }
+
+    @media (max-width: 1000px) {
+        .public-wrap {
+            width: calc(100% - 56px);
+        }
+
+        .public-hero {
+            gap: 35px;
+        }
+
+        .public-photo-frame {
+            height: 410px;
+        }
+
+        .public-floating-card {
+            left: -10px;
+            padding: 16px;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .public-wrap {
+            width: calc(100% - 40px);
+        }
+
+        .public-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 36px;
+            padding-block: 30px 54px;
+        }
+
+        .public-eyebrow {
+            margin-bottom: 18px;
+        }
+
+        .public-hero-title {
+            font-size: clamp(2.25rem, 9vw, 3rem);
+            line-height: 1.25;
+            letter-spacing: 0;
+        }
+
+        .public-hero-lead {
+            font-size: 16px;
+        }
+
+        .public-hero-visual {
+            padding-right: 18px;
+        }
+
+        .public-photo-frame {
+            height: 340px;
+            border-top-left-radius: 95px;
+        }
+
+        .public-floating-card {
+            right: 6px;
+            left: 12px;
+            padding: 17px;
         }
     }
 }

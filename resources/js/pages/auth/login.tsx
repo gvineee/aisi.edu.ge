@@ -22,6 +22,16 @@ export default function Login({ status, canResetPassword }: Props) {
         <>
             <Head title="ჩემი აისი — შესვლა" />
 
+            {/* First thing read: e.g. "your session ended, nothing was saved". */}
+            {status && (
+                <p
+                    role="status"
+                    className="mb-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-amber-200"
+                >
+                    {status}
+                </p>
+            )}
+
             <PasskeyVerify
                 label="Passkey-ით შესვლა"
                 loadingLabel="მიმდინარეობს შემოწმება..."
@@ -107,12 +117,6 @@ export default function Login({ status, canResetPassword }: Props) {
                     </>
                 )}
             </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
         </>
     );
 }

@@ -1,5 +1,10 @@
 import { Link, usePage } from '@inertiajs/react';
-import { type CSSProperties, type PropsWithChildren, useState } from 'react';
+import {
+    type CSSProperties,
+    type PropsWithChildren,
+    useRef,
+    useState,
+} from 'react';
 import { ArrowUpRight, Globe, Menu, X } from 'lucide-react';
 import { login } from '@/routes';
 import Logo from '@/components/public/logo';
@@ -15,7 +20,11 @@ import type { Brand } from '@/types';
  * CLAUDE.md invariant #8 and docs/04-design-handoff.md section 6).
  */
 export default function PublicLayout({ children }: PropsWithChildren) {
-    const { brand } = usePage<{ brand: Brand | null }>().props;
+    const { props, url } = usePage<{ brand: Brand | null }>();
+    const { brand } = props;
+    const path = url.split(/[?#]/)[0];
+    const isCurrent = (href: string) =>
+        path === href || path.startsWith(`${href}/`);
     const [menuOpen, setMenuOpen] = useState(false);
     const [visitOpen, setVisitOpen] = useState(false);
     const {
@@ -82,7 +91,16 @@ export default function PublicLayout({ children }: PropsWithChildren) {
         </nav>
     );
 
-    const openVisitDialog = () => setVisitOpen(true);
+    // The dialog opens from buttons anywhere on the page, not from a Radix
+    // trigger, so it remembers the button to give focus back on close.
+    const visitTrigger = useRef<HTMLElement | null>(null);
+    const openVisitDialog = () => {
+        visitTrigger.current =
+            document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null;
+        setVisitOpen(true);
+    };
 
     return (
         <VisitDialogContext.Provider value={openVisitDialog}>
@@ -93,12 +111,12 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                 <header className="relative overflow-x-hidden border-b border-slate-200 bg-white">
                     {languages && (
                         <div className="border-b border-slate-100">
-                            <div className="mx-auto flex max-w-6xl justify-end px-6">
+                            <div className="public-wrap flex justify-end">
                                 {languages}
                             </div>
                         </div>
                     )}
-                    <div className="mx-auto flex h-[76px] max-w-6xl items-center gap-6 px-6">
+                    <div className="public-wrap flex h-[76px] items-center gap-6">
                         <Link
                             href={homeUrl}
                             className="shrink-0"
@@ -112,6 +130,11 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                                 <Link
                                     key={item.href}
                                     href={item.href}
+                                    aria-current={
+                                        isCurrent(item.href)
+                                            ? 'page'
+                                            : undefined
+                                    }
                                     className="public-navigation-link shrink-0 whitespace-nowrap"
                                 >
                                     {item.label}
@@ -145,6 +168,11 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                                 <Link
                                     key={item.href}
                                     href={item.href}
+                                    aria-current={
+                                        isCurrent(item.href)
+                                            ? 'page'
+                                            : undefined
+                                    }
                                     className="public-navigation-link public-navigation-link-mobile min-h-11 py-2"
                                     onClick={() => setMenuOpen(false)}
                                 >
@@ -173,7 +201,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                 <main id="main">{children}</main>
 
                 <footer className="border-t border-slate-200 bg-[var(--brand-secondary)]">
-                    <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-[var(--brand-muted)] sm:flex-row sm:items-center sm:justify-between">
+                    <div className="public-wrap flex flex-col gap-4 py-10 text-sm text-[var(--brand-muted)] sm:flex-row sm:items-center sm:justify-between">
                         <Logo brand={brand} size="compact" />
                         <div className="flex flex-wrap gap-x-6 gap-y-2">
                             {brand?.contact.phone && (
@@ -197,7 +225,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             )}
                         </div>
                     </div>
-                    <div className="mx-auto max-w-6xl px-6">
+                    <div className="public-wrap">
                         <div className="flex flex-wrap gap-x-6 gap-y-0 border-t border-slate-200 py-2 text-xs text-[var(--brand-muted)]">
                             {isDefault ? (
                                 <>
@@ -233,7 +261,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             </a>
                         </div>
                     </div>
-                    <div className="mx-auto max-w-6xl px-6">
+                    <div className="public-wrap">
                         <p className="border-t border-slate-200 py-4 text-xs text-[var(--brand-muted)]">
                             {t('madeByBefore')}
                             <a
@@ -252,6 +280,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                 <VisitRequestDialog
                     open={visitOpen}
                     onOpenChange={setVisitOpen}
+                    returnFocusTo={visitTrigger}
                 />
             </div>
         </VisitDialogContext.Provider>

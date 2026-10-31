@@ -29,6 +29,14 @@ class RequireRecentPassword
 
         $request->session()->put('url.intended', $request->isMethod('GET') ? $request->fullUrl() : url()->previous());
 
-        return redirect()->route('password.confirm');
+        $redirect = redirect()->route('password.confirm');
+
+        // A held-back write: this server toast replaces whatever "saved"
+        // toast the form raises on landing (useFlashToast), so no page
+        // reports a change that never happened.
+        return $request->isMethod('GET') ? $redirect : $redirect->with('toast', [
+            'type' => 'warning',
+            'message' => 'ჯერ დაადასტურეთ პაროლი — ცვლილება ჯერ არ შენახულა. დადასტურების შემდეგ გაიმეორეთ.',
+        ]);
     }
 }

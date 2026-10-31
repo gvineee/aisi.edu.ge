@@ -1,5 +1,5 @@
 import { Form } from '@inertiajs/react';
-import { useCallback, useEffect, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useState } from 'react';
 import { store } from '@/actions/App/Http/Controllers/Public/AdmissionLeadController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ import { formatGeorgian } from '@/lib/ka-dates';
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** The button that opened the dialog; focus goes back there on close. */
+    returnFocusTo?: RefObject<HTMLElement | null>;
 };
 
 type VisitSlot = {
@@ -59,7 +61,11 @@ function slotText(slot: VisitSlot): string {
  * the meantime comes back as a field error and the list is refreshed.
  * Without published times it stays a contact request with a wished date.
  */
-export default function VisitRequestDialog({ open, onOpenChange }: Props) {
+export default function VisitRequestDialog({
+    open,
+    onOpenChange,
+    returnFocusTo,
+}: Props) {
     const [slots, setSlots] = useState<VisitSlot[] | null>(null);
     const [slotsFailed, setSlotsFailed] = useState(false);
     const [selected, setSelected] = useState('');
@@ -95,7 +101,15 @@ export default function VisitRequestDialog({ open, onOpenChange }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+            <DialogContent
+                className="max-h-[90dvh] overflow-y-auto sm:max-w-md"
+                onCloseAutoFocus={(event) => {
+                    if (returnFocusTo?.current?.isConnected) {
+                        event.preventDefault();
+                        returnFocusTo.current.focus();
+                    }
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>ვიზიტის დაგეგმვა</DialogTitle>
                     <DialogDescription>
@@ -284,6 +298,8 @@ export default function VisitRequestDialog({ open, onOpenChange }: Props) {
                                 </Label>
                             </div>
                             <InputError message={errors.consent_given} />
+
+                            <InputError message={errors.rate_limit} />
 
                             <Button
                                 type="submit"

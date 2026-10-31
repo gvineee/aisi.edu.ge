@@ -41,7 +41,9 @@ class LibraryCatalogController extends Controller
                 'subject' => $resource->subject,
                 'isRequired' => $resource->is_required,
                 'accessScope' => $resource->access_scope,
-                'externalUrl' => $resource->external_url,
+                // A link only for a digital item whose distribution right is
+                // confirmed; catalog and loan entries never promise a download.
+                'externalUrl' => $resource->access_scope === LibraryResource::SCOPE_DIGITAL ? $resource->external_url : null,
             ]);
 
         return Inertia::render('public/library-index', [

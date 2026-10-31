@@ -70,4 +70,31 @@ class LibraryCatalogTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('Other Tenant Resource');
     }
+
+    /**
+     * Audit A02: 25+ items span three pages and every page, with the query,
+     * is reachable by link; only a rights-confirmed digital item gets a link.
+     */
+    public function test_pages_carry_the_query_and_only_digital_items_link_out(): void
+    {
+        $tenant = TenantDomain::query()->where('domain', 'localhost')->first()->tenant;
+
+        for ($i = 1; $i <= 26; $i++) {
+            $tenant->libraryResources()->create([
+                'title' => sprintf('წიგნი %02d', $i), 'grade' => 'VI', 'is_required' => false,
+                'access_scope' => $i === 26 ? 'digital' : 'loan',
+                'external_url' => 'https://example.org/book-'.$i,
+            ]);
+        }
+
+        $this->get('/library?q='.urlencode('წიგნი').'&page=3')->assertOk()->assertInertia(fn ($page) => $page
+            ->where('resources.current_page', 3)
+            ->where('resources.last_page', 3)
+            ->where('resources.total', 26)
+            ->where('resources.data.1.title', 'წიგნი 26')
+            ->where('resources.data.1.externalUrl', 'https://example.org/book-26')
+            ->where('resources.data.0.externalUrl', null)
+            ->where('resources.prev_page_url', fn ($url) => str_contains((string) $url, 'q=') && str_contains((string) $url, 'page=2'))
+        );
+    }
 }

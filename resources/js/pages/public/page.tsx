@@ -40,7 +40,12 @@ type Block =
     | {
           type: 'programs';
           heading: string;
-          items: Array<{ title: string; grade: string; body: string }>;
+          items: Array<{
+              title: string;
+              grade: string;
+              body: string;
+              href?: string;
+          }>;
       }
     | {
           type: 'history';
@@ -127,7 +132,17 @@ type Props = {
  * One rendering path for every page keeps the block set (and this
  * component) the single thing to maintain, instead of one file per page.
  */
-export default function CmsPage({
+export default function CmsPage(props: Props) {
+    // The visit dialog's provider lives inside PublicLayout, so everything
+    // that opens it must render below the layout, never beside it.
+    return (
+        <PublicLayout>
+            <CmsPageContent {...props} />
+        </PublicLayout>
+    );
+}
+
+function CmsPageContent({
     page,
     latestPosts = [],
     featuredTeachers = [],
@@ -140,9 +155,15 @@ export default function CmsPage({
     const accent = brand?.colors.accent ?? '#F5683C';
     const primary = brand?.colors.primary ?? '#132B45';
     const openVisitDialog = useOpenVisitDialog();
+    // "Our vision" scrolls to the page's own about section when it has one.
+    const visionHref = page.blocks.some((block) => block.type === 'history')
+        ? '#about'
+        : page.slug === 'about'
+          ? null
+          : '/about';
 
     return (
-        <PublicLayout>
+        <>
             <Head
                 title={
                     preview
@@ -177,18 +198,16 @@ export default function CmsPage({
                 switch (block.type) {
                     case 'hero':
                         return (
-                            <section
-                                key={index}
-                                className="mx-auto max-w-6xl px-6 py-16 sm:py-24"
-                            >
-                                <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+                            <section key={index} className="public-wrap">
+                                {/* Proportions from design/app/globals.css `.hero` (see app.css). */}
+                                <div className="public-hero">
                                     <div>
                                         {block.eyebrow && (
-                                            <p className="mb-6 text-xs font-bold tracking-widest text-slate-500">
+                                            <p className="public-eyebrow">
                                                 {block.eyebrow}
                                             </p>
                                         )}
-                                        <h1 className="text-4xl leading-tight tracking-tight text-balance sm:text-5xl">
+                                        <h1 className="public-hero-title text-balance">
                                             {block.heading}
                                             {block.headingLine2 && (
                                                 <>
@@ -210,15 +229,15 @@ export default function CmsPage({
                                             )}
                                         </h1>
                                         {block.body && (
-                                            <p className="mt-6 max-w-md text-lg text-slate-600">
+                                            <p className="public-hero-lead">
                                                 {block.body}
                                             </p>
                                         )}
-                                        <div className="mt-8 flex flex-wrap items-center gap-6">
+                                        <div className="mt-8 flex flex-wrap items-center gap-x-[26px] gap-y-4">
                                             <button
                                                 type="button"
                                                 onClick={openVisitDialog}
-                                                className="inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
+                                                className="inline-flex min-h-12 items-center gap-3.5 rounded-lg px-[22px] py-[15px] text-sm font-semibold"
                                                 style={{
                                                     backgroundColor: accent,
                                                     color: primary,
@@ -228,32 +247,44 @@ export default function CmsPage({
                                                 {brand?.name ?? ''}{' '}
                                                 <ArrowUpRight size={18} />
                                             </button>
-                                            <a
-                                                href="#about"
-                                                className="inline-flex items-center gap-1 font-semibold"
-                                                style={{ color: primary }}
-                                            >
-                                                ჩვენი ხედვა{' '}
-                                                <ArrowRight size={16} />
-                                            </a>
+                                            {visionHref?.startsWith('#') && (
+                                                <a
+                                                    href={visionHref}
+                                                    className="inline-flex min-h-11 items-center gap-1 font-semibold"
+                                                    style={{ color: primary }}
+                                                >
+                                                    ჩვენი ხედვა{' '}
+                                                    <ArrowRight size={16} />
+                                                </a>
+                                            )}
+                                            {visionHref?.startsWith('/') && (
+                                                <Link
+                                                    href={visionHref}
+                                                    className="inline-flex min-h-11 items-center gap-1 font-semibold"
+                                                    style={{ color: primary }}
+                                                >
+                                                    ჩვენი ხედვა{' '}
+                                                    <ArrowRight size={16} />
+                                                </Link>
+                                            )}
                                         </div>
                                         {block.note && (
-                                            <div className="mt-8 flex items-start gap-3 text-sm text-slate-600">
+                                            <div className="mt-8 flex items-start gap-[15px] text-xs leading-[1.8] text-slate-600 sm:mt-[42px]">
                                                 <Sparkles
-                                                    className="mt-0.5 h-5 w-5 shrink-0"
+                                                    className="h-6 w-6 shrink-0"
                                                     style={{ color: accent }}
                                                 />
                                                 <span>{block.note}</span>
                                             </div>
                                         )}
                                     </div>
-                                    <div className="relative">
+                                    <div className="public-hero-visual">
                                         {brand?.heroImageUrl ? (
-                                            <div className="overflow-hidden rounded-[130px_14px_14px_14px]">
+                                            <div className="public-photo-frame">
                                                 <img
                                                     src={brand.heroImageUrl}
                                                     alt={block.imageAlt ?? ''}
-                                                    className="h-72 w-full object-cover sm:h-96"
+                                                    className="h-full w-full object-cover"
                                                 />
                                                 {block.imageCaption && (
                                                     <p className="absolute top-3 right-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600">
@@ -263,7 +294,7 @@ export default function CmsPage({
                                             </div>
                                         ) : (
                                             <div
-                                                className="flex h-72 items-center justify-center rounded-[130px_14px_14px_14px] bg-slate-100 sm:h-96"
+                                                className="public-photo-frame flex items-center justify-center bg-slate-100"
                                                 aria-hidden="true"
                                             >
                                                 <BookOpen
@@ -273,7 +304,7 @@ export default function CmsPage({
                                             </div>
                                         )}
                                         <div
-                                            className="absolute top-7 -right-2 hidden text-[10px] tracking-[0.3em] text-slate-400 sm:block"
+                                            className="absolute top-7 -right-2 hidden text-[10px] tracking-[0.3em] text-slate-500 sm:block"
                                             style={{
                                                 writingMode: 'vertical-rl',
                                             }}
@@ -281,21 +312,21 @@ export default function CmsPage({
                                         >
                                             LEARN. DISCOVER. BECOME.
                                         </div>
-                                        <div className="absolute -bottom-6 left-4 flex max-w-56 items-center gap-3 rounded-xl bg-white p-4 shadow-lg ring-1 ring-slate-200">
+                                        <div className="public-floating-card">
                                             <span
-                                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+                                                className="inline-flex shrink-0 rounded-xl p-[13px]"
                                                 style={{
-                                                    backgroundColor: `${accent}1a`,
-                                                    color: accent,
+                                                    backgroundColor: '#ffede7',
+                                                    color: '#c34621',
                                                 }}
                                             >
-                                                <BookOpen size={22} />
+                                                <BookOpen size={27} />
                                             </span>
-                                            <div className="text-sm">
-                                                <p className="font-semibold">
+                                            <div>
+                                                <p className="text-sm font-semibold text-[var(--brand-primary)]">
                                                     მეტი, ვიდრე გაკვეთილი
                                                 </p>
-                                                <p className="text-xs text-slate-500">
+                                                <p className="mt-1 text-xs text-slate-600">
                                                     საკუთარი თავის აღმოჩენის
                                                     ადგილი
                                                 </p>
@@ -314,7 +345,7 @@ export default function CmsPage({
                                 key={index}
                                 className="border-y border-slate-100 bg-slate-50 py-6"
                             >
-                                <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 text-sm font-medium text-slate-600 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-10">
+                                <div className="public-wrap flex flex-col gap-[18px] text-[13px] text-[var(--brand-primary)] sm:flex-row sm:flex-wrap sm:justify-between sm:gap-6 sm:text-sm">
                                     {block.items.map((item, itemIndex) => {
                                         const Icon =
                                             valueIcons[
@@ -344,9 +375,9 @@ export default function CmsPage({
                             <section
                                 key={index}
                                 id="about"
-                                className="border-t border-slate-100 bg-slate-50 py-16 sm:py-24"
+                                className="border-t border-slate-100 bg-slate-50 py-12 sm:py-[76px]"
                             >
-                                <div className="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-2 lg:items-start">
+                                <div className="public-wrap grid gap-10 lg:grid-cols-2 lg:items-start">
                                     <div>
                                         {block.eyebrow && (
                                             <p className="mb-4 text-xs font-bold tracking-widest text-slate-500">
@@ -382,69 +413,120 @@ export default function CmsPage({
                         );
 
                     case 'programs': {
-                        const programAccents = [
-                            { bg: '#FFF1EA', fg: '#C84925' },
-                            { bg: '#E9F0F5', fg: primary },
-                            { bg: '#EAF5EF', fg: '#247452' },
-                        ];
+                        // design/app/globals.css .peach / .blue / .green
+                        const programTones = ['#ffede5', '#eaf1f9', '#e5f2ed'];
+                        // Each stage opens its own description on the
+                        // learning page (or an editor-set link). The learning
+                        // page itself is that description, so no link there.
+                        const stageHref = (
+                            item: (typeof block.items)[number],
+                            n: number,
+                        ) =>
+                            item.href ??
+                            (page.slug === 'learning'
+                                ? null
+                                : `/learning#stage-${n}`);
 
                         return (
                             <section
                                 key={index}
-                                className="bg-slate-50 py-16 sm:py-24"
+                                className="bg-slate-50 py-12 sm:py-[76px]"
                             >
-                                <div className="mx-auto max-w-6xl px-6">
+                                <div className="public-wrap">
                                     <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
                                         <h2 className="text-2xl sm:text-3xl">
                                             {block.heading}
                                         </h2>
-                                        <span className="text-xs font-semibold text-slate-400">
+                                        <span
+                                            className="hidden text-sm whitespace-nowrap text-slate-600 sm:inline"
+                                            aria-hidden="true"
+                                        >
                                             01 —{' '}
                                             {String(
                                                 block.items.length,
                                             ).padStart(2, '0')}
                                         </span>
                                     </div>
-                                    <div className="grid gap-6 sm:grid-cols-3">
+                                    <ul className="grid gap-4 sm:gap-[22px] md:grid-cols-3">
                                         {block.items.map((item, itemIndex) => {
-                                            const tone =
-                                                programAccents[
-                                                    itemIndex %
-                                                        programAccents.length
-                                                ];
-
-                                            return (
-                                                <div
-                                                    key={item.title}
-                                                    className="rounded-xl bg-white p-7 shadow-sm ring-1 ring-slate-200"
-                                                >
-                                                    <div className="mb-4 flex items-center justify-between">
-                                                        <span
-                                                            className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold"
-                                                            style={{
-                                                                backgroundColor:
-                                                                    tone.bg,
-                                                                color: tone.fg,
-                                                            }}
-                                                        >
-                                                            {String(
-                                                                itemIndex + 1,
-                                                            ).padStart(2, '0')}
+                                            const n = itemIndex + 1;
+                                            const href = stageHref(item, n);
+                                            const body = (
+                                                <>
+                                                    <span className="mb-[22px] flex w-full items-center justify-between sm:mb-[42px]">
+                                                        <span className="text-sm opacity-60">
+                                                            {String(n).padStart(
+                                                                2,
+                                                                '0',
+                                                            )}
                                                         </span>
-                                                    </div>
-                                                    <p className="mb-3 text-xs font-semibold text-slate-500">
+                                                        {href && (
+                                                            <ArrowUpRight
+                                                                aria-hidden
+                                                            />
+                                                        )}
+                                                    </span>
+                                                    <span className="text-xs text-[#536877]">
                                                         {item.grade}
-                                                    </p>
-                                                    <h3 className="mb-3 text-lg">
+                                                    </span>
+                                                    <h3 className="mt-2.5 mb-[15px] text-[1.3rem] md:text-[1.15rem] xl:text-[1.3rem]">
                                                         {item.title}
                                                     </h3>
-                                                    <p className="text-sm text-slate-600">
+                                                    <span className="text-sm leading-[1.9] text-[#596b7b]">
                                                         {item.body}
-                                                    </p>
-                                                </div>
+                                                    </span>
+                                                    {href && (
+                                                        <span className="mt-[30px] flex items-center gap-[18px] text-sm font-semibold">
+                                                            გაიგე მეტი
+                                                            <ArrowRight
+                                                                size={18}
+                                                                aria-hidden
+                                                            />
+                                                        </span>
+                                                    )}
+                                                </>
+                                            );
+                                            const card =
+                                                'public-program-card flex h-full flex-col items-start rounded-xl p-[27px] text-left md:p-5 xl:p-[30px]';
+
+                                            return (
+                                                <li
+                                                    key={item.title}
+                                                    id={`stage-${n}`}
+                                                    className="scroll-mt-8"
+                                                >
+                                                    {href ? (
+                                                        <Link
+                                                            href={href}
+                                                            className={card}
+                                                            style={{
+                                                                backgroundColor:
+                                                                    programTones[
+                                                                        itemIndex %
+                                                                            3
+                                                                    ],
+                                                            }}
+                                                        >
+                                                            {body}
+                                                        </Link>
+                                                    ) : (
+                                                        <div
+                                                            className={card}
+                                                            style={{
+                                                                backgroundColor:
+                                                                    programTones[
+                                                                        itemIndex %
+                                                                            3
+                                                                    ],
+                                                            }}
+                                                        >
+                                                            {body}
+                                                        </div>
+                                                    )}
+                                                </li>
                                             );
                                         })}
-                                    </div>
+                                    </ul>
                                 </div>
                             </section>
                         );
@@ -457,7 +539,7 @@ export default function CmsPage({
                                 className="py-16 text-white sm:py-24"
                                 style={{ backgroundColor: primary }}
                             >
-                                <div className="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-2 lg:items-center">
+                                <div className="public-wrap grid gap-10 lg:grid-cols-2 lg:items-center">
                                     <div>
                                         {block.eyebrow && (
                                             <p
@@ -570,7 +652,7 @@ export default function CmsPage({
                             <section
                                 key={index}
                                 id="life"
-                                className="mx-auto max-w-6xl px-6 py-16"
+                                className="public-wrap py-16"
                             >
                                 <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
                                     <div>
@@ -647,7 +729,7 @@ export default function CmsPage({
                                 id="teachers"
                                 className="border-t border-slate-100 bg-slate-50 py-16"
                             >
-                                <div className="mx-auto max-w-6xl px-6">
+                                <div className="public-wrap">
                                     <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
                                         <div>
                                             {block.eyebrow && (
@@ -729,7 +811,7 @@ export default function CmsPage({
                                 id="contact"
                                 className="border-t border-slate-200 bg-[var(--brand-secondary,#F4F7FA)] py-16"
                             >
-                                <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 sm:flex-row sm:items-center">
+                                <div className="public-wrap flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
                                     <div>
                                         {block.eyebrow && (
                                             <p className="mb-2 text-xs font-bold tracking-widest text-slate-500">
@@ -775,10 +857,7 @@ export default function CmsPage({
 
                     case 'documents':
                         return (
-                            <section
-                                key={index}
-                                className="mx-auto max-w-6xl px-6 py-16"
-                            >
+                            <section key={index} className="public-wrap py-16">
                                 {block.heading && (
                                     <h2 className="mb-10 text-2xl sm:text-3xl">
                                         {block.heading}
@@ -824,6 +903,6 @@ export default function CmsPage({
             {media && <ContentMediaBlock media={media} />}
 
             {categorySection && <CategorySection section={categorySection} />}
-        </PublicLayout>
+        </>
     );
 }
