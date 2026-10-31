@@ -32,7 +32,10 @@ export default function VerifyEnrollment({ existingRequest }: Props) {
         last_name: '',
     });
 
-    if (existingRequest && !(existingRequest.status === 'rejected' && allowResubmit)) {
+    if (
+        existingRequest &&
+        !(existingRequest.status === 'rejected' && allowResubmit)
+    ) {
         return (
             <PortalLayout>
                 <Head title="ვერიფიკაცია" />
@@ -45,11 +48,7 @@ export default function VerifyEnrollment({ existingRequest }: Props) {
                             <p className="text-slate-600">
                                 თქვენ მოითხოვეთ წვდომა როგორც{' '}
                                 <strong>
-                                    {
-                                        ROLE_LABELS[
-                                            existingRequest.requestedRole
-                                        ]
-                                    }
+                                    {ROLE_LABELS[existingRequest.requestedRole]}
                                 </strong>{' '}
                                 ({existingRequest.submittedName}). ადმინისტრაცია
                                 მალე განიხილავს — შედეგს ნახავთ აქვე.
@@ -62,8 +61,8 @@ export default function VerifyEnrollment({ existingRequest }: Props) {
                                 მოთხოვნა დამტკიცებულია
                             </h1>
                             <p className="text-slate-600">
-                                გთხოვთ, გვერდი განაახლოთ — თქვენი პროფილი
-                                უკვე მზადაა.
+                                გთხოვთ, გვერდი განაახლოთ — თქვენი პროფილი უკვე
+                                მზადაა.
                             </p>
                         </>
                     )}
@@ -99,14 +98,12 @@ export default function VerifyEnrollment({ existingRequest }: Props) {
             <Head title="ვერიფიკაცია" />
 
             <div className="mx-auto max-w-lg">
-                <h1 className="mb-2 text-xl">
-                    დაადასტურეთ, ვინ ხართ
-                </h1>
+                <h1 className="mb-2 text-xl">დაადასტურეთ, ვინ ხართ</h1>
                 <p className="mb-6 text-sm text-slate-600">
                     სკოლას უკვე აქვს ატვირთული მოსწავლეთა სია. თქვენი (ან
-                    შვილის) მონაცემების მითითებით ჩვენ შევადარებთ მას
-                    სკოლის ბაზას — ადმინისტრაცია დაადასტურებს დამთხვევას
-                    და მოგანიჭებთ წვდომას.
+                    შვილის) მონაცემების მითითებით ჩვენ შევადარებთ მას სკოლის
+                    ბაზას — ადმინისტრაცია დაადასტურებს დამთხვევას და მოგანიჭებთ
+                    წვდომას.
                 </p>
 
                 <form onSubmit={submit} className="space-y-5">
@@ -189,9 +186,9 @@ export default function VerifyEnrollment({ existingRequest }: Props) {
                         />
                         <InputError message={errors.national_id} />
                         <p className="text-xs text-slate-500">
-                            პირადი ნომრით ყველაზე ზუსტად ხდება დამთხვევა
-                            სკოლის ბაზასთან. თუ არ იცით, დატოვეთ ცარიელი —
-                            შემოწმდება სახელით/გვარით.
+                            პირადი ნომრით ყველაზე ზუსტად ხდება დამთხვევა სკოლის
+                            ბაზასთან. თუ არ იცით, დატოვეთ ცარიელი — შემოწმდება
+                            სახელით/გვარით.
                         </p>
                     </div>
 

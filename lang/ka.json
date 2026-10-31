@@ -1,0 +1,7 @@
+{
+    "The provided password was incorrect.": "პაროლი არასწორია.",
+    "The provided two factor authentication code was invalid.": "დადასტურების კოდი არასწორია.",
+    "The provided two factor recovery code was invalid.": "აღდგენის კოდი არასწორია.",
+    "Password updated.": "პაროლი შეიცვალა.",
+    "Profile updated.": "პროფილი განახლდა."
+}

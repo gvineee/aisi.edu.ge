@@ -2,6 +2,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
+import AccountLayout from '@/layouts/account-layout';
 import AppLayout from '@/layouts/app-layout';
 import { installGeorgianDates } from '@/lib/ka-dates';
 import AuthLayout from '@/layouts/auth-layout';
@@ -18,11 +19,13 @@ void createInertiaApp({
             case name === 'welcome':
             case name.startsWith('public/'):
             case name.startsWith('portal/'):
+            case name.startsWith('platform/'):
+            case name === 'error':
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
+                return [AccountLayout, SettingsLayout];
             default:
                 return AppLayout;
         }

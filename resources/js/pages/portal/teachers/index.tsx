@@ -38,16 +38,34 @@ export default function TeachersIndex({ teachers }: Props) {
 
     return (
         <PortalLayout>
-            <Head title="მასწავლებლები" />
+            <Head title="მასწავლებლები საიტზე" />
 
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-2xl">მასწავლებლები</h1>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-2xl">მასწავლებლები საიტზე</h1>
                 <Link href="/portal/teachers/create">
                     <Button>
                         <Plus size={16} /> ახალი მასწავლებელი
                     </Button>
                 </Link>
             </div>
+            <p className="mb-6 max-w-2xl text-sm text-slate-600">
+                საჯარო საიტის „ჩვენი გუნდის“ გვერდები — ფოტო და ბიოგრაფია. ეს არ
+                ქმნის პორტალის ანგარიშს: შესვლა და როლები —{' '}
+                <Link
+                    href="/portal/members"
+                    className="underline underline-offset-4"
+                >
+                    ანგარიშები და წვდომა
+                </Link>
+                ; განრიგი და დატვირთვა —{' '}
+                <Link
+                    href="/portal/staff"
+                    className="underline underline-offset-4"
+                >
+                    პერსონალი და დატვირთვა
+                </Link>
+                .
+            </p>
 
             {teachers.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">

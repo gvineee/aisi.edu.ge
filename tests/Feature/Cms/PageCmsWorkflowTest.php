@@ -169,4 +169,25 @@ class PageCmsWorkflowTest extends TestCase
             ->get("http://other-school.test/portal/cms/pages/{$page->id}/edit", ['Host' => 'other-school.test'])
             ->assertNotFound();
     }
+
+    /**
+     * Audit A13: whatever editor produced the blocks, a script link is
+     * refused and ordinary links are kept.
+     */
+    public function test_block_links_must_be_safe(): void
+    {
+        [, $editor] = $this->editor();
+        $page = fn (string $href) => [
+            'slug' => 'links-'.md5($href), 'locale' => 'ka', 'title' => 'ბმულები',
+            'blocks' => json_encode([['type' => 'history', 'heading' => 'H', 'body' => 'B', 'ctaHref' => $href]]),
+        ];
+
+        foreach (['javascript:alert(1)', 'data:text/html,x', '//evil.example', ' JaVaScRiPt:alert(1)'] as $bad) {
+            $this->actingAs($editor)->post('/portal/cms/pages', $page($bad))->assertSessionHasErrors('blocks');
+        }
+
+        foreach (['/about', '#about', 'https://example.org/x', 'mailto:info@example.org'] as $good) {
+            $this->actingAs($editor)->post('/portal/cms/pages', $page($good))->assertSessionHasNoErrors();
+        }
+    }
 }

@@ -12,6 +12,7 @@ use App\Domain\Tenancy\Models\Tenant;
 use App\Domain\Tenancy\Models\TenantDomain;
 use App\Domain\Tenancy\Models\TenantMembership;
 use App\Domain\Timetable\Models\Lesson;
+use App\Domain\Timetable\Models\NonTeachingPeriod;
 use App\Domain\Timetable\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -87,6 +88,29 @@ class DashboardRolesTest extends TestCase
             ->where('todaySchedule.0.subject', 'Chemistry')
         );
         $response->assertDontSee('Physics');
+    }
+
+    /**
+     * Audit A09: on a holiday the day card must not promise lessons.
+     */
+    public function test_a_holiday_clears_the_day_and_names_the_break(): void
+    {
+        $tenant = $this->localTenant();
+        $today = now($tenant->timezone);
+        ['class' => $class] = $this->makeClassWithLesson($tenant, 'Chemistry', $today->dayOfWeekIso);
+        $year = $tenant->academicYears()->where('name', '2026-2027')->sole();
+        $holiday = new NonTeachingPeriod(['academic_year_id' => $year->id, 'label' => 'შემოდგომის არდადეგები', 'starts_on' => $today->toDateString(), 'ends_on' => $today->toDateString()]);
+        $holiday->tenant_id = $tenant->id;
+        $holiday->save();
+
+        $studentUser = User::factory()->create();
+        TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $studentUser->id, 'role' => TenantMembership::ROLE_STUDENT, 'is_active' => true]);
+        $tenant->students()->create(['school_class_id' => $class->id, 'user_id' => $studentUser->id, 'first_name' => 'Test', 'last_name' => 'Student', 'is_active' => true]);
+
+        $this->actingAs($studentUser)->get(route('dashboard'))->assertInertia(fn ($page) => $page
+            ->where('dayOff', 'შემოდგომის არდადეგები')
+            ->has('todaySchedule', 0)
+        );
     }
 
     public function test_a_student_role_without_a_linked_student_record_gets_an_honest_state(): void

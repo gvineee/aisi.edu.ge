@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState, type FormEvent } from 'react';
 import { IdCard } from 'lucide-react';
 import { toast } from 'sonner';
@@ -309,7 +309,21 @@ export default function StaffIndex({
                 სკოლის თანამშრომლები, მათი კვირის დატვირთვა კლასებისა და
                 საგნების მიხედვით და პორტალის ანგარიში. ანგარიშის მიბმის შემდეგ
                 მასწავლებელი საკუთარ გაკვეთილებს, დასწრებას და ჩანაცვლებებს
-                პორტალში ხედავს.
+                პორტალში ხედავს. მოწვევა და როლები —{' '}
+                <Link
+                    href="/portal/members"
+                    className="underline underline-offset-4"
+                >
+                    ანგარიშები და წვდომა
+                </Link>
+                ; საჯარო ბიოგრაფია —{' '}
+                <Link
+                    href="/portal/teachers"
+                    className="underline underline-offset-4"
+                >
+                    მასწავლებლები საიტზე
+                </Link>
+                .
             </p>
 
             <div className="mb-6 flex flex-wrap items-end gap-4">

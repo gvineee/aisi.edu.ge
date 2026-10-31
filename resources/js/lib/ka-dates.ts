@@ -168,11 +168,14 @@ export function installGeorgianDates(): void {
         return;
     }
 
+    // The browser's own methods, kept to be called with .call(this).
+    /* eslint-disable typescript/unbound-method */
     const original = {
         date: Date.prototype.toLocaleDateString,
         time: Date.prototype.toLocaleTimeString,
         both: Date.prototype.toLocaleString,
     };
+    /* eslint-enable typescript/unbound-method */
 
     Date.prototype.toLocaleDateString = function (
         locales?: Intl.LocalesArgument,

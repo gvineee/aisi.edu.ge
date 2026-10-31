@@ -79,6 +79,8 @@ export default defineConfig({
             'design/**',
             'docs/**',
             'CLAUDE.md',
+            // Handoff notes for the agent, like CLAUDE.md — not product source.
+            'CLAUDE-*.md',
             'content-migration/**',
         ],
         sortTailwindcss: {

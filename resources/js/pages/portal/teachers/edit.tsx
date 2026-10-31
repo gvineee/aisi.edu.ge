@@ -113,9 +113,7 @@ export default function TeacherEdit({ teacher }: Props) {
                         <Input
                             id="subject"
                             value={subject}
-                            onChange={(event) =>
-                                setSubject(event.target.value)
-                            }
+                            onChange={(event) => setSubject(event.target.value)}
                             required
                             maxLength={255}
                             placeholder="მაგ. ინგლისური ენა"

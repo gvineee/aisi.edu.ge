@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Search, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -575,10 +575,10 @@ export default function MembersIndex({
 
     return (
         <PortalLayout>
-            <Head title="წევრები" />
+            <Head title="ანგარიშები და წვდომა" />
 
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-2xl">წევრები</h1>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-2xl">ანგარიშები და წვდომა</h1>
                 <Button
                     onClick={() => setShowInvite((v) => !v)}
                     aria-expanded={showInvite}
@@ -586,6 +586,24 @@ export default function MembersIndex({
                     <UserPlus size={16} /> ახალი წევრის მოწვევა
                 </Button>
             </div>
+            <p className="mb-6 max-w-2xl text-sm text-slate-600">
+                ვინ შედის პორტალში და რა როლით: მოწვევები, როლები, მშობლისა და
+                მოსწავლის კავშირები. თანამშრომლის დატვირთვა და გაკვეთილები —{' '}
+                <Link
+                    href="/portal/staff"
+                    className="underline underline-offset-4"
+                >
+                    პერსონალი და დატვირთვა
+                </Link>
+                ; საიტზე გამოქვეყნებული ბიოგრაფია —{' '}
+                <Link
+                    href="/portal/teachers"
+                    className="underline underline-offset-4"
+                >
+                    მასწავლებლები საიტზე
+                </Link>
+                .
+            </p>
 
             {!mailEnabled && (
                 <p

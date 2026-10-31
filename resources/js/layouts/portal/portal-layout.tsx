@@ -1,4 +1,4 @@
-import { Form, Link, router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren } from 'react';
 import {
     Activity,
@@ -19,7 +19,6 @@ import {
     House,
     LayoutGrid,
     LifeBuoy,
-    LogOut,
     Menu,
     MessageSquareText,
     Newspaper,
@@ -42,8 +41,7 @@ import {
     Users,
     Wallet,
 } from 'lucide-react';
-import { logout } from '@/routes';
-import { Button } from '@/components/ui/button';
+import AccountMenu from '@/components/account-menu';
 import {
     Sheet,
     SheetContent,
@@ -227,23 +225,11 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                             <RoleSwitcher className="hidden sm:flex" />
                         )}
                         {auth.user && (
-                            <span className="hidden text-sm text-slate-600 sm:inline">
-                                {auth.user.name}
-                            </span>
+                            <AccountMenu
+                                user={auth.user}
+                                context={brand?.name}
+                            />
                         )}
-                        <Form {...logout.form()}>
-                            {({ processing }) => (
-                                <Button
-                                    type="submit"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={processing}
-                                    className="focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2"
-                                >
-                                    <LogOut size={16} /> გასვლა
-                                </Button>
-                            )}
-                        </Form>
                     </div>
                 </div>
                 {showRoleSwitcher && (

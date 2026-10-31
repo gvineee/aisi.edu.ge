@@ -11,6 +11,7 @@ import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 import DashboardHeading from '@/components/portal/dashboard-heading';
 import DayCard from '@/components/portal/day-card';
+import { dayPlanText } from '@/lib/day-plan';
 import StatGrid, { type Stat } from '@/components/portal/stat-grid';
 import Panel from '@/components/portal/panel';
 import LessonRow from '@/components/portal/lesson-row';
@@ -46,6 +47,8 @@ type NewsItem = {
 };
 
 type Props = {
+    /** Holiday or break covering today, if any. */
+    dayOff?: string | null;
     children: Child[];
     actionItems: ActionItem[];
     recentNews: NewsItem[];
@@ -61,6 +64,7 @@ export default function ParentDashboard({
     children,
     actionItems,
     recentNews,
+    dayOff = null,
 }: Props) {
     const [selectedId, setSelectedId] = useState(children[0]?.id ?? null);
     const selected = children.find((c) => c.id === selectedId) ?? null;
@@ -146,7 +150,10 @@ export default function ParentDashboard({
                                 <DayCard
                                     eyebrow={`${selected.name}-ის დღე`}
                                     heading="ახალი დღე, ახალი შესაძლებლობები."
-                                    body="გაკვეთილები იწყება 09:00-ზე. მოემზადე პირველი აღმოჩენისთვის."
+                                    body={dayPlanText(
+                                        selected.todaySchedule,
+                                        dayOff,
+                                    )}
                                     ctaLabel="დღის განრიგი"
                                     ctaHref="#todays-lessons"
                                 />

@@ -159,6 +159,16 @@ class CategoryPlacementTest extends TestCase
         $this->get('/news/import-wp-posts-2438')->assertOk()
             ->assertInertia(fn ($page) => $page->where('breadcrumb.href', '/official-documents'));
         $this->get('/news/import-wp-posts-13')->assertNotFound();
+
+        // Audit A07: the news teasers of a "life" block (home, school life) follow /news.
+        $news->update(['excerpt' => 'წყლის დღე სკოლაში. Download water-day_2026.pdf']);
+        $life = $this->page('life-teasers', 'ცხოვრება');
+        $life->update(['blocks' => [['type' => 'life', 'heading' => 'დღეები, რომლებიც გვზრდის.']]]);
+        foreach (['/life-teasers'] as $path) {
+            $this->get($path)->assertInertia(fn ($page) => $page
+                ->where('latestPosts', fn ($posts) => ! collect($posts)->pluck('slug')->contains('import-wp-posts-2438'))
+                ->where('latestPosts', fn ($posts) => collect($posts)->firstWhere('slug', 'import-wp-posts-2462')['excerpt'] === 'წყლის დღე სკოლაში.'));
+        }
     }
 
     public function test_an_editor_moves_an_item_and_the_plan_then_leaves_it_alone(): void

@@ -16,7 +16,7 @@ type Props = {
 export default function ResetPassword({ token, email, passwordRules }: Props) {
     return (
         <>
-            <Head title="Reset password" />
+            <Head title="ახალი პაროლის დაყენება" />
 
             <Form
                 {...update.form()}
@@ -26,9 +26,13 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                 {({ processing, errors }) => (
                     <div className="grid gap-6">
                         <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email">ელფოსტა</Label>
                             <Input
                                 id="email"
+                                aria-invalid={!!errors.email}
+                                aria-describedby={
+                                    errors.email ? 'email_error' : undefined
+                                }
                                 type="email"
                                 name="email"
                                 autoComplete="email"
@@ -37,38 +41,55 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                                 readOnly
                             />
                             <InputError
+                                id="email_error"
                                 message={errors.email}
                                 className="mt-2"
                             />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">ახალი პაროლი</Label>
                             <PasswordInput
                                 id="password"
+                                aria-invalid={!!errors.password}
+                                aria-describedby={
+                                    errors.password
+                                        ? 'password_error'
+                                        : undefined
+                                }
                                 name="password"
                                 autoComplete="new-password"
                                 className="mt-1 block w-full"
                                 autoFocus
-                                placeholder="Password"
+                                placeholder="ახალი პაროლი"
                                 passwordrules={passwordRules}
                             />
-                            <InputError message={errors.password} />
+                            <InputError
+                                id="password_error"
+                                message={errors.password}
+                            />
                         </div>
 
                         <div className="grid gap-2">
                             <Label htmlFor="password_confirmation">
-                                Confirm password
+                                პაროლის დადასტურება
                             </Label>
                             <PasswordInput
                                 id="password_confirmation"
+                                aria-invalid={!!errors.password_confirmation}
+                                aria-describedby={
+                                    errors.password_confirmation
+                                        ? 'password_confirmation_error'
+                                        : undefined
+                                }
                                 name="password_confirmation"
                                 autoComplete="new-password"
                                 className="mt-1 block w-full"
-                                placeholder="Confirm password"
+                                placeholder="პაროლის დადასტურება"
                                 passwordrules={passwordRules}
                             />
                             <InputError
+                                id="password_confirmation_error"
                                 message={errors.password_confirmation}
                                 className="mt-2"
                             />
@@ -81,7 +102,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                             data-test="reset-password-button"
                         >
                             {processing && <Spinner />}
-                            Reset password
+                            პაროლის შეცვლა
                         </Button>
                     </div>
                 )}
@@ -91,6 +112,6 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 }
 
 ResetPassword.layout = {
-    title: 'Reset password',
-    description: 'Please enter your new password below',
+    title: 'ახალი პაროლის დაყენება',
+    description: 'შეიყვანეთ ახალი პაროლი',
 };

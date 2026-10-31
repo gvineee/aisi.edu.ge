@@ -6,6 +6,7 @@ import PortalLayout from '@/layouts/portal/portal-layout';
 import { Button } from '@/components/ui/button';
 import { formatDay } from '@/lib/assessment';
 import { AUDIENCES, SURVEY_STATUS, type Survey } from '@/lib/surveys';
+import { fieldText } from '@/lib/form-data';
 
 type Results = {
     responses: number;
@@ -59,10 +60,7 @@ export default function SurveyShow({
                 answers[question.id] = form
                     .getAll(`q-${question.id}`)
                     .map(String);
-            else
-                answers[question.id] = String(
-                    form.get(`q-${question.id}`) ?? '',
-                );
+            else answers[question.id] = fieldText(form.get(`q-${question.id}`));
         });
         setSaving(true);
         router.post(

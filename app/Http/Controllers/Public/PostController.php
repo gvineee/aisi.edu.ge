@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Domain\Content\CategoryListing;
 use App\Domain\Content\Models\ContentMediaLink;
 use App\Domain\Content\Models\Post;
+use App\Domain\Content\PublicExcerpt;
 use App\Domain\Content\PublicLocales;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
@@ -49,7 +50,7 @@ class PostController extends Controller
             ->through(fn (Post $post) => [
                 'slug' => $post->slug,
                 'title' => $post->title,
-                'excerpt' => $post->excerpt,
+                'excerpt' => PublicExcerpt::clean($post->excerpt),
                 'publishedAt' => $post->published_at?->toIso8601String(),
                 'coverImageUrl' => $post->coverImageUrl(),
             ]);
@@ -83,7 +84,7 @@ class PostController extends Controller
         return Inertia::render('public/news-show', [
             'post' => [
                 'title' => $post->title,
-                'excerpt' => $post->excerpt,
+                'excerpt' => PublicExcerpt::clean($post->excerpt),
                 'body' => $post->body,
                 'publishedAt' => $post->published_at?->toIso8601String(),
                 'seoTitle' => $post->seo_title,

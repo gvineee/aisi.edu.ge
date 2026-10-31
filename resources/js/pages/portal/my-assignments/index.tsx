@@ -97,8 +97,7 @@ function AssignmentCard({ assignment }: { assignment: AssignmentItem }) {
                         </span>
                     )}
                     <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                        {STATUS_LABELS[assignment.status] ??
-                            assignment.status}
+                        {STATUS_LABELS[assignment.status] ?? assignment.status}
                     </span>
                 </div>
             </div>
@@ -137,15 +136,35 @@ function AssignmentCard({ assignment }: { assignment: AssignmentItem }) {
                         </Button>
                     ) : (
                         <form onSubmit={submit} className="space-y-3">
+                            <label
+                                htmlFor={`answer-${assignment.id}`}
+                                className="block text-sm font-medium"
+                            >
+                                პასუხი
+                            </label>
                             <textarea
+                                id={`answer-${assignment.id}`}
+                                aria-describedby={`answer-hint-${assignment.id}`}
                                 value={textResponse}
                                 onChange={(event) =>
                                     setTextResponse(event.target.value)
                                 }
-                                placeholder="პასუხის ტექსტი (არასავალდებულო, თუ ფაილს ტვირთავთ)"
                                 className="min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
                             />
+                            <p
+                                id={`answer-hint-${assignment.id}`}
+                                className="text-xs text-slate-600"
+                            >
+                                ტექსტი არასავალდებულოა, თუ ფაილს ტვირთავთ.
+                            </p>
+                            <label
+                                htmlFor={`answer-file-${assignment.id}`}
+                                className="block text-sm font-medium"
+                            >
+                                ფაილი (არასავალდებულო)
+                            </label>
                             <input
+                                id={`answer-file-${assignment.id}`}
                                 type="file"
                                 onChange={(event) =>
                                     setFile(event.target.files?.[0] ?? null)

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/empty';
 import { formatDay } from '@/lib/assessment';
 import { postWithToast } from '@/lib/operations';
+import { fieldText } from '@/lib/form-data';
 
 type ItemSummary = {
     id: number;
@@ -161,10 +162,10 @@ export default function PortfolioIndex({
                                     className="mt-2 flex gap-2"
                                     onSubmit={(event) => {
                                         event.preventDefault();
-                                        const raw = String(
+                                        const raw = fieldText(
                                             new FormData(
                                                 event.currentTarget,
-                                            ).get('tags') ?? '',
+                                            ).get('tags'),
                                         );
                                         postWithToast(
                                             `/portal/portfolio/${item.id}/tags`,

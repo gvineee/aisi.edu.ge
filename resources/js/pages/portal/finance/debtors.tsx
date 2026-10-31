@@ -25,7 +25,11 @@ type Props = {
     filters: { class: number | null; overdue: boolean };
     classes: { id: number; name: string }[];
     rows: Row[];
-    totals: { outstandingMinor: number; overdueMinor: number; students: number };
+    totals: {
+        outstandingMinor: number;
+        overdueMinor: number;
+        students: number;
+    };
 };
 
 const fieldClass =
@@ -36,7 +40,12 @@ const fieldClass =
  * Reminders go only to guardians with financial access and notifications
  * on, at most once every three days per invoice.
  */
-export default function FinanceDebtors({ filters, classes, rows, totals }: Props) {
+export default function FinanceDebtors({
+    filters,
+    classes,
+    rows,
+    totals,
+}: Props) {
     const query = (next: { class?: number | null; overdue?: boolean }) => {
         const merged = { ...filters, ...next };
         router.get(

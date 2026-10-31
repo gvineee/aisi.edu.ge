@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { firstError, formatDateTime, formatDay } from '@/lib/assessment';
+import { fieldText } from '@/lib/form-data';
 
 export type MyAcknowledgement = {
     id: number;
@@ -111,8 +112,8 @@ export function AcknowledgementManager({
             `/documents/${documentId}/acknowledgement-requests`,
             {
                 roles: form.getAll('roles').map(String),
-                due_on: String(form.get('due_on') ?? ''),
-                note: String(form.get('note') ?? ''),
+                due_on: fieldText(form.get('due_on')),
+                note: fieldText(form.get('note')),
             },
             options('გაცნობის მოთხოვნა გაიგზავნა.', () => {
                 setFormKey((k) => k + 1);

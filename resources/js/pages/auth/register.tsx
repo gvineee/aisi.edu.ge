@@ -30,6 +30,10 @@ export default function Register({ passwordRules }: Props) {
                                 <Label htmlFor="name">სახელი და გვარი</Label>
                                 <Input
                                     id="name"
+                                    aria-invalid={!!errors.name}
+                                    aria-describedby={
+                                        errors.name ? 'name_error' : undefined
+                                    }
                                     type="text"
                                     required
                                     autoFocus
@@ -40,6 +44,7 @@ export default function Register({ passwordRules }: Props) {
                                     className="h-12 border-slate-300 bg-white px-4 focus-visible:border-[#f5683c] focus-visible:ring-[#f5683c]/20"
                                 />
                                 <InputError
+                                    id="name_error"
                                     message={errors.name}
                                     className="mt-2"
                                 />
@@ -49,6 +54,10 @@ export default function Register({ passwordRules }: Props) {
                                 <Label htmlFor="email">ელფოსტა</Label>
                                 <Input
                                     id="email"
+                                    aria-invalid={!!errors.email}
+                                    aria-describedby={
+                                        errors.email ? 'email_error' : undefined
+                                    }
                                     type="email"
                                     required
                                     tabIndex={2}
@@ -57,13 +66,22 @@ export default function Register({ passwordRules }: Props) {
                                     placeholder="name@example.com"
                                     className="h-12 border-slate-300 bg-white px-4 focus-visible:border-[#f5683c] focus-visible:ring-[#f5683c]/20"
                                 />
-                                <InputError message={errors.email} />
+                                <InputError
+                                    id="email_error"
+                                    message={errors.email}
+                                />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password">პაროლი</Label>
                                 <PasswordInput
                                     id="password"
+                                    aria-invalid={!!errors.password}
+                                    aria-describedby={
+                                        errors.password
+                                            ? 'password_error'
+                                            : undefined
+                                    }
                                     required
                                     tabIndex={3}
                                     autoComplete="new-password"
@@ -71,7 +89,10 @@ export default function Register({ passwordRules }: Props) {
                                     placeholder="შეიყვანეთ პაროლი"
                                     passwordrules={passwordRules}
                                 />
-                                <InputError message={errors.password} />
+                                <InputError
+                                    id="password_error"
+                                    message={errors.password}
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -80,6 +101,14 @@ export default function Register({ passwordRules }: Props) {
                                 </Label>
                                 <PasswordInput
                                     id="password_confirmation"
+                                    aria-invalid={
+                                        !!errors.password_confirmation
+                                    }
+                                    aria-describedby={
+                                        errors.password_confirmation
+                                            ? 'password_confirmation_error'
+                                            : undefined
+                                    }
                                     required
                                     tabIndex={4}
                                     autoComplete="new-password"
@@ -88,6 +117,7 @@ export default function Register({ passwordRules }: Props) {
                                     passwordrules={passwordRules}
                                 />
                                 <InputError
+                                    id="password_confirmation_error"
                                     message={errors.password_confirmation}
                                 />
                             </div>

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Portal;
 
+use App\Domain\Content\PageBlockRules;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * Used for both create and update — the controller re-checks the actor's
@@ -54,6 +56,27 @@ class SavePageRequest extends FormRequest
             'seo_title' => ['nullable', 'string', 'max:255'],
             'seo_description' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    /**
+     * Links inside blocks must be safe (no javascript:/data: URLs) and text
+     * bounded — see PageBlockRules.
+     *
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            $blocks = $this->input('blocks_decoded');
+
+            if (! is_array($blocks)) {
+                return;
+            }
+
+            foreach (PageBlockRules::errors($blocks) as $message) {
+                $validator->errors()->add('blocks', $message);
+            }
+        }];
     }
 
     /**

@@ -102,8 +102,14 @@ export default function PickupVerify({
                         }
                         className="max-w-xs font-mono text-lg tracking-widest"
                     />
-                    <Button type="submit">შემოწმება</Button>
+                    <Button type="submit">
+                        კოდის გამოყენება და გაყვანის აღრიცხვა
+                    </Button>
                 </div>
+                <p className="mt-2 text-xs text-slate-600">
+                    ჯერ ნახეთ წამომყვანის პირადობის მოწმობა. კოდი ერთჯერადია:
+                    ღილაკზე დაჭერისთანავე გამოიყენება და გაყვანა ჩაიწერება.
+                </p>
                 {error && (
                     <p
                         id="pickup-code-error"

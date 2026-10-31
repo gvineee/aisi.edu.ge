@@ -1,10 +1,11 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState, type FormEvent } from 'react';
 import { Copy, Eye, History, Send, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import PortalLayout from '@/layouts/portal/portal-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import BlockEditor from '@/components/portal/block-editor';
 import CategoryPicker, {
     type CategoryOption,
     type Placement,
@@ -48,8 +49,7 @@ type Props = {
     placement?: Placement;
 };
 
-const DEFAULT_BLOCKS =
-    '[\n  { "type": "text", "heading": "სათაური", "body": "ტექსტი" }\n]';
+const DEFAULT_BLOCKS = [{ type: 'text', heading: '', body: '' }];
 
 export default function CmsPageEdit({
     page,
@@ -60,9 +60,7 @@ export default function CmsPageEdit({
     placement = null,
 }: Props) {
     const [saving, setSaving] = useState(false);
-    const [blocksValue, setBlocksValue] = useState(
-        page ? JSON.stringify(page.blocks, null, 2) : DEFAULT_BLOCKS,
-    );
+    const { errors } = usePage<{ errors: Record<string, string> }>().props;
 
     const isNew = page === null;
 
@@ -258,35 +256,18 @@ export default function CmsPageEdit({
                         />
                     </div>
 
-                    <div>
-                        <label
-                            htmlFor="blocks"
-                            className="mb-1 block text-sm font-medium"
-                        >
-                            შემცველობის ბლოკები (JSON)
-                        </label>
-                        <textarea
-                            id="blocks"
-                            name="blocks"
-                            required
-                            value={blocksValue}
-                            onChange={(event) =>
-                                setBlocksValue(event.target.value)
-                            }
-                            rows={14}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs"
-                            aria-describedby="blocks-help"
-                        />
-                        <p
-                            id="blocks-help"
-                            className="mt-1 text-xs text-slate-500"
-                        >
-                            ტიპიზებული ბლოკების მასივი (თითოეულს აქვს{' '}
-                            <code>type</code>) — ისე, როგორც საჯარო გვერდზე
-                            გამოისახება. თავისუფალი HTML/JavaScript დაშვებული არ
-                            არის.
-                        </p>
-                    </div>
+                    <BlockEditor
+                        key={JSON.stringify(page?.blocks ?? [])}
+                        initial={page?.blocks ?? DEFAULT_BLOCKS}
+                        media={media}
+                        error={
+                            errors.blocks ??
+                            errors.blocks_decoded ??
+                            Object.entries(errors).find(([key]) =>
+                                key.startsWith('blocks'),
+                            )?.[1]
+                        }
+                    />
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>

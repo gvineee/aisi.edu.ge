@@ -94,7 +94,7 @@ class BuildDailyActionFeed
             ->with('request.document')->get()
             ->map(fn (DocumentAcknowledgement $ack) => $this->item("document_ack:{$ack->id}", 'document_acknowledgement',
                 'გაეცანით: '.$ack->request->document->title, 'დოკუმენტები', "/documents/{$ack->request->document_id}",
-                $ack->request->due_on, $ack->request->due_on !== null && $ack->request->due_on->lt(Carbon::now()->startOfDay()) ? 'high' : 'normal'))
+                $ack->request->due_on, $ack->request->due_on !== null && $ack->request->due_on->lt(Carbon::now()->startOfDay()) ? 'high' : 'normal', dateOnly: true))
             ->values()->all();
     }
 
@@ -133,7 +133,7 @@ class BuildDailyActionFeed
                     foreach (Invoice::query()->where('tenant_id', $tenantId)->where('billing_account_id', $accountId)->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIALLY_PAID])->get() as $invoice) {
                         $overdue = $invoice->due_on->lt($now->copy()->startOfDay());
                         $items[] = $this->item("invoice:{$invoice->id}", 'invoice', ($overdue ? 'ვადაგადაცილებული ინვოისი' : 'გადასახდელი ინვოისი')." № {$invoice->number}",
-                            $student->fullName(), "/portal/finance/invoices/{$invoice->id}", $invoice->due_on, $overdue ? 'urgent' : 'normal');
+                            $student->fullName(), "/portal/finance/invoices/{$invoice->id}", $invoice->due_on, $overdue ? 'urgent' : 'normal', dateOnly: true);
                     }
                 }
             }
@@ -192,7 +192,7 @@ class BuildDailyActionFeed
             ->whereDate('date', '>=', $today)->whereDate('date', '<=', $now->copy()->addDays(7)->toDateString())
             ->doesntHave('handoff')->with('lesson.schoolClass')->get() as $cover) {
             $items[] = $this->item("handoff:{$cover->id}", 'handoff', 'შემცვლელს გეგმა სჭირდება', ($cover->lesson->schoolClass->name ?? '').' · '.$cover->date->toDateString(),
-                '/portal/my-coverage', $cover->date, $cover->date->toDateString() === $today ? 'urgent' : 'high');
+                '/portal/my-coverage', $cover->date, $cover->date->toDateString() === $today ? 'urgent' : 'high', dateOnly: true);
         }
 
         $toGrade = AssignmentSubmission::query()->where('tenant_id', $tenantId)->where('status', AssignmentSubmission::STATUS_SUBMITTED)
@@ -285,15 +285,17 @@ class BuildDailyActionFeed
     /**
      * @return array<string, mixed>
      */
-    private function item(string $key, string $type, string $title, ?string $context, string $href, ?CarbonInterface $dueAt, string $priority): array
+    private function item(string $key, string $type, string $title, ?string $context, string $href, ?CarbonInterface $dueAt, string $priority, bool $dateOnly = false): array
     {
+        // A date-only deadline (invoice due date) travels as Y-m-d: as a UTC
+        // midnight it showed in Tbilisi as an invented "04:00".
         return [
             'key' => $key,
             'type' => $type,
             'title' => $title,
             'contextLabel' => $context,
             'href' => $href,
-            'dueAt' => $dueAt?->toIso8601String(),
+            'dueAt' => $dateOnly ? $dueAt?->toDateString() : $dueAt?->toIso8601String(),
             'priority' => $priority,
         ];
     }

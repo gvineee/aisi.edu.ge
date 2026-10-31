@@ -7,6 +7,7 @@ use App\Domain\Content\Models\ContentMediaLink;
 use App\Domain\Content\Models\Page;
 use App\Domain\Content\Models\Post;
 use App\Domain\Content\Models\Teacher;
+use App\Domain\Content\PublicExcerpt;
 use App\Domain\Content\PublicLocales;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Http\Controllers\Controller;
@@ -58,7 +59,7 @@ class PageController extends Controller
                 ->map(fn (Page $page) => ['url' => $locales->url($tenant, $locale, '/'.$page->slug), 'title' => $page->title, 'excerpt' => $page->excerpt])->values(),
             'posts' => Post::query()->where('tenant_id', $tenant->id)->where('locale', $locale)
                 ->where('status', Post::STATUS_PUBLISHED)->whereNotNull('published_at')->orderByDesc('published_at')->limit(6)->get(['slug', 'title', 'excerpt', 'published_at'])
-                ->map(fn (Post $post) => ['url' => $locales->url($tenant, $locale, '/news/'.$post->slug), 'title' => $post->title, 'excerpt' => $post->excerpt, 'publishedAt' => $post->published_at?->toIso8601String()])->values(),
+                ->map(fn (Post $post) => ['url' => $locales->url($tenant, $locale, '/news/'.$post->slug), 'title' => $post->title, 'excerpt' => PublicExcerpt::clean($post->excerpt), 'publishedAt' => $post->published_at?->toIso8601String()])->values(),
         ]);
     }
 
@@ -126,18 +127,21 @@ class PageController extends Controller
             return [];
         }
 
+        // The same rule as /news: posts placed in another section (official
+        // documents, reports, plans) are not school-life news.
         return Post::query()
             ->where('tenant_id', $tenantId)
             ->where('locale', $locale)
             ->where('status', Post::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
+            ->whereNotIn('id', app(CategoryListing::class)->postIdsOutsideNews($tenantId))
             ->orderByDesc('published_at')
             ->limit(6)
             ->get(['slug', 'title', 'excerpt', 'published_at', 'cover_image_path'])
             ->map(fn (Post $post) => [
                 'slug' => $post->slug,
                 'title' => $post->title,
-                'excerpt' => $post->excerpt,
+                'excerpt' => PublicExcerpt::clean($post->excerpt),
                 'publishedAt' => $post->published_at?->toIso8601String(),
                 'coverImageUrl' => $post->coverImageUrl(),
             ])

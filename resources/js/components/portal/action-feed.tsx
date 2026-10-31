@@ -47,6 +47,15 @@ const PRIORITY: Record<
 };
 
 function dueLabel(iso: string): string {
+    // "2026-11-10": a due date without a time of day.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+        return new Date(`${iso}T00:00:00Z`).toLocaleDateString('ka-GE', {
+            day: 'numeric',
+            month: 'short',
+            timeZone: 'UTC',
+        });
+    }
+
     return new Date(iso).toLocaleString('ka-GE', {
         day: 'numeric',
         month: 'short',

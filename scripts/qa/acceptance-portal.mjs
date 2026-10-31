@@ -13,7 +13,6 @@ export default async function portal({
     assert,
     tagButton,
     sleep,
-    OVERFLOW,
     out,
 }) {
     const chooseFile = async (selector, path) => {

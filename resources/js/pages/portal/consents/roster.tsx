@@ -52,9 +52,7 @@ export default function ConsentsRoster({ form, rows }: Props) {
                         <tbody className="divide-y divide-slate-100">
                             {rows.map((row) => (
                                 <tr key={row.studentId}>
-                                    <td className="p-3">
-                                        {row.studentName}
-                                    </td>
+                                    <td className="p-3">{row.studentName}</td>
                                     <td className="p-3">
                                         {row.status === 'granted' ? (
                                             <Badge className="bg-emerald-600 text-white">

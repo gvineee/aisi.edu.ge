@@ -127,8 +127,7 @@ export default function AssignmentIndex({
                         <ClipboardList />
                         <EmptyTitle>ჯერ არცერთი დავალება არ არის</EmptyTitle>
                         <EmptyDescription>
-                            შექმენით პირველი დავალება „ახალი დავალება"
-                            ღილაკით.
+                            შექმენით პირველი დავალება „ახალი დავალება" ღილაკით.
                         </EmptyDescription>
                     </EmptyHeader>
                 </Empty>
@@ -182,8 +181,8 @@ export default function AssignmentIndex({
                 <DialogContent>
                     <DialogTitle>ახალი დავალება</DialogTitle>
                     <DialogDescription>
-                        აირჩიეთ კლასი/საგანი, სათაური და, სურვილისამებრ, ვადა
-                        და მაქსიმალური ქულა.
+                        აირჩიეთ კლასი/საგანი, სათაური და, სურვილისამებრ, ვადა და
+                        მაქსიმალური ქულა.
                     </DialogDescription>
                     <form onSubmit={submitCreate} className="space-y-4">
                         <div className="space-y-1.5">

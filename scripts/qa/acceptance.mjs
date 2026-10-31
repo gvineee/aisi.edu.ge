@@ -386,7 +386,7 @@ for (const width of [360, 390, 768, 1024, 1440]) {
                 if (o.sw > o.cw + 1)
                     bad.push(`${path} ${o.sw}>${o.cw} ${o.off.join(' ')}`);
             }
-            if (width !== 1440) await p.go('/', 600);
+            await p.go('/', 600);
             await p.shot(`D01-home-${width}`);
             assert(bad.length === 0, bad.join('; '));
             return 'ok';
@@ -396,21 +396,18 @@ for (const width of [360, 390, 768, 1024, 1440]) {
 await p.width(1440);
 
 // ---------------------------------------------------------------- portal
-// (portal checks are appended below as each item lands)
-const portal = (await import('./acceptance-portal.mjs').catch(() => null))
-    ?.default;
-if (portal)
-    await portal({
-        p,
-        check,
-        assert,
-        text,
-        tagButton,
-        xsrfPost,
-        sleep,
-        OVERFLOW,
-        out: OUT,
-    });
+const helpers = {
+    p,
+    check,
+    assert,
+    text,
+    tagButton,
+    xsrfPost,
+    sleep,
+    out: OUT,
+};
+await (await import('./acceptance-portal.mjs')).default(helpers);
+await (await import('./acceptance-portal-roles.mjs')).default(helpers);
 
 writeFileSync(join(OUT, 'results.json'), JSON.stringify(results, null, 1));
 p.close();

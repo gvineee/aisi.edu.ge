@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/empty';
 import { Label } from '@/components/ui/label';
 import { postWithToast } from '@/lib/operations';
+import { fieldText } from '@/lib/form-data';
 
 type ConversationSummary = {
     id: number;
@@ -295,8 +296,8 @@ export default function MessagesIndex({
                     className="flex min-w-[220px] flex-1 gap-2"
                     onSubmit={(event) => {
                         event.preventDefault();
-                        const q = String(
-                            new FormData(event.currentTarget).get('q') ?? '',
+                        const q = fieldText(
+                            new FormData(event.currentTarget).get('q'),
                         );
                         router.get('/portal/messages', {
                             q: q || undefined,
@@ -346,9 +347,9 @@ export default function MessagesIndex({
                 </label>
             </div>
 
-            <div className="grid gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white md:grid-cols-[360px_1fr]">
+            <div className="grid gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
                 <div
-                    className={`border-slate-200 md:border-r ${activeConversation ? 'hidden md:block' : ''}`}
+                    className={`border-slate-200 lg:border-r ${activeConversation ? 'hidden lg:block' : ''}`}
                 >
                     {conversations.length === 0 ? (
                         <Empty className="p-8">
@@ -407,7 +408,7 @@ export default function MessagesIndex({
                     )}
                 </div>
 
-                <div className={activeConversation ? '' : 'hidden md:block'}>
+                <div className={activeConversation ? '' : 'hidden lg:block'}>
                     {!activeConversation ? (
                         <Empty className="p-8">
                             <EmptyHeader>
@@ -424,7 +425,7 @@ export default function MessagesIndex({
                             <div className="flex items-center gap-3 border-b border-slate-200 p-4">
                                 <Link
                                     href="/portal/messages"
-                                    className="md:hidden"
+                                    className="inline-flex min-h-11 min-w-11 items-center justify-center lg:hidden"
                                     aria-label="სიაზე დაბრუნება"
                                 >
                                     <ArrowLeft size={20} />
@@ -499,7 +500,7 @@ export default function MessagesIndex({
                                 {activeConversation.messages.map((message) => (
                                     <div
                                         key={message.id}
-                                        className={`max-w-md rounded-xl px-4 py-2 text-sm ${
+                                        className={`max-w-[85%] rounded-xl px-4 py-2 text-sm break-words sm:max-w-md ${
                                             message.isOwn
                                                 ? 'ml-auto bg-[#132B45] text-white'
                                                 : 'bg-slate-100 text-slate-800'
@@ -608,7 +609,7 @@ export default function MessagesIndex({
                                         setReplyBody(event.target.value)
                                     }
                                     placeholder="დაწერეთ პასუხი..."
-                                    className="h-11 min-h-11 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
+                                    className="h-11 min-h-11 min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
                                 />
                                 <label
                                     className={`inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-md ring-1 ring-slate-300 hover:bg-slate-50 ${replyFile ? 'bg-amber-50' : ''}`}

@@ -325,7 +325,7 @@ class PortalContext
         }
 
         if (in_array($activeRole, self::MEMBER_ACCESS_ROLES, true)) {
-            $items[] = ['key' => 'members', 'label' => 'წევრები', 'href' => route('members.index'), 'icon' => 'members'];
+            $items[] = ['key' => 'members', 'label' => 'ანგარიშები და წვდომა', 'href' => route('members.index'), 'icon' => 'members'];
         }
 
         if (in_array($activeRole, self::ACADEMIC_STRUCTURE_ACCESS_ROLES, true)) {
@@ -333,7 +333,7 @@ class PortalContext
         }
 
         if (in_array($activeRole, self::TEACHER_MANAGEMENT_ACCESS_ROLES, true)) {
-            $items[] = ['key' => 'teachers', 'label' => 'მასწავლებლები', 'href' => route('teachers.index'), 'icon' => 'teachers'];
+            $items[] = ['key' => 'teachers', 'label' => 'მასწავლებლები საიტზე', 'href' => route('teachers.index'), 'icon' => 'teachers'];
         }
 
         if (in_array($activeRole, self::ASSIGNMENT_ACCESS_ROLES, true)) {
@@ -451,7 +451,7 @@ class PortalContext
             $items[] = ['key' => 'students', 'label' => 'მოსწავლეები', 'href' => route('students.index'), 'icon' => 'students'];
         }
 
-        return $this->grouped($items);
+        return $this->grouped($items, $activeRole);
     }
 
     /**
@@ -471,6 +471,17 @@ class PortalContext
      *
      * @var array<string, array{label: string|null, keys: list<string>}>
      */
+    /**
+     * A family's menu reads as a family's day, not as "school management":
+     * books with learning, money under payments, services with the family.
+     */
+    private const FAMILY_NAV_GROUPS = [
+        'main' => ['label' => null, 'keys' => ['dashboard', 'messages', 'my-timetable', 'progress', 'calendar', 'surveys']],
+        'learning' => ['label' => 'სწავლა', 'keys' => ['assignments', 'absence-notes', 'books', 'book-lists']],
+        'family' => ['label' => 'ოჯახი და სკოლა', 'keys' => ['appointments', 'consents', 'pickup', 'health', 'services']],
+        'payments' => ['label' => 'გადახდები', 'keys' => ['finance']],
+    ];
+
     private const NAV_GROUPS = [
         'main' => ['label' => null, 'keys' => ['dashboard', 'messages', 'pulse', 'my-timetable', 'teacher-workspace', 'progress', 'calendar', 'surveys']],
         'learning' => ['label' => 'სწავლება', 'keys' => ['academic-overview', 'timetable', 'curriculum', 'substitutions', 'assignments', 'gradebook', 'competencies', 'report-cards', 'assessment-settings', 'absence-notes']],
@@ -487,13 +498,14 @@ class PortalContext
      * @param  array<int, array{key: string, label: string, href: string, icon: string}>  $items
      * @return array<int, array{key: string, label: string, href: string, icon: string, group: string, groupLabel: string|null}>
      */
-    private function grouped(array $items): array
+    private function grouped(array $items, ?string $role = null): array
     {
+        $groups = $this->groupsFor($role);
         $position = [];
         $groupOf = [];
         $index = 0;
 
-        foreach (self::NAV_GROUPS as $group => $definition) {
+        foreach ($groups as $group => $definition) {
             foreach ($definition['keys'] as $key) {
                 $position[$key] = $index++;
                 $groupOf[$key] = $group;
@@ -505,7 +517,7 @@ class PortalContext
         foreach ($items as $item) {
             $unique[$item['key']] ??= $item + [
                 'group' => $groupOf[$item['key']] ?? 'other',
-                'groupLabel' => isset($groupOf[$item['key']]) ? self::NAV_GROUPS[$groupOf[$item['key']]]['label'] : 'სხვა',
+                'groupLabel' => isset($groupOf[$item['key']]) ? $groups[$groupOf[$item['key']]]['label'] : 'სხვა',
             ];
         }
 
@@ -513,6 +525,29 @@ class PortalContext
         usort($sorted, fn (array $a, array $b) => ($position[$a['key']] ?? PHP_INT_MAX) <=> ($position[$b['key']] ?? PHP_INT_MAX));
 
         return $sorted;
+    }
+
+    /**
+     * @return array<string, array{label: string|null, keys: list<string>}>
+     */
+    private function groupsFor(?string $role): array
+    {
+        if (in_array($role, [TenantMembership::ROLE_GUARDIAN, TenantMembership::ROLE_STUDENT], true)) {
+            return self::FAMILY_NAV_GROUPS;
+        }
+
+        if ($role === TenantMembership::ROLE_TEACHER) {
+            // A teacher's documents and covers sit next to their day.
+            $groups = self::NAV_GROUPS;
+            foreach ($groups as $group => $definition) {
+                $groups[$group]['keys'] = array_values(array_diff($definition['keys'], ['documents', 'substitutions']));
+            }
+            $groups['main']['keys'] = [...$groups['main']['keys'], 'documents', 'substitutions'];
+
+            return $groups;
+        }
+
+        return self::NAV_GROUPS;
     }
 
     /**

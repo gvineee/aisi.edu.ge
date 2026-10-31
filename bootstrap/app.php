@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\ErrorPage;
 use App\Http\Middleware\EnsureAdminMfa;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsurePlatformOperator;
@@ -18,6 +19,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -76,4 +78,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 : null,
             default => null,
         });
+
+        $exceptions->respond(fn (Response $response, Throwable $e, Request $request) => ErrorPage::respond($response, $request));
     })->create();

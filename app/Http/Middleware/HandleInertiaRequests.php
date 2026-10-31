@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Content\PublicLocales;
+use App\Domain\Platform\Models\PlatformOperator;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\PortalContext;
 use Illuminate\Http\Request;
@@ -110,6 +111,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'portal' => $portalProp,
+            // Account pages pick their chrome: the school portal, or the
+            // platform console for an operator who holds no school role.
+            'platformOperator' => $user !== null && $request->routeIs('profile.*', 'security.*')
+                && PlatformOperator::query()->where('user_id', $user->id)->where('is_active', true)->exists(),
             'publicLocale' => $publicLocale,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

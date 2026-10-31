@@ -64,11 +64,10 @@ export default function AdmissionsPipelineIndex({
     filters,
 }: Props) {
     const applyStageFilter = (stage: string) => {
-        router.get(
-            '/portal/admissions-pipeline',
-            stage ? { stage } : {},
-            { preserveState: true, replace: true },
-        );
+        router.get('/portal/admissions-pipeline', stage ? { stage } : {}, {
+            preserveState: true,
+            replace: true,
+        });
     };
 
     const leadsByStage = (stage: string) =>

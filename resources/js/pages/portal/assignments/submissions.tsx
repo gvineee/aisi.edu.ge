@@ -107,36 +107,46 @@ function GradeRow({
                     className="flex flex-wrap items-end gap-3"
                 >
                     <div className="space-y-1">
-                        <label className="block text-xs font-medium text-slate-600">
+                        <label
+                            htmlFor={`score-${row.submissionId}`}
+                            className="block text-xs font-medium text-slate-600"
+                        >
                             ქულა
                             {assignment.maxScore
                                 ? ` (მაქს. ${assignment.maxScore})`
                                 : ''}
                         </label>
                         <input
+                            id={`score-${row.submissionId}`}
                             type="number"
                             min={0}
                             max={assignment.maxScore ?? undefined}
                             value={score}
                             onChange={(event) => setScore(event.target.value)}
                             required
-                            className="h-9 w-24 rounded-md border border-slate-300 px-2 text-sm"
+                            className="h-11 w-24 rounded-md border border-slate-300 px-2 text-sm"
                         />
                     </div>
                     <div className="min-w-[200px] flex-1 space-y-1">
-                        <label className="block text-xs font-medium text-slate-600">
+                        <label
+                            htmlFor={`feedback-${row.submissionId}`}
+                            className="block text-xs font-medium text-slate-600"
+                        >
                             უკუკავშირი (არასავალდებულო)
                         </label>
                         <input
+                            id={`feedback-${row.submissionId}`}
                             value={feedback}
                             onChange={(event) =>
                                 setFeedback(event.target.value)
                             }
-                            className="h-9 w-full rounded-md border border-slate-300 px-2 text-sm"
+                            className="h-11 w-full rounded-md border border-slate-300 px-2 text-sm"
                         />
                     </div>
                     <Button type="submit" size="sm" disabled={grading}>
-                        {row.status === 'graded' ? 'ხელახლა შეფასება' : 'შეფასება'}
+                        {row.status === 'graded'
+                            ? 'ხელახლა შეფასება'
+                            : 'შეფასება'}
                     </Button>
                 </form>
             )}

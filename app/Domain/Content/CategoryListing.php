@@ -103,7 +103,7 @@ class CategoryListing
             'title' => $target->title,
             'url' => $this->url($target),
             'date' => $target->published_at?->toIso8601String(),
-            'excerpt' => $target->excerpt,
+            'excerpt' => PublicExcerpt::clean($target->excerpt),
             'section' => $placement->section,
         ];
     }

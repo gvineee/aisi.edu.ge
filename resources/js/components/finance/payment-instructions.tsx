@@ -15,9 +15,8 @@ export default function PaymentInstructions({
     if (!info || (info.bankAccounts.length === 0 && !info.instructions)) {
         return (
             <p className="mb-6 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-                გადახდის რეკვიზიტებს სკოლის ბუღალტერია მოგაწვდით.
-                ჩარიცხული თანხა ანგარიშზე ბუღალტრის დადასტურების შემდეგ
-                აისახება.
+                გადახდის რეკვიზიტებს სკოლის ბუღალტერია მოგაწვდით. ჩარიცხული
+                თანხა ანგარიშზე ბუღალტრის დადასტურების შემდეგ აისახება.
             </p>
         );
     }
@@ -57,8 +56,7 @@ export default function PaymentInstructions({
                 </p>
             )}
             <p className="mt-2 text-slate-500">
-                ჩარიცხვა პორტალში ბუღალტრის მიერ დადასტურების შემდეგ
-                გამოჩნდება.
+                ჩარიცხვა პორტალში ბუღალტრის მიერ დადასტურების შემდეგ გამოჩნდება.
             </p>
         </section>
     );

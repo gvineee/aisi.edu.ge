@@ -4,6 +4,7 @@ import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 import DashboardHeading from '@/components/portal/dashboard-heading';
 import DayCard from '@/components/portal/day-card';
+import { dayPlanText } from '@/lib/day-plan';
 import StatGrid, { type Stat } from '@/components/portal/stat-grid';
 import Panel from '@/components/portal/panel';
 import LessonRow from '@/components/portal/lesson-row';
@@ -26,6 +27,8 @@ type NewsItem = {
 };
 
 type Props = {
+    /** Holiday or break covering today, if any. */
+    dayOff?: string | null;
     linked: boolean;
     studentId?: number;
     userName: string;
@@ -49,6 +52,7 @@ export default function StudentDashboard({
     todaySchedule,
     actionItems,
     recentNews,
+    dayOff = null,
 }: Props) {
     const dateLabel = new Date().toLocaleDateString('ka-GE', {
         weekday: 'long',
@@ -90,8 +94,8 @@ export default function StudentDashboard({
                     <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center">
                         <UserX className="mx-auto mb-4 h-10 w-10 text-slate-400" />
                         <p className="font-medium">
-                            თქვენი ანგარიში ჯერ არ არის დაკავშირებული
-                            მოსწავლის ჩანაწერთან.
+                            თქვენი ანგარიში ჯერ არ არის დაკავშირებული მოსწავლის
+                            ჩანაწერთან.
                         </p>
                         <p className="mt-2 text-sm text-slate-500">
                             დაუკავშირდით სკოლის ადმინისტრაციას, რომ თქვენი
@@ -105,7 +109,7 @@ export default function StudentDashboard({
                         <DayCard
                             eyebrow="დღის გეგმა"
                             heading="ახალი დღე, ახალი შესაძლებლობები."
-                            body="გაკვეთილები იწყება 09:00-ზე. მოემზადე პირველი აღმოჩენისთვის."
+                            body={dayPlanText(todaySchedule, dayOff)}
                             ctaLabel="დღის განრიგი"
                             ctaHref="#todays-lessons"
                         />
@@ -139,8 +143,7 @@ export default function StudentDashboard({
                             <div id="todays-lessons">
                                 {todaySchedule.length === 0 ? (
                                     <p className="py-6 text-center text-sm text-slate-500">
-                                        დღეს გამოქვეყნებული გაკვეთილი არ
-                                        არის.
+                                        დღეს გამოქვეყნებული გაკვეთილი არ არის.
                                     </p>
                                 ) : (
                                     todaySchedule.map((lesson, index) => (

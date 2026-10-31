@@ -33,7 +33,12 @@ type PaymentRow = {
     isManual: boolean;
     reversed: boolean;
     reversalReason: string | null;
-    refunds: { id: number; amountMinor: number; status: string; method: string | null }[];
+    refunds: {
+        id: number;
+        amountMinor: number;
+        status: string;
+        method: string | null;
+    }[];
 };
 
 type Props = {
@@ -43,7 +48,12 @@ type Props = {
     students: { id: number; name: string; className: string | null }[];
     openInvoices: Record<
         string,
-        { id: number; number: string; dueOn: string; outstandingMinor: number }[]
+        {
+            id: number;
+            number: string;
+            dueOn: string;
+            outstandingMinor: number;
+        }[]
     >;
     preselectStudentId: number | null;
     preselectInvoiceId: number | null;
@@ -271,8 +281,8 @@ export default function FinancePayments({
                 </h2>
                 <p className="text-sm text-slate-500">
                     ნაღდი, საბანკო გადარიცხვა ან POS — სალაროს წიგნიდან ან
-                    საბანკო ამონაწერიდან. თანხა ჯერ არჩეულ ინვოისს ფარავს, თუ
-                    არ აირჩიეთ — ყველაზე ძველ ვადიანს; ნაშთი კრედიტად რჩება.
+                    საბანკო ამონაწერიდან. თანხა ჯერ არჩეულ ინვოისს ფარავს, თუ არ
+                    აირჩიეთ — ყველაზე ძველ ვადიანს; ნაშთი კრედიტად რჩება.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                     <div>
@@ -405,7 +415,10 @@ export default function FinancePayments({
                             htmlFor="pay-ref"
                             className="mb-1 block text-sm font-medium"
                         >
-                            საბუთის № {method === 'bank_transfer' || method === 'pos' ? '(სავალდებულო)' : '(არასავალდებულო)'}
+                            საბუთის №{' '}
+                            {method === 'bank_transfer' || method === 'pos'
+                                ? '(სავალდებულო)'
+                                : '(არასავალდებულო)'}
                         </label>
                         <Input
                             id="pay-ref"

@@ -4,6 +4,7 @@ import PortalLayout from '@/layouts/portal/portal-layout';
 import ActionFeed, { type ActionItem } from '@/components/portal/action-feed';
 import DashboardHeading from '@/components/portal/dashboard-heading';
 import DayCard from '@/components/portal/day-card';
+import { dayPlanText } from '@/lib/day-plan';
 import StatGrid, { type Stat } from '@/components/portal/stat-grid';
 import Panel from '@/components/portal/panel';
 import LessonRow from '@/components/portal/lesson-row';
@@ -37,6 +38,8 @@ type SubstitutionEntry = {
 };
 
 type Props = {
+    /** Holiday or break covering today, if any. */
+    dayOff?: string | null;
     date: string;
     lessons: LessonEntry[];
     portfolioReviewCount: number;
@@ -52,6 +55,7 @@ export default function TeacherDashboard({
     substitutions,
     actionItems,
     recentNews,
+    dayOff = null,
 }: Props) {
     const dateLabel = new Date(date).toLocaleDateString('ka-GE', {
         weekday: 'long',
@@ -96,7 +100,7 @@ export default function TeacherDashboard({
                 <DayCard
                     eyebrow="დღის გეგმა"
                     heading="ახალი დღე, ახალი შესაძლებლობები."
-                    body="გაკვეთილები იწყება 09:00-ზე. მოემზადე პირველი აღმოჩენისთვის."
+                    body={dayPlanText(lessons, dayOff)}
                     ctaLabel="დღის განრიგი"
                     ctaHref="#todays-lessons"
                 />

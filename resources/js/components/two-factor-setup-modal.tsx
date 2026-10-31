@@ -104,7 +104,7 @@ function TwoFactorSetupStep({
                     <div className="relative flex w-full items-center justify-center">
                         <div className="bg-border absolute inset-0 top-1/2 h-px w-full" />
                         <span className="bg-card relative px-2 py-1">
-                            or, enter the code manually
+                            ან შეიყვანეთ კოდი ხელით
                         </span>
                     </div>
 
@@ -119,11 +119,13 @@ function TwoFactorSetupStep({
                                     <input
                                         type="text"
                                         readOnly
+                                        aria-label="დაყენების გასაღები"
                                         value={manualSetupKey}
                                         className="bg-background text-foreground h-full w-full p-3 outline-none"
                                     />
                                     <button
                                         onClick={() => copy(manualSetupKey)}
+                                        aria-label="დაყენების გასაღების კოპირება"
                                         className="border-border hover:bg-muted border-l px-3"
                                     >
                                         <IconComponent className="w-4" />
@@ -182,6 +184,16 @@ function TwoFactorVerificationStep({
                                 disabled={processing}
                                 pattern={REGEXP_ONLY_DIGITS}
                                 autoFocus
+                                aria-label="6-ციფრიანი დადასტურების კოდი"
+                                aria-invalid={
+                                    !!errors?.confirmTwoFactorAuthentication
+                                        ?.code
+                                }
+                                aria-describedby={
+                                    errors?.confirmTwoFactorAuthentication?.code
+                                        ? 'otp_error'
+                                        : undefined
+                                }
                             >
                                 <InputOTPGroup>
                                     {Array.from(
@@ -196,6 +208,7 @@ function TwoFactorVerificationStep({
                                 </InputOTPGroup>
                             </InputOTP>
                             <InputError
+                                id="otp_error"
                                 message={
                                     errors?.confirmTwoFactorAuthentication?.code
                                 }
@@ -210,7 +223,7 @@ function TwoFactorVerificationStep({
                                 onClick={onBack}
                                 disabled={processing}
                             >
-                                Back
+                                უკან
                             </Button>
                             <Button
                                 type="submit"
@@ -219,7 +232,7 @@ function TwoFactorVerificationStep({
                                     processing || code.length < OTP_MAX_LENGTH
                                 }
                             >
-                                Confirm
+                                დადასტურება
                             </Button>
                         </div>
                     </div>
@@ -262,26 +275,26 @@ export default function TwoFactorSetupModal({
     }>(() => {
         if (twoFactorEnabled) {
             return {
-                title: 'Two-factor authentication enabled',
+                title: 'ორფაქტორიანი ავთენტიფიკაცია ჩართულია',
                 description:
-                    'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
-                buttonText: 'Close',
+                    'ორფაქტორიანი ავთენტიფიკაცია ჩართულია. დაასკანერეთ QR კოდი ან შეიყვანეთ დაყენების გასაღები ავთენტიფიკატორის აპლიკაციაში.',
+                buttonText: 'დახურვა',
             };
         }
 
         if (showVerificationStep) {
             return {
-                title: 'Verify authentication code',
+                title: 'დადასტურების კოდის შემოწმება',
                 description:
-                    'Enter the 6-digit code from your authenticator app',
+                    'შეიყვანეთ ავთენტიფიკატორის აპლიკაციაში ნაჩვენები 6-ციფრიანი კოდი',
                 buttonText: 'Continue',
             };
         }
 
         return {
-            title: 'Enable two-factor authentication',
+            title: 'ორფაქტორიანი ავთენტიფიკაციის ჩართვა',
             description:
-                'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
+                'ჩართვის დასასრულებლად დაასკანერეთ QR კოდი ან შეიყვანეთ დაყენების გასაღები ავთენტიფიკატორის აპლიკაციაში',
             buttonText: 'Continue',
         };
     }, [twoFactorEnabled, showVerificationStep]);

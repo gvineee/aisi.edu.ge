@@ -23,18 +23,18 @@ export default function TwoFactorChallenge() {
     }>(() => {
         if (showRecoveryInput) {
             return {
-                title: 'Recovery code',
+                title: 'აღდგენის კოდი',
                 description:
-                    'Please confirm access to your account by entering one of your emergency recovery codes.',
-                toggleText: 'login using an authentication code',
+                    'ანგარიშზე შესასვლელად შეიყვანეთ ერთ-ერთი სარეზერვო აღდგენის კოდი.',
+                toggleText: 'ავთენტიფიკატორის კოდით შესვლა',
             };
         }
 
         return {
-            title: 'Authentication code',
+            title: 'დადასტურების კოდი',
             description:
-                'Enter the authentication code provided by your authenticator application.',
-            toggleText: 'login using a recovery code',
+                'შეიყვანეთ 6-ციფრიანი კოდი ავთენტიფიკატორის აპლიკაციიდან.',
+            toggleText: 'აღდგენის კოდით შესვლა',
         };
     }, [showRecoveryInput]);
 
@@ -51,7 +51,7 @@ export default function TwoFactorChallenge() {
 
     return (
         <>
-            <Head title="Two-factor authentication" />
+            <Head title="ორფაქტორიანი შემოწმება" />
 
             <div className="space-y-6">
                 <Form
@@ -64,14 +64,29 @@ export default function TwoFactorChallenge() {
                         <>
                             {showRecoveryInput ? (
                                 <>
+                                    <label
+                                        htmlFor="recovery_code"
+                                        className="text-sm font-medium"
+                                    >
+                                        აღდგენის კოდი
+                                    </label>
                                     <Input
+                                        id="recovery_code"
                                         name="recovery_code"
                                         type="text"
-                                        placeholder="Enter recovery code"
+                                        autoComplete="one-time-code"
+                                        placeholder="მაგ. abcd-efgh"
                                         autoFocus={showRecoveryInput}
                                         required
+                                        aria-invalid={!!errors.recovery_code}
+                                        aria-describedby={
+                                            errors.recovery_code
+                                                ? 'recovery_code_error'
+                                                : undefined
+                                        }
                                     />
                                     <InputError
+                                        id="recovery_code_error"
                                         message={errors.recovery_code}
                                     />
                                 </>
@@ -86,6 +101,13 @@ export default function TwoFactorChallenge() {
                                             disabled={processing}
                                             pattern={REGEXP_ONLY_DIGITS}
                                             autoFocus
+                                            aria-label="6-ციფრიანი დადასტურების კოდი"
+                                            aria-invalid={!!errors.code}
+                                            aria-describedby={
+                                                errors.code
+                                                    ? 'code_error'
+                                                    : undefined
+                                            }
                                         >
                                             <InputOTPGroup>
                                                 {Array.from(
@@ -100,7 +122,10 @@ export default function TwoFactorChallenge() {
                                             </InputOTPGroup>
                                         </InputOTP>
                                     </div>
-                                    <InputError message={errors.code} />
+                                    <InputError
+                                        id="code_error"
+                                        message={errors.code}
+                                    />
                                 </div>
                             )}
 
@@ -109,11 +134,11 @@ export default function TwoFactorChallenge() {
                                 className="w-full"
                                 disabled={processing}
                             >
-                                Continue
+                                გაგრძელება
                             </Button>
 
                             <div className="text-muted-foreground text-center text-sm">
-                                <span>or you can </span>
+                                <span>ან </span>
                                 <button
                                     type="button"
                                     className="text-foreground cursor-pointer underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"

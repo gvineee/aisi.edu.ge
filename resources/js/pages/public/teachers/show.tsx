@@ -39,12 +39,8 @@ export default function TeacherShow({ teacher }: Props) {
                         </span>
                     )}
                     <div>
-                        <h1 className="text-2xl sm:text-3xl">
-                            {teacher.name}
-                        </h1>
-                        <p className="mt-1 text-slate-500">
-                            {teacher.subject}
-                        </p>
+                        <h1 className="text-2xl sm:text-3xl">{teacher.name}</h1>
+                        <p className="mt-1 text-slate-500">{teacher.subject}</p>
                     </div>
                 </div>
 

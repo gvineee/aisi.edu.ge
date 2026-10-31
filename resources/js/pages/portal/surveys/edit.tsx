@@ -67,9 +67,11 @@ export default function SurveyEdit({ survey }: { survey: Survey | null }) {
                 toast.error(Object.values(errors)[0] ?? 'შემოწმეთ ფორმა.'),
             onFinish: () => setSaving(false),
         };
-        survey
-            ? router.put(`/portal/surveys/${survey.id}`, data, options)
-            : router.post('/portal/surveys', data, options);
+        if (survey) {
+            router.put(`/portal/surveys/${survey.id}`, data, options);
+        } else {
+            router.post('/portal/surveys', data, options);
+        }
     };
 
     const field =

@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Portal;
 use App\Domain\Academics\Models\GuardianLink;
 use App\Domain\Academics\Models\Student;
 use App\Domain\Academics\Models\TeacherAssignment;
+use App\Domain\Content\CategoryListing;
 use App\Domain\Content\Models\Post;
+use App\Domain\Content\PublicExcerpt;
 use App\Domain\Documents\Actions\ListPendingApprovalRequests;
 use App\Domain\Documents\Models\ApprovalRequest;
+use App\Domain\Platform\Models\PlatformOperator;
 use App\Domain\Portal\Actions\BuildDailyActionFeed;
 use App\Domain\Portfolio\Models\PortfolioItem;
 use App\Domain\Tenancy\CurrentTenant;
@@ -49,6 +52,14 @@ class DashboardController extends Controller
         $activeRole = $portalContext->resolveActiveRole($request, $tenant->id, $user->id);
 
         if ($activeRole === null) {
+            // A platform operator holds no school role (and gets none): their
+            // place is the platform console, not the "verify your child" page.
+            if (PlatformOperator::query()->where('user_id', $user->id)->where('is_active', true)->exists()) {
+                return $user->two_factor_confirmed_at !== null
+                    ? redirect()->route('platform.index')
+                    : redirect()->route('security.edit')->with('toast', ['type' => 'warning', 'message' => 'პლატფორმის პანელისთვის ჯერ ჩართეთ ორფაქტორიანი ავთენტიფიკაცია.']);
+            }
+
             return Inertia::render('portal/no-role', ['name' => $user->name]);
         }
 
@@ -85,13 +96,14 @@ class DashboardController extends Controller
             ->where('tenant_id', $tenantId)
             ->where('status', Post::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
+            ->whereNotIn('id', app(CategoryListing::class)->postIdsOutsideNews($tenantId))
             ->latest('published_at')
             ->take(2)
             ->get()
             ->map(fn (Post $post) => [
                 'slug' => $post->slug,
                 'title' => $post->title,
-                'excerpt' => $post->excerpt,
+                'excerpt' => PublicExcerpt::clean($post->excerpt),
                 'publishedAt' => $post->published_at?->toIso8601String(),
             ])
             ->values()
@@ -137,6 +149,7 @@ class DashboardController extends Controller
         }
 
         return Inertia::render('portal/parent-dashboard', [
+            'dayOff' => $resolveDailyLessons->nonTeachingLabel($tenant->id, $today),
             'children' => $children,
             'actionItems' => $actionItems,
             'recentNews' => $recentNews,
@@ -175,6 +188,7 @@ class DashboardController extends Controller
             ->get();
 
         return Inertia::render('portal/teacher-dashboard', [
+            'dayOff' => $resolveDailyLessons->nonTeachingLabel($tenant->id, $today),
             'date' => $today->toDateString(),
             'lessons' => $lessons->map(fn (array $entry) => [
                 ...$this->formatScheduleEntry($entry),
@@ -233,6 +247,7 @@ class DashboardController extends Controller
         }
 
         return Inertia::render('portal/student-dashboard', [
+            'dayOff' => $resolveDailyLessons->nonTeachingLabel($tenant->id, $today),
             'linked' => true,
             'studentId' => $student->id,
             'userName' => $user->name,

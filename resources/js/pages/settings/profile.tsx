@@ -26,15 +26,15 @@ export default function Profile({
 
     return (
         <>
-            <Head title="Profile settings" />
+            <Head title="პროფილის პარამეტრები" />
 
-            <h1 className="sr-only">Profile settings</h1>
+            <h1 className="sr-only">პროფილის პარამეტრები</h1>
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Profile"
-                    description="Update your name and email address"
+                    title="პროფილი"
+                    description="განაახლეთ სახელი, გვარი და ელფოსტა"
                 />
 
                 <Form
@@ -47,40 +47,50 @@ export default function Profile({
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="name">სახელი და გვარი</Label>
 
                                 <Input
                                     id="name"
+                                    aria-invalid={!!errors.name}
+                                    aria-describedby={
+                                        errors.name ? 'name_error' : undefined
+                                    }
                                     className="mt-1 block w-full"
                                     defaultValue={auth.user.name}
                                     name="name"
                                     required
                                     autoComplete="name"
-                                    placeholder="Full name"
+                                    placeholder="სახელი და გვარი"
                                 />
 
                                 <InputError
                                     className="mt-2"
+                                    id="name_error"
                                     message={errors.name}
                                 />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">ელფოსტა</Label>
 
                                 <Input
                                     id="email"
+                                    aria-invalid={!!errors.email}
+                                    aria-describedby={
+                                        errors.email ? 'email_error' : undefined
+                                    }
                                     type="email"
                                     className="mt-1 block w-full"
                                     defaultValue={auth.user.email}
                                     name="email"
                                     required
                                     autoComplete="username"
-                                    placeholder="Email address"
+                                    placeholder="name@example.com"
                                 />
 
                                 <InputError
                                     className="mt-2"
+                                    id="email_error"
                                     message={errors.email}
                                 />
                             </div>
@@ -89,22 +99,23 @@ export default function Profile({
                                 auth.user.email_verified_at === null && (
                                     <div>
                                         <p className="text-muted-foreground -mt-4 text-sm">
-                                            Your email address is unverified.{' '}
+                                            თქვენი ელფოსტა დადასტურებული არ
+                                            არის.{' '}
                                             <Link
                                                 href={send()}
                                                 as="button"
                                                 className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
                                             >
-                                                Click here to re-send the
-                                                verification email.
+                                                დადასტურების წერილის ხელახლა
+                                                გაგზავნა
                                             </Link>
                                         </p>
 
                                         {status ===
                                             'verification-link-sent' && (
                                             <div className="mt-2 text-sm font-medium text-green-600">
-                                                A new verification link has been
-                                                sent to your email address.
+                                                დადასტურების ახალი ბმული
+                                                გაიგზავნა თქვენს ელფოსტაზე.
                                             </div>
                                         )}
                                     </div>
@@ -115,7 +126,7 @@ export default function Profile({
                                     disabled={processing}
                                     data-test="update-profile-button"
                                 >
-                                    Save
+                                    შენახვა
                                 </Button>
                             </div>
                         </>
@@ -131,7 +142,7 @@ export default function Profile({
 Profile.layout = {
     breadcrumbs: [
         {
-            title: 'Profile settings',
+            title: 'პროფილის პარამეტრები',
             href: edit(),
         },
     ],

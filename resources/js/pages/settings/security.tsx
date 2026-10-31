@@ -24,15 +24,15 @@ export default function Security(props: Props) {
 
     return (
         <>
-            <Head title="Security settings" />
+            <Head title="უსაფრთხოების პარამეტრები" />
 
-            <h1 className="sr-only">Security settings</h1>
+            <h1 className="sr-only">უსაფრთხოების პარამეტრები</h1>
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Update password"
-                    description="Ensure your account is using a long, random password to stay secure"
+                    title="პაროლის შეცვლა"
+                    description="ანგარიშის დასაცავად გამოიყენეთ გრძელი, შემთხვევითი პაროლი"
                 />
 
                 <Form
@@ -61,52 +61,79 @@ export default function Security(props: Props) {
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="current_password">
-                                    Current password
+                                    მიმდინარე პაროლი
                                 </Label>
 
                                 <PasswordInput
                                     id="current_password"
+                                    aria-invalid={!!errors.current_password}
+                                    aria-describedby={
+                                        errors.current_password
+                                            ? 'current_password_error'
+                                            : undefined
+                                    }
                                     ref={currentPasswordInput}
                                     name="current_password"
                                     className="mt-1 block w-full"
                                     autoComplete="current-password"
-                                    placeholder="Current password"
+                                    placeholder="მიმდინარე პაროლი"
                                 />
 
-                                <InputError message={errors.current_password} />
+                                <InputError
+                                    id="current_password_error"
+                                    message={errors.current_password}
+                                />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password">New password</Label>
+                                <Label htmlFor="password">ახალი პაროლი</Label>
 
                                 <PasswordInput
                                     id="password"
+                                    aria-invalid={!!errors.password}
+                                    aria-describedby={
+                                        errors.password
+                                            ? 'password_error'
+                                            : undefined
+                                    }
                                     ref={passwordInput}
                                     name="password"
                                     className="mt-1 block w-full"
                                     autoComplete="new-password"
-                                    placeholder="New password"
-                                    passwordrules={props.passwordRules}
-                                />
-
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    name="password_confirmation"
-                                    className="mt-1 block w-full"
-                                    autoComplete="new-password"
-                                    placeholder="Confirm password"
+                                    placeholder="ახალი პაროლი"
                                     passwordrules={props.passwordRules}
                                 />
 
                                 <InputError
+                                    id="password_error"
+                                    message={errors.password}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="password_confirmation">
+                                    პაროლის დადასტურება
+                                </Label>
+
+                                <PasswordInput
+                                    id="password_confirmation"
+                                    aria-invalid={
+                                        !!errors.password_confirmation
+                                    }
+                                    aria-describedby={
+                                        errors.password_confirmation
+                                            ? 'password_confirmation_error'
+                                            : undefined
+                                    }
+                                    name="password_confirmation"
+                                    className="mt-1 block w-full"
+                                    autoComplete="new-password"
+                                    placeholder="პაროლის დადასტურება"
+                                    passwordrules={props.passwordRules}
+                                />
+
+                                <InputError
+                                    id="password_confirmation_error"
                                     message={errors.password_confirmation}
                                 />
                             </div>
@@ -116,7 +143,7 @@ export default function Security(props: Props) {
                                     disabled={processing}
                                     data-test="update-password-button"
                                 >
-                                    Save
+                                    შენახვა
                                 </Button>
                             </div>
                         </>
@@ -141,7 +168,7 @@ export default function Security(props: Props) {
 Security.layout = {
     breadcrumbs: [
         {
-            title: 'Security settings',
+            title: 'უსაფრთხოების პარამეტრები',
             href: edit(),
         },
     ],

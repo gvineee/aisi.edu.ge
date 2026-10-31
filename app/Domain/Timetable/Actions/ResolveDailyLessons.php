@@ -5,6 +5,7 @@ namespace App\Domain\Timetable\Actions;
 use App\Domain\Academics\Models\Student;
 use App\Domain\Timetable\Models\Lesson;
 use App\Domain\Timetable\Models\LessonException;
+use App\Domain\Timetable\Models\NonTeachingPeriod;
 use App\Domain\Timetable\Models\SubstitutionAssignment;
 use App\Domain\Timetable\Models\TimetableVersion;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\DB;
  * (Asia/Tbilisi); lesson times are wall-clock and never converted.
  *
  * For a date it applies, in order:
+ * - nothing at all on a non-teaching day (a holiday or break);
  * - only published lessons;
  * - the effective timetable version: among the year's non-draft versions
  *   whose validity covers the date, the one that started last. If one
@@ -121,12 +123,30 @@ class ResolveDailyLessons
     }
 
     /**
+     * The name of the holiday or break covering the date, if any.
+     */
+    public function nonTeachingLabel(int $tenantId, Carbon $date): ?string
+    {
+        $label = NonTeachingPeriod::query()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('starts_on', '<=', $date->toDateString())
+            ->whereDate('ends_on', '>=', $date->toDateString())
+            ->value('label');
+
+        return is_string($label) ? $label : null;
+    }
+
+    /**
      * @param  Builder<Lesson>  $query
      * @return Collection<int, array<string, mixed>>
      */
     private function resolve(Builder $query, int $tenantId, Carbon $date, ?int $viewerTeacherId = null): Collection
     {
         $day = $date->toDateString();
+
+        if ($this->nonTeachingLabel($tenantId, $date) !== null) {
+            return collect();
+        }
 
         $lessons = $query
             ->where('status', Lesson::STATUS_PUBLISHED)

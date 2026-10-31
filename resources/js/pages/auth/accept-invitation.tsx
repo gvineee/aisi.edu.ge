@@ -1,17 +1,17 @@
-import { Head, router } from "@inertiajs/react";
-import { useState, type FormEvent } from "react";
-import InputError from "@/components/input-error";
-import PasswordInput from "@/components/password-input";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
-import * as InvitationController from "@/actions/App/Http/Controllers/Public/InvitationController";
+import { Head, router } from '@inertiajs/react';
+import { useState, type FormEvent } from 'react';
+import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import * as InvitationController from '@/actions/App/Http/Controllers/Public/InvitationController';
 
 type Props =
-    | { status: "accepted" | "expired" }
+    | { status: 'accepted' | 'expired' }
     | {
-          status: "valid";
+          status: 'valid';
           token: string;
           email: string;
           roleLabel: string;
@@ -20,17 +20,17 @@ type Props =
           passwordRules: string;
       };
 
-const STATUS_MESSAGES: Record<"accepted" | "expired", string> = {
-    accepted: "ეს მოწვევა უკვე გამოყენებულია.",
+const STATUS_MESSAGES: Record<'accepted' | 'expired', string> = {
+    accepted: 'ეს მოწვევა უკვე გამოყენებულია.',
     expired:
-        "ამ მოწვევის ვადა ამოიწურა. მიმართეთ ადმინისტრაციას ახალი მოწვევისთვის.",
+        'ამ მოწვევის ვადა ამოიწურა. მიმართეთ ადმინისტრაციას ახალი მოწვევისთვის.',
 };
 
 export default function AcceptInvitation(props: Props) {
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    if (props.status !== "valid") {
+    if (props.status !== 'valid') {
         return (
             <>
                 <Head title="მოწვევა" />
@@ -85,24 +85,37 @@ export default function AcceptInvitation(props: Props) {
                             <Label htmlFor="name">სახელი და გვარი</Label>
                             <Input
                                 id="name"
+                                aria-invalid={!!errors.name}
+                                aria-describedby={
+                                    errors.name ? 'name_error' : undefined
+                                }
                                 name="name"
                                 required
                                 autoFocus
                                 autoComplete="name"
                             />
-                            <InputError message={errors.name} />
+                            <InputError id="name_error" message={errors.name} />
                         </div>
 
                         <div className="grid gap-2">
                             <Label htmlFor="password">პაროლი</Label>
                             <PasswordInput
                                 id="password"
+                                aria-invalid={!!errors.password}
+                                aria-describedby={
+                                    errors.password
+                                        ? 'password_error'
+                                        : undefined
+                                }
                                 name="password"
                                 required
                                 autoComplete="new-password"
                                 passwordrules={passwordRules}
                             />
-                            <InputError message={errors.password} />
+                            <InputError
+                                id="password_error"
+                                message={errors.password}
+                            />
                         </div>
 
                         <div className="grid gap-2">
@@ -111,19 +124,26 @@ export default function AcceptInvitation(props: Props) {
                             </Label>
                             <PasswordInput
                                 id="password_confirmation"
+                                aria-invalid={!!errors.password_confirmation}
+                                aria-describedby={
+                                    errors.password_confirmation
+                                        ? 'password_confirmation_error'
+                                        : undefined
+                                }
                                 name="password_confirmation"
                                 required
                                 autoComplete="new-password"
                                 passwordrules={passwordRules}
                             />
                             <InputError
+                                id="password_confirmation_error"
                                 message={errors.password_confirmation}
                             />
                         </div>
                     </>
                 )}
 
-                <InputError message={errors.invitation} />
+                <InputError message={errors.invitation} role="alert" />
 
                 <Button type="submit" className="w-full" disabled={processing}>
                     {processing && <Spinner />}
@@ -135,6 +155,6 @@ export default function AcceptInvitation(props: Props) {
 }
 
 AcceptInvitation.layout = {
-    title: "მოწვევის მიღება",
-    description: "",
+    title: 'მოწვევის მიღება',
+    description: '',
 };

@@ -15,7 +15,10 @@ const ITEMS = [
  */
 export default function FinanceNav({ current }: { current: string }) {
     return (
-        <nav aria-label="ფინანსების განყოფილებები" className="-mx-4 mb-5 overflow-x-auto px-4">
+        <nav
+            aria-label="ფინანსების განყოფილებები"
+            className="-mx-4 mb-5 overflow-x-auto px-4"
+        >
             <ul className="flex min-w-max gap-2">
                 {ITEMS.map((item) => {
                     const active = item.href === current;
