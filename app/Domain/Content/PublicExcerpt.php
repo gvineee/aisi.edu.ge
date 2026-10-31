@@ -20,7 +20,14 @@ class PublicExcerpt
             '~\b(download|ჩამოტვირთვა)\b~iu',
             '~\(\s*\d+(?:[.,]\d+)?\s*(kb|mb|კბ|მბ)\s*\)~iu',
         ], ' ', $excerpt) ?? $excerpt;
-        $text = trim((string) preg_replace('~\s+~u', ' ', $text), " \t\n\r\0\x0B-–—:|·");
+        // Multibyte-safe: trim()'s byte list would cut the last byte off a
+        // Georgian letter (e.g. "ე" ends in the same byte as "—").
+        $text = preg_replace(['~\s+~u', '~^[\s\-–—:|·]+|[\s\-–—:|·]+$~u'], [' ', ''], $text);
+
+        // A broken string must never reach the page (json_encode would fail).
+        if ($text === null || ! mb_check_encoding($text, 'UTF-8')) {
+            return $excerpt;
+        }
 
         return $text === '' ? null : $text;
     }
