@@ -38,11 +38,10 @@ class HomePageBlueprint
                 'headingEmphasis' => 'ხვალ.',
                 'body' => 'სივრცე, სადაც ცნობისმოყვარეობა ცოდნად იქცევა, ბავშვები კი საკუთარი გზის პოვნას სწავლობენ.',
                 'note' => 'ცოდნა. მეგობრობა. ახალი შესაძლებლობები. ერთად, ყოველი ახალი დღიდან.',
-                // design/public/school-life.jpg per docs/09-design-source-map.md:
-                // "არქიტექტურული ვიზუალიზაცია; არა დადასტურებული დღევანდელი
-                // ფოტო — გამოყენება/აქტუალობა სკოლამ უნდა დაადასტუროს."
+                // design/public/school-life.jpg (an architectural
+                // visualization, docs/09-design-source-map.md). The school
+                // approved its use on the site on 2026-11-01.
                 'imageAlt' => 'სკოლა აისის შენობის ვიზუალიზაცია',
-                'imageCaption' => 'შენობის ვიზუალიზაცია · დასადასტურებელია სკოლის მიერ',
             ],
             [
                 'type' => 'values',
