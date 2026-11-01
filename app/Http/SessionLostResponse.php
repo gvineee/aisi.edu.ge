@@ -2,6 +2,7 @@
 
 namespace App\Http;
 
+use App\Http\Responses\LoginResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +19,8 @@ class SessionLostResponse
     public const MESSAGE = 'სესია დასრულდა, ამიტომ ბოლო მოქმედება არ შენახულა. შედით ხელახლა და გაიმეორეთ — ფაილი, თუ ტვირთავდით, თავიდან აირჩიეთ.';
 
     public const PUBLIC_MESSAGE = 'გვერდი დიდხანს იყო ღია და ფორმა ვეღარ გაიგზავნა. შეავსეთ და გაგზავნეთ თავიდან.';
+
+    public const LANDING_REFUSED = 'წინა გვერდი ამ ანგარიშისთვის ხელმისაწვდომი არ არის, ამიტომ თქვენს სივრცეში გადმოგიყვანეთ.';
 
     public static function for(Request $request): ?Response
     {
@@ -44,5 +47,23 @@ class SessionLostResponse
         $session->flash('status', self::MESSAGE);
 
         return Inertia::location(route('login'));
+    }
+
+    /**
+     * Signed in again with a different account than the one whose page was
+     * kept (R03): the first visit after sign-in is refused, so go to this
+     * account's own space with a note instead of a 403 screen. Any later
+     * 403 stays a 403.
+     */
+    public static function landingRefused(Request $request): ?Response
+    {
+        if (! $request->isMethod('GET') || ! $request->hasSession() || $request->user() === null
+            || $request->session()->get(LoginResponse::LANDING) !== $request->fullUrl()) {
+            return null;
+        }
+
+        $request->session()->flash('toast', ['type' => 'warning', 'message' => self::LANDING_REFUSED]);
+
+        return redirect()->route('dashboard');
     }
 }

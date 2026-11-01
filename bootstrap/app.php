@@ -71,6 +71,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(fn (AuthenticationException $e, Request $request) => SessionLostResponse::for($request));
         $exceptions->render(fn (HttpException $e, Request $request) => match ($e->getStatusCode()) {
             419 => SessionLostResponse::for($request),
+            403 => SessionLostResponse::landingRefused($request),
             // Too many tries: an error on the form (onError), never a plain
             // redirect the form would read as "sent".
             429 => $request->header('X-Inertia') && ! $request->isMethod('GET')

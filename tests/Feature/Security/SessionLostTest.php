@@ -6,6 +6,7 @@ use App\Domain\Admissions\Models\AdmissionLead;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Tenancy\Models\TenantDomain;
 use App\Http\SessionLostResponse;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Session\TokenMismatchException;
@@ -63,6 +64,25 @@ class SessionLostTest extends TestCase
 
         $this->from('/portal/teacher')->withHeaders(self::INERTIA)->post('/_qa/stale-private')
             ->assertStatus(409)->assertHeader('X-Inertia-Location', route('login'));
+    }
+
+    /**
+     * R03: the kept page belonged to another account. Signing in with one
+     * that may not open it leads to its own space, not a 403 screen; the
+     * page itself stays refused.
+     */
+    public function test_signing_in_as_another_role_skips_a_refused_kept_page(): void
+    {
+        Route::middleware(['web', 'auth'])->get('/_qa/editor-only', fn () => abort(403));
+        $user = User::factory()->create();
+
+        $this->withSession(['url.intended' => url('/_qa/editor-only')])
+            ->post('/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect(url('/_qa/editor-only'));
+
+        $this->get('/_qa/editor-only')->assertRedirect(route('dashboard'));
+        $this->assertSame(SessionLostResponse::LANDING_REFUSED, session('toast.message'));
+        $this->get('/_qa/editor-only')->assertForbidden();
     }
 
     /**

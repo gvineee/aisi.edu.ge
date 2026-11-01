@@ -286,11 +286,6 @@ function CmsPageContent({
                                                     alt={block.imageAlt ?? ''}
                                                     className="h-full w-full object-cover"
                                                 />
-                                                {block.imageCaption && (
-                                                    <p className="absolute top-3 right-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600">
-                                                        {block.imageCaption}
-                                                    </p>
-                                                )}
                                             </div>
                                         ) : (
                                             <div
@@ -477,7 +472,7 @@ function CmsPageContent({
                                                     </span>
                                                     {href && (
                                                         <span className="mt-[30px] flex items-center gap-[18px] text-sm font-semibold">
-                                                            გაიგე მეტი
+                                                            სწავლების გვერდზე
                                                             <ArrowRight
                                                                 size={18}
                                                                 aria-hidden

@@ -44,7 +44,6 @@ export const BLOCK_SCHEMAS: Record<string, Schema> = {
             { key: 'body', label: 'ტექსტი', kind: 'textarea' },
             { key: 'note', label: 'მცირე შენიშვნა', kind: 'text' },
             { key: 'imageAlt', label: 'სურათის აღწერა (alt)', kind: 'text' },
-            { key: 'imageCaption', label: 'სურათის წარწერა', kind: 'text' },
         ],
     },
     values: {
