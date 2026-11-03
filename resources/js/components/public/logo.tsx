@@ -2,7 +2,8 @@ import type { Brand } from '@/types';
 
 type Props = {
     brand: Brand | null;
-    size?: 'default' | 'compact' | 'portal';
+    /** `plain`: no box; the surrounding stylesheet sizes the image. */
+    size?: 'default' | 'compact' | 'portal' | 'plain';
 };
 
 /**
@@ -38,6 +39,18 @@ export default function Logo({ brand, size = 'default' }: Props) {
             >
                 {name}
             </span>
+        );
+    }
+
+    if (size === 'plain') {
+        return (
+            <img
+                src={brand.logoUrl}
+                alt={`სკოლა ${name}`}
+                width={210}
+                height={70}
+                className="block h-auto object-contain"
+            />
         );
     }
 

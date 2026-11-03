@@ -29,7 +29,14 @@ const size = (bytes: number) =>
  * The images (in their original order, galleries kept together) and file
  * attachments carried over from the original page or post.
  */
-export default function ContentMediaBlock({ media }: { media: ContentMedia }) {
+export default function ContentMediaBlock({
+    media,
+    className = 'mx-auto max-w-3xl space-y-6 px-6 pb-12',
+}: {
+    media: ContentMedia;
+    /** Layout of the wrapper; pages pass the new-vision grid. */
+    className?: string;
+}) {
     if (media.images.length === 0 && media.attachments.length === 0) {
         return null;
     }
@@ -54,7 +61,7 @@ export default function ContentMediaBlock({ media }: { media: ContentMedia }) {
     });
 
     return (
-        <div className="mx-auto max-w-3xl space-y-6 px-6 pb-12">
+        <div className={className}>
             {groups.map((group) =>
                 group.gallery ? (
                     <ul

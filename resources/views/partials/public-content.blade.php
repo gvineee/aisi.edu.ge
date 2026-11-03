@@ -13,14 +13,18 @@
     $formatDate = fn (?string $iso) => $iso
         ? \Illuminate\Support\Carbon::parse($iso)->timezone('Asia/Tbilisi')->locale('ka')->isoFormat('LL')
         : null;
-    $navItems = [
-        '/about' => 'სკოლის შესახებ',
-        '/learning' => 'სწავლა',
-        '/school-life' => 'სასკოლო ცხოვრება',
-        '/news' => 'ამბები',
-        '/library' => 'ბიბლიოთეკა',
-        '/contact' => 'კონტაქტი',
-    ];
+    // The same menu the React header shows (PublicNavigation), flattened.
+    $navigation = data_get($props, 'publicNavigation');
+    $navItems = [];
+    $collect = function (array $entries) use (&$collect, &$navItems): void {
+        foreach ($entries as $entry) {
+            if (isset($entry['href'])) {
+                $navItems[$entry['href']] ??= $entry['label'];
+            }
+            $collect($entry['children'] ?? []);
+        }
+    };
+    $collect(array_merge($navigation['main'] ?? [], $navigation['utility'] ?? []));
 @endphp
 <div id="public-content">
     <header>
@@ -72,8 +76,8 @@
                                 @endforeach
                                 @break
                             @case('text')
-                                <h2>{{ $block['heading'] ?? '' }}</h2>
-                                @foreach ((array) ($block['body'] ?? []) as $paragraph)
+                                @if (filled($block['heading'] ?? null))<h2>{{ $block['heading'] }}</h2>@endif
+                                @foreach (is_array($block['body'] ?? null) ? $block['body'] : array_filter(array_map('trim', preg_split('/\R\s*\R/u', (string) ($block['body'] ?? ''))), 'strlen') as $paragraph)
                                     <p>{{ $paragraph }}</p>
                                 @endforeach
                                 @break

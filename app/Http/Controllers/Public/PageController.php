@@ -108,8 +108,27 @@ class PageController extends Controller
             'featuredTeachers' => $isDefault ? $this->featuredTeachersIfNeeded($tenant->id, $page->blocks) : [],
             'categorySection' => $isDefault ? $categories->forHub($tenant->id, $url, $url) : null,
             'breadcrumb' => $isDefault ? $categories->breadcrumbFor($page) : null,
-            'media' => ContentMediaLink::propsFor($page),
+            'media' => $this->mediaFor($page),
         ]);
+    }
+
+    /**
+     * A page with its own curated documents block lists its files there; the
+     * attachments the importer linked to it (the old page's raw file links,
+     * often with wrong captions) would list the same files a second time.
+     *
+     * @return array<string, mixed>
+     */
+    private function mediaFor(Page $page): array
+    {
+        $media = ContentMediaLink::propsFor($page);
+        $curated = collect($page->blocks ?? [])->contains(fn (array $block) => ($block['type'] ?? null) === 'documents');
+
+        if ($curated) {
+            $media['attachments'] = [];
+        }
+
+        return $media;
     }
 
     /**

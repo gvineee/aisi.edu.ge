@@ -29,6 +29,13 @@ const ka = {
     nextPage: 'შემდეგი გვერდი →',
     noNews: 'ამ ეტაპზე გამოქვეყნებული ამბავი არ არის.',
     backToNews: 'ამბებში დაბრუნება',
+    visitCta: 'მოდი, გაგვიცანი',
+    mainNav: 'მთავარი მენიუ',
+    mobileNav: 'მობილური მენიუ',
+    openMenu: 'მენიუს გახსნა',
+    closeMenu: 'მენიუს დახურვა',
+    skipToContent: 'მთავარ შინაარსზე გადასვლა',
+    opensNewTab: 'იხსნება ახალ ჩანართში',
 };
 
 type Dictionary = typeof ka;
@@ -56,6 +63,13 @@ const en: Dictionary = {
     nextPage: 'Next page →',
     noNews: 'No news has been published yet.',
     backToNews: 'Back to news',
+    visitCta: 'Come and meet us',
+    mainNav: 'Main menu',
+    mobileNav: 'Mobile menu',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    skipToContent: 'Skip to main content',
+    opensNewTab: 'opens in a new tab',
 };
 
 const ru: Dictionary = {
@@ -81,6 +95,13 @@ const ru: Dictionary = {
     nextPage: 'Следующая страница →',
     noNews: 'Новостей пока нет.',
     backToNews: 'Назад к новостям',
+    visitCta: 'Приходите знакомиться',
+    mainNav: 'Главное меню',
+    mobileNav: 'Мобильное меню',
+    openMenu: 'Открыть меню',
+    closeMenu: 'Закрыть меню',
+    skipToContent: 'Перейти к основному содержанию',
+    opensNewTab: 'откроется в новой вкладке',
 };
 
 const DICTIONARIES: Record<string, Dictionary> = { ka, en, ru };

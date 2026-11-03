@@ -12,7 +12,7 @@ namespace App\Domain\Content;
 class PageBlockRules
 {
     /** Keys whose value becomes an href on the public page. */
-    private const LINK_KEYS = ['ctaHref', 'href', 'url'];
+    private const LINK_KEYS = ['ctaHref', 'href', 'url', 'secondaryHref', 'imageUrl'];
 
     private const MAX_TEXT = 10000;
 

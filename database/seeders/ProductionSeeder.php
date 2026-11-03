@@ -7,6 +7,7 @@ use App\Domain\Content\AdmissionsPageBlueprint;
 use App\Domain\Content\DocumentsPageBlueprint;
 use App\Domain\Content\HomePageBlueprint;
 use App\Domain\Content\Models\Page;
+use App\Domain\Content\NavigationBlueprint;
 use App\Domain\Content\SchoolLifePageBlueprint;
 use App\Domain\Tenancy\Models\BrandSetting;
 use App\Domain\Tenancy\Models\FeatureEntitlement;
@@ -98,6 +99,7 @@ class ProductionSeeder extends Seeder
                 'contact_phone' => '+995 599 159 800',
                 'contact_address' => 'თბილისი, დიდი დიღომი, დავარის 64',
                 'social_links' => [],
+                'navigation' => NavigationBlueprint::definition(),
             ],
         );
 

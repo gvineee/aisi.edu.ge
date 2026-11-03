@@ -1,11 +1,13 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     type CSSProperties,
+    type KeyboardEvent as ReactKeyboardEvent,
     type PropsWithChildren,
+    useEffect,
     useRef,
     useState,
 } from 'react';
-import { ArrowUpRight, Globe, Menu, X } from 'lucide-react';
+import { ArrowUpRight, ChevronRight, Menu, X } from 'lucide-react';
 import { login } from '@/routes';
 import Logo from '@/components/public/logo';
 import VisitRequestDialog from '@/components/public/visit-request-dialog';
@@ -13,20 +15,48 @@ import { VisitDialogContext } from '@/components/public/visit-dialog-context';
 import { usePublicLocale } from '@/lib/public-i18n';
 import type { Brand } from '@/types';
 
+/** A resolved menu entry (App\Domain\Content\PublicNavigation). */
+type NavEntry = {
+    label: string;
+    href?: string;
+    external?: boolean;
+    /** Language links reload the page in that language. */
+    lang?: string;
+    children?: NavEntry[];
+};
+
+type PublicNavigationProps = {
+    main: NavEntry[];
+    utility: NavEntry[];
+    tagline: string | null;
+};
+
+/** Below this width the header shows the mobile menu (new-vision.css). */
+const MOBILE_QUERY = '(max-width: 900px)';
+
 /**
- * Public site chrome (header, mobile menu, footer). Every visual value that
- * could differ per school — name, logo, colors, contact — comes from the
- * `brand` prop shared by HandleInertiaRequests, never hardcoded here (see
- * CLAUDE.md invariant #8 and docs/04-design-handoff.md section 6).
+ * Public site chrome in the 2026-11-01 visual language
+ * (design/app/new-vision/NewVision.tsx): header with the school's own menu
+ * hierarchy as keyboard-accessible disclosures, full-screen mobile menu
+ * with accordions, and footer. School name, logo, colours and contact come
+ * from `brand`; the menu from `publicNavigation` — both tenant settings
+ * (CLAUDE.md invariant #8), never hardcoded here.
  */
 export default function PublicLayout({ children }: PropsWithChildren) {
-    const { props, url } = usePage<{ brand: Brand | null }>();
-    const { brand } = props;
+    const { props, url } = usePage<{
+        brand: Brand | null;
+        publicNavigation: PublicNavigationProps | null;
+    }>();
+    const { brand, publicNavigation } = props;
     const path = url.split(/[?#]/)[0];
     const isCurrent = (href: string) =>
-        path === href || path.startsWith(`${href}/`);
+        href === '/'
+            ? path === '/'
+            : path === href || path.startsWith(`${href}/`);
     const [menuOpen, setMenuOpen] = useState(false);
     const [visitOpen, setVisitOpen] = useState(false);
+    const headerRef = useRef<HTMLElement | null>(null);
+    const toggleRef = useRef<HTMLButtonElement | null>(null);
     const {
         t,
         switcher,
@@ -46,50 +76,27 @@ export default function PublicLayout({ children }: PropsWithChildren) {
     } as CSSProperties;
 
     // Another language has only its own translated pages (server-side list).
-    const nav = localeNav ?? [
-        { href: '/about', label: 'სკოლის შესახებ' },
-        { href: '/learning', label: 'სწავლა' },
-        { href: '/school-life', label: 'სასკოლო ცხოვრება' },
-        { href: '/news', label: 'ამბები' },
-        { href: '/library', label: 'ბიბლიოთეკა' },
-        { href: '/contact', label: 'კონტაქტი' },
-    ];
-
-    const languages = switcher.length > 1 && (
-        <nav
-            aria-label={t('language')}
-            className="flex items-center gap-1 text-xs"
-        >
-            <Globe
-                size={14}
-                aria-hidden
-                className="mr-1 text-[var(--brand-muted)]"
-            />
-            {switcher.map((item) =>
-                item.current ? (
-                    <span
-                        key={item.code}
-                        aria-current="true"
-                        lang={item.code}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 font-semibold"
-                    >
-                        {item.label}
-                    </span>
-                ) : (
-                    <a
-                        key={item.code}
-                        href={item.url}
-                        lang={item.code}
-                        hrefLang={item.code}
-                        title={item.sameContent ? undefined : t('untranslated')}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-[var(--brand-muted)] hover:bg-slate-100 hover:text-[var(--brand-primary)]"
-                    >
-                        {item.label}
-                    </a>
-                ),
-            )}
-        </nav>
-    );
+    const mainEntries: NavEntry[] = isDefault
+        ? (publicNavigation?.main ?? [])
+        : (localeNav ?? []).map((item) => ({
+              label: item.label,
+              href: item.href,
+          }));
+    const languageEntry: NavEntry | null =
+        switcher.length > 1
+            ? {
+                  label: t('language'),
+                  children: switcher.map((item) => ({
+                      label: item.label,
+                      href: item.url,
+                      lang: item.code,
+                  })),
+              }
+            : null;
+    const entries = languageEntry
+        ? [...mainEntries, languageEntry]
+        : mainEntries;
+    const utility = isDefault ? (publicNavigation?.utility ?? []) : [];
 
     // The dialog opens from buttons anywhere on the page, not from a Radix
     // trigger, so it remembers the button to give focus back on close.
@@ -99,181 +106,300 @@ export default function PublicLayout({ children }: PropsWithChildren) {
             document.activeElement instanceof HTMLElement
                 ? document.activeElement
                 : null;
+        setMenuOpen(false);
         setVisitOpen(true);
     };
 
+    const closeDisclosures = () =>
+        headerRef.current
+            ?.querySelectorAll('details[open]')
+            .forEach((details) => details.removeAttribute('open'));
+
+    // Lock the page behind the full-screen mobile menu.
+    useEffect(() => {
+        if (!menuOpen) {
+            return;
+        }
+
+        const prior = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const wide = window.matchMedia(MOBILE_QUERY);
+        const onChange = () => !wide.matches && setMenuOpen(false);
+        wide.addEventListener('change', onChange);
+
+        return () => {
+            document.body.style.overflow = prior;
+            wide.removeEventListener('change', onChange);
+        };
+    }, [menuOpen]);
+
+    // Escape closes the mobile menu; a click outside closes dropdowns; any
+    // Inertia visit closes both.
+    useEffect(() => {
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && menuOpen) {
+                setMenuOpen(false);
+                toggleRef.current?.focus();
+            }
+        };
+        const onPointer = (event: PointerEvent) => {
+            if (
+                headerRef.current &&
+                event.target instanceof Node &&
+                !headerRef.current.contains(event.target)
+            ) {
+                closeDisclosures();
+            }
+        };
+        const stop = router.on('navigate', () => {
+            setMenuOpen(false);
+            closeDisclosures();
+        });
+        window.addEventListener('keydown', onKey);
+        document.addEventListener('pointerdown', onPointer);
+
+        return () => {
+            window.removeEventListener('keydown', onKey);
+            document.removeEventListener('pointerdown', onPointer);
+            stop();
+        };
+    }, [menuOpen]);
+
+    const onDisclosureKey = (event: ReactKeyboardEvent<HTMLDetailsElement>) => {
+        if (event.key === 'Escape' && event.currentTarget.open) {
+            event.currentTarget.open = false;
+            event.currentTarget.querySelector('summary')?.focus();
+            event.stopPropagation();
+        }
+    };
+
+    const renderLink = (item: NavEntry, key: string) => {
+        const content = (
+            <>
+                {item.label}
+                <ArrowUpRight size={14} aria-hidden="true" />
+            </>
+        );
+
+        if (item.lang) {
+            return (
+                <a
+                    key={key}
+                    href={item.href}
+                    lang={item.lang}
+                    hrefLang={item.lang}
+                    aria-current={
+                        switcher.find((s) => s.code === item.lang)?.current
+                            ? 'true'
+                            : undefined
+                    }
+                >
+                    {content}
+                </a>
+            );
+        }
+
+        if (item.external) {
+            return (
+                <a
+                    key={key}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    {item.label}
+                    <ArrowUpRight size={14} aria-hidden="true" />
+                    <span className="sr-only"> ({t('opensNewTab')})</span>
+                </a>
+            );
+        }
+
+        return (
+            <Link
+                key={key}
+                href={item.href ?? '/'}
+                aria-current={
+                    item.href && isCurrent(item.href) ? 'page' : undefined
+                }
+                onClick={() => setMenuOpen(false)}
+            >
+                {content}
+            </Link>
+        );
+    };
+
+    const renderNavigation = (
+        items: NavEntry[],
+        place: 'desktop' | 'mobile',
+        depth = 0,
+    ) =>
+        items.map((item, index) => {
+            const key = `${place}-${depth}-${index}-${item.label}`;
+
+            return item.children ? (
+                <details
+                    key={key}
+                    // One open group per level, like the design.
+                    name={`an-nav-${place}-${depth}`}
+                    className={`an-nav-group an-nav-depth-${depth}`}
+                    onKeyDown={onDisclosureKey}
+                >
+                    <summary>
+                        {item.label}
+                        <ChevronRight size={14} aria-hidden="true" />
+                    </summary>
+                    <div className="an-nav-dropdown">
+                        {renderNavigation(item.children, place, depth + 1)}
+                    </div>
+                </details>
+            ) : (
+                renderLink(item, key)
+            );
+        });
+
     return (
         <VisitDialogContext.Provider value={openVisitDialog}>
-            <div
-                style={brandVars}
-                className="min-h-screen overflow-x-hidden bg-white text-[var(--brand-primary)]"
-            >
-                <header className="relative overflow-x-hidden border-b border-slate-200 bg-white">
-                    {languages && (
-                        <div className="border-b border-slate-100">
-                            <div className="public-wrap flex justify-end">
-                                {languages}
-                            </div>
-                        </div>
-                    )}
-                    <div className="public-wrap flex h-[76px] items-center gap-6">
-                        <Link
-                            href={homeUrl}
-                            className="shrink-0"
-                            aria-label={`${name} — ${t('home')}`}
-                        >
-                            <Logo brand={brand} />
+            <div style={brandVars} className="aisi-next">
+                <a className="an-skip" href="#main">
+                    {t('skipToContent')}
+                </a>
+                <header ref={headerRef} className="an-header">
+                    <Link
+                        href={homeUrl}
+                        className="an-logo"
+                        aria-label={`${name} — ${t('home')}`}
+                    >
+                        <Logo brand={brand} size="plain" />
+                    </Link>
+                    <nav className="an-desktop-nav" aria-label={t('mainNav')}>
+                        {renderNavigation(entries, 'desktop')}
+                    </nav>
+                    <div className="an-header-actions">
+                        <Link href={login()} className="an-portal-link">
+                            {t('myPortal', { name })}{' '}
+                            <ArrowUpRight size={15} aria-hidden="true" />
                         </Link>
-
-                        <nav className="hidden min-w-0 flex-1 [scrollbar-width:none] gap-3 overflow-x-auto lg:flex xl:gap-6 [&::-webkit-scrollbar]:hidden">
-                            {nav.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    aria-current={
-                                        isCurrent(item.href)
-                                            ? 'page'
-                                            : undefined
-                                    }
-                                    className="public-navigation-link shrink-0 whitespace-nowrap"
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </nav>
-
-                        <div className="flex shrink-0 items-center gap-3">
-                            <Link
-                                href={login()}
-                                className="hidden min-h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold whitespace-nowrap lg:inline-flex"
-                            >
-                                {t('myPortal', { name })}{' '}
-                                <ArrowUpRight size={16} />
-                            </Link>
-                            <button
-                                type="button"
-                                aria-label={t('menu')}
-                                aria-expanded={menuOpen}
-                                className="flex h-11 w-11 items-center justify-center rounded-lg lg:hidden"
-                                onClick={() => setMenuOpen((open) => !open)}
-                            >
-                                {menuOpen ? <X /> : <Menu />}
-                            </button>
-                        </div>
-                    </div>
-
-                    {menuOpen && (
-                        <nav className="flex flex-col gap-1 border-t border-slate-200 bg-white p-4 lg:hidden">
-                            {nav.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    aria-current={
-                                        isCurrent(item.href)
-                                            ? 'page'
-                                            : undefined
-                                    }
-                                    className="public-navigation-link public-navigation-link-mobile min-h-11 py-2"
-                                    onClick={() => setMenuOpen(false)}
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                            <Link
-                                href={login()}
-                                className="min-h-11 py-2 font-semibold"
-                            >
-                                {t('myPortal', { name })}
-                            </Link>
-                            {!isDefault && (
-                                <a
-                                    href="/"
-                                    lang="ka"
-                                    className="min-h-11 py-2 text-sm"
-                                >
-                                    {t('inOriginal')}
-                                </a>
+                        <button
+                            type="button"
+                            className="an-header-visit"
+                            onClick={openVisitDialog}
+                        >
+                            {t('visitCta')}{' '}
+                            <ArrowUpRight size={19} aria-hidden="true" />
+                        </button>
+                        <button
+                            ref={toggleRef}
+                            type="button"
+                            className="an-menu-toggle"
+                            aria-label={
+                                menuOpen ? t('closeMenu') : t('openMenu')
+                            }
+                            aria-expanded={menuOpen}
+                            aria-controls="an-mobile-menu"
+                            onClick={() => setMenuOpen((open) => !open)}
+                        >
+                            {menuOpen ? (
+                                <X aria-hidden="true" />
+                            ) : (
+                                <Menu aria-hidden="true" />
                             )}
-                        </nav>
-                    )}
+                        </button>
+                    </div>
                 </header>
+                {menuOpen && (
+                    <nav
+                        id="an-mobile-menu"
+                        className="an-mobile-menu"
+                        aria-label={t('mobileNav')}
+                    >
+                        {renderNavigation(entries, 'mobile')}
+                        <Link href={login()} onClick={() => setMenuOpen(false)}>
+                            {t('myPortal', { name })}{' '}
+                            <ArrowUpRight aria-hidden="true" />
+                        </Link>
+                        <button type="button" onClick={openVisitDialog}>
+                            {t('visitCta')} <ArrowUpRight aria-hidden="true" />
+                        </button>
+                        {(utility.length > 0 || !isDefault) && (
+                            <div className="an-mobile-utility">
+                                {utility.map((item, index) =>
+                                    renderLink(item, `mobile-utility-${index}`),
+                                )}
+                                {!isDefault && (
+                                    <a href="/" lang="ka">
+                                        {t('inOriginal')}
+                                    </a>
+                                )}
+                            </div>
+                        )}
+                    </nav>
+                )}
 
                 <main id="main">{children}</main>
 
-                <footer className="border-t border-slate-200 bg-[var(--brand-secondary)]">
-                    <div className="public-wrap flex flex-col gap-4 py-10 text-sm text-[var(--brand-muted)] sm:flex-row sm:items-center sm:justify-between">
-                        <Logo brand={brand} size="compact" />
-                        <div className="flex flex-wrap gap-x-6 gap-y-2">
+                <footer className="an-footer">
+                    <div className="an-wrap">
+                        <div className="an-footer-top">
+                            <Link
+                                href={homeUrl}
+                                className="an-footer-logo"
+                                aria-label={`${name} — ${t('home')}`}
+                            >
+                                <Logo brand={brand} size="plain" />
+                            </Link>
+                            <p>
+                                {(isDefault && publicNavigation?.tagline) || ''}
+                            </p>
                             {brand?.contact.phone && (
                                 <a
                                     href={`tel:${brand.contact.phone.replace(/\s+/g, '')}`}
-                                    className="inline-flex min-h-11 items-center"
                                 >
-                                    {brand.contact.phone}
+                                    {brand.contact.phone}{' '}
+                                    <ArrowUpRight
+                                        size={16}
+                                        aria-hidden="true"
+                                    />
                                 </a>
                             )}
                             {brand?.contact.email && (
-                                <a
-                                    href={`mailto:${brand.contact.email}`}
-                                    className="inline-flex min-h-11 items-center"
-                                >
-                                    {brand.contact.email}
+                                <a href={`mailto:${brand.contact.email}`}>
+                                    {brand.contact.email}{' '}
+                                    <ArrowUpRight
+                                        size={16}
+                                        aria-hidden="true"
+                                    />
                                 </a>
                             )}
-                            {brand?.contact.address && (
-                                <span>{brand.contact.address}</span>
-                            )}
                         </div>
-                    </div>
-                    <div className="public-wrap">
-                        <div className="flex flex-wrap gap-x-6 gap-y-0 border-t border-slate-200 py-2 text-xs text-[var(--brand-muted)]">
-                            {isDefault ? (
-                                <>
-                                    <Link
-                                        href="/admissions"
-                                        className="inline-flex min-h-11 items-center hover:underline"
-                                    >
-                                        {t('admissions')}
-                                    </Link>
-                                    <Link
-                                        href="/official-documents"
-                                        className="inline-flex min-h-11 items-center hover:underline"
-                                    >
-                                        {t('documents')}
-                                    </Link>
-                                </>
-                            ) : (
+                        {(utility.length > 0 || !isDefault) && (
+                            <nav className="an-footer-links" aria-label={name}>
+                                {utility.map((item, index) =>
+                                    renderLink(item, `footer-utility-${index}`),
+                                )}
+                                {!isDefault && (
+                                    <a href="/" lang="ka">
+                                        {t('inOriginal')}
+                                    </a>
+                                )}
+                            </nav>
+                        )}
+                        <div className="an-footer-bottom">
+                            <span>{brand?.contact.address ?? ''}</span>
+                            <p className="an-footer-credit">
+                                {t('madeByBefore')}
                                 <a
-                                    href="/"
-                                    lang="ka"
-                                    className="inline-flex min-h-11 items-center hover:underline"
+                                    href="https://syslab.ge"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                 >
-                                    {t('inOriginal')}
+                                    syslab.ge
                                 </a>
-                            )}
-                            <a
-                                href="https://aisi.edupage.org"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex min-h-11 items-center hover:underline"
-                            >
-                                {t('journal')}
-                            </a>
+                                {t('madeByAfter')}
+                            </p>
+                            <span>
+                                {name} © {new Date().getFullYear()}
+                            </span>
                         </div>
-                    </div>
-                    <div className="public-wrap">
-                        <p className="border-t border-slate-200 py-4 text-xs text-[var(--brand-muted)]">
-                            {t('madeByBefore')}
-                            <a
-                                href="https://syslab.ge"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex min-h-11 items-center font-semibold underline-offset-2 hover:underline"
-                            >
-                                syslab.ge
-                            </a>
-                            {t('madeByAfter')}
-                        </p>
                     </div>
                 </footer>
 

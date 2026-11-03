@@ -1,12 +1,25 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
-    ArrowRight,
     ArrowUpRight,
     BookOpen,
+    CalendarDays,
+    ChevronRight,
     FileText,
+    Heart,
+    MessageCircle,
+    Minus,
+    Plus,
     Sparkles,
-    Users,
+    type LucideIcon,
 } from 'lucide-react';
+import {
+    Fragment,
+    useEffect,
+    useState,
+    type CSSProperties,
+    type KeyboardEvent,
+    type ReactNode,
+} from 'react';
 import PublicLayout from '@/layouts/public/public-layout';
 import ContentMediaBlock, {
     type ContentMedia,
@@ -29,8 +42,18 @@ type Block =
           headingLine2?: string;
           headingEmphasis?: string;
           body?: string;
+          ctaLabel?: string;
+          secondaryLabel?: string;
+          secondaryHref?: string;
           note?: string;
+          noteEmphasis?: string;
+          handNote?: string;
+          photoNoteTitle?: string;
+          photoNoteBody?: string;
+          verticalNote?: string;
+          imageUrl?: string;
           imageAlt?: string;
+          /** Retired (2026-11-01): never drawn over the photo again. */
           imageCaption?: string;
       }
     | {
@@ -39,11 +62,16 @@ type Block =
       }
     | {
           type: 'programs';
+          eyebrow?: string;
           heading: string;
+          headingAccent?: string;
+          aside?: string;
+          linkLabel?: string;
           items: Array<{
               title: string;
               grade: string;
               body: string;
+              note?: string;
               href?: string;
           }>;
       }
@@ -51,23 +79,47 @@ type Block =
           type: 'history';
           eyebrow?: string;
           heading: string;
+          headingAccent?: string;
           lead?: string;
           body: string;
           ctaLabel?: string;
           ctaHref?: string;
+          belief?: string;
+          beliefMeta?: string;
+      }
+    | {
+          type: 'discoveries';
+          eyebrow?: string;
+          heading: string;
+          headingAccent?: string;
+          aside?: string;
+          ctaLabel?: string;
+          ctaHref?: string;
+          items: Array<{
+              label: string;
+              title: string;
+              body: string;
+              tag?: string;
+              imageUrl?: string;
+              imageAlt?: string;
+          }>;
       }
     | {
           type: 'portal_promo';
           eyebrow?: string;
           heading: string;
+          headingAccent?: string;
           body?: string;
           ctaLabel?: string;
           ctaHref?: string;
+          features?: Array<{ title: string; body?: string }>;
+          sticker?: string;
       }
     | {
           type: 'life';
           eyebrow?: string;
           heading: string;
+          headingAccent?: string;
           ctaLabel?: string;
           ctaHref?: string;
       }
@@ -78,8 +130,16 @@ type Block =
           ctaLabel?: string;
           ctaHref?: string;
       }
-    | { type: 'text'; heading: string; body: string | string[] }
-    | { type: 'contact_cta'; eyebrow?: string; heading: string; body?: string }
+    | { type: 'text'; heading?: string; body: string | string[] }
+    | {
+          type: 'contact_cta';
+          eyebrow?: string;
+          heading: string;
+          headingAccent?: string;
+          body?: string;
+          ctaLabel?: string;
+          sunNote?: string;
+      }
     | {
           type: 'documents';
           heading?: string;
@@ -127,10 +187,173 @@ type Props = {
     preview?: boolean;
 };
 
+/** Fixed per-position tints from design/app/new-vision/NewVision.tsx. */
+const DISCOVERY_TINTS = ['#e7eddf', '#f6e0cc', '#dfe9f0'];
+const STAGE_TINTS = ['#f7e4d5', '#e5eddd', '#e0e8f0'];
+const STAGE_SYMBOLS = ['✳', '↗', '◎'];
+const PORTAL_ICONS: Array<{ icon: LucideIcon; tone: string }> = [
+    { icon: CalendarDays, tone: 'an-app-peach' },
+    { icon: BookOpen, tone: 'an-app-green' },
+    { icon: MessageCircle, tone: 'an-app-blue' },
+];
+const PORTAL_FEATURES = [
+    { title: 'დღის განრიგი', body: 'გეგმა, რომელიც ხელთ გაქვს' },
+    { title: 'აღმოჩენების პორტფოლიო', body: 'პატარა ნაბიჯების დიდი ისტორია' },
+    { title: 'შეტყობინებები', body: 'მასწავლებელთან ახლოს' },
+];
+
+/** In-page anchor each block type owns (hero links such as `#school-day`). */
+const BLOCK_ANCHORS: Partial<Record<Block['type'], string>> = {
+    history: 'about',
+    discoveries: 'school-day',
+    life: 'life',
+    teachers: 'teachers',
+    contact_cta: 'contact',
+};
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** Editor text keeps its own line breaks. */
+function Lines({ text }: { text: string }) {
+    return (
+        <>
+            {text.split('\n').map((line, index) => (
+                <Fragment key={index}>
+                    {index > 0 && <br />}
+                    {line}
+                </Fragment>
+            ))}
+        </>
+    );
+}
+
+function SunMark({ className = '' }: { className?: string }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 120 120"
+            fill="none"
+            aria-hidden="true"
+            focusable="false"
+        >
+            <circle
+                cx="60"
+                cy="60"
+                r="22"
+                stroke="currentColor"
+                strokeWidth="3.5"
+            />
+            {Array.from({ length: 12 }, (_, i) => (
+                <path
+                    key={i}
+                    d="M60 7V26"
+                    stroke="currentColor"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    transform={`rotate(${i * 30} 60 60)`}
+                />
+            ))}
+            <path
+                d="M49 62c5 8 17 8 22 0"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+            />
+            <circle cx="51" cy="53" r="2" fill="currentColor" />
+            <circle cx="69" cy="53" r="2" fill="currentColor" />
+        </svg>
+    );
+}
+
+/** Site paths go through Inertia; anchors stay anchors; others open apart. */
+function SmartLink({
+    href,
+    className,
+    ariaLabel,
+    children,
+}: {
+    href: string;
+    className?: string;
+    ariaLabel?: string;
+    children: ReactNode;
+}) {
+    if (href.startsWith('/')) {
+        return (
+            <Link href={href} className={className} aria-label={ariaLabel}>
+                {children}
+            </Link>
+        );
+    }
+
+    if (href.startsWith('#')) {
+        return (
+            <a href={href} className={className} aria-label={ariaLabel}>
+                {children}
+            </a>
+        );
+    }
+
+    return (
+        <a
+            href={href}
+            className={className}
+            aria-label={ariaLabel}
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            {children}
+        </a>
+    );
+}
+
+function SectionLabel({ number, text }: { number?: number; text?: string }) {
+    if (!text) {
+        return null;
+    }
+
+    return (
+        <div className="an-section-label">
+            <span>{number ? `${pad(number)} / ${text}` : text}</span>
+            <span className="an-label-line" aria-hidden="true" />
+        </div>
+    );
+}
+
+function TwoToneHeading({
+    heading,
+    accent,
+}: {
+    heading: string;
+    accent?: string;
+}) {
+    return (
+        <>
+            <Lines text={heading} />
+            {accent && (
+                <>
+                    <br />
+                    <span>{accent}</span>
+                </>
+            )}
+        </>
+    );
+}
+
+function formatPostDate(iso: string) {
+    return new Date(iso).toLocaleDateString('ka-GE', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'Asia/Tbilisi',
+    });
+}
+
 /**
  * Renders any tenant CMS page — home included — from its typed blocks.
  * One rendering path for every page keeps the block set (and this
  * component) the single thing to maintain, instead of one file per page.
+ * Markup and class names follow design/app/new-vision/NewVision.tsx; the
+ * styles live in resources/css/new-vision.css.
  */
 export default function CmsPage(props: Props) {
     // The visit dialog's provider lives inside PublicLayout, so everything
@@ -152,15 +375,26 @@ function CmsPageContent({
     preview = false,
 }: Props) {
     const { brand } = usePage<{ brand: Brand | null }>().props;
-    const accent = brand?.colors.accent ?? '#F5683C';
-    const primary = brand?.colors.primary ?? '#132B45';
     const openVisitDialog = useOpenVisitDialog();
-    // "Our vision" scrolls to the page's own about section when it has one.
-    const visionHref = page.blocks.some((block) => block.type === 'history')
-        ? '#about'
-        : page.slug === 'about'
-          ? null
-          : '/about';
+    const isHome = page.slug === 'home';
+    const anchors = new Set(
+        page.blocks.map((block) => BLOCK_ANCHORS[block.type]).filter(Boolean),
+    );
+
+    // "01 / …" numbering of the labelled sections, as in the design —
+    // only when a page has more than one of them.
+    const labelled = page.blocks.filter(
+        (block) =>
+            ['history', 'discoveries', 'programs', 'life'].includes(
+                block.type,
+            ) &&
+            'eyebrow' in block &&
+            block.eyebrow,
+    );
+    const sectionNumber = (block: Block) =>
+        labelled.length > 1
+            ? labelled.indexOf(block) + 1 || undefined
+            : undefined;
 
     return (
         <>
@@ -187,7 +421,12 @@ function CmsPageContent({
                 </div>
             )}
 
-            {breadcrumb && <CategoryBreadcrumbNav breadcrumb={breadcrumb} />}
+            {breadcrumb && (
+                <CategoryBreadcrumbNav
+                    breadcrumb={breadcrumb}
+                    className="an-wrap pt-6"
+                />
+            )}
 
             {/* Every page needs one h1; hero-less CMS pages get the title for assistive tech. */}
             {!page.blocks.some((block) => block.type === 'hero') && (
@@ -196,445 +435,464 @@ function CmsPageContent({
 
             {page.blocks.map((block, index) => {
                 switch (block.type) {
-                    case 'hero':
-                        return (
-                            <section key={index} className="public-wrap">
-                                {/* Proportions from design/app/globals.css `.hero` (see app.css). */}
-                                <div className="public-hero">
-                                    <div>
-                                        {block.eyebrow && (
-                                            <p className="public-eyebrow">
-                                                {block.eyebrow}
-                                            </p>
-                                        )}
-                                        <h1 className="public-hero-title text-balance">
-                                            {block.heading}
-                                            {block.headingLine2 && (
-                                                <>
-                                                    <br />
-                                                    {block.headingLine2}{' '}
-                                                    {block.headingEmphasis && (
-                                                        <em
-                                                            className="not-italic"
-                                                            style={{
-                                                                color: accent,
-                                                            }}
-                                                        >
-                                                            {
-                                                                block.headingEmphasis
-                                                            }
-                                                        </em>
-                                                    )}
-                                                </>
-                                            )}
-                                        </h1>
-                                        {block.body && (
-                                            <p className="public-hero-lead">
-                                                {block.body}
-                                            </p>
-                                        )}
-                                        <div className="mt-8 flex flex-wrap items-center gap-x-[26px] gap-y-4">
-                                            <button
-                                                type="button"
-                                                onClick={openVisitDialog}
-                                                className="inline-flex min-h-12 items-center gap-3.5 rounded-lg px-[22px] py-[15px] text-sm font-semibold"
-                                                style={{
-                                                    backgroundColor: accent,
-                                                    color: primary,
-                                                }}
-                                            >
-                                                მოდი, გაიცანი{' '}
-                                                {brand?.name ?? ''}{' '}
-                                                <ArrowUpRight size={18} />
-                                            </button>
-                                            {visionHref?.startsWith('#') && (
-                                                <a
-                                                    href={visionHref}
-                                                    className="inline-flex min-h-11 items-center gap-1 font-semibold"
-                                                    style={{ color: primary }}
-                                                >
-                                                    ჩვენი ხედვა{' '}
-                                                    <ArrowRight size={16} />
-                                                </a>
-                                            )}
-                                            {visionHref?.startsWith('/') && (
-                                                <Link
-                                                    href={visionHref}
-                                                    className="inline-flex min-h-11 items-center gap-1 font-semibold"
-                                                    style={{ color: primary }}
-                                                >
-                                                    ჩვენი ხედვა{' '}
-                                                    <ArrowRight size={16} />
-                                                </Link>
-                                            )}
-                                        </div>
-                                        {block.note && (
-                                            <div className="mt-8 flex items-start gap-[15px] text-xs leading-[1.8] text-slate-600 sm:mt-[42px]">
-                                                <Sparkles
-                                                    className="h-6 w-6 shrink-0"
-                                                    style={{ color: accent }}
-                                                />
-                                                <span>{block.note}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="public-hero-visual">
-                                        {brand?.heroImageUrl ? (
-                                            <div className="public-photo-frame">
-                                                <img
-                                                    src={brand.heroImageUrl}
-                                                    alt={block.imageAlt ?? ''}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div
-                                                className="public-photo-frame flex items-center justify-center bg-slate-100"
+                    case 'hero': {
+                        const visitLabel =
+                            block.ctaLabel ??
+                            `მოდი, გაიცანი ${brand?.name ?? ''}`.trim();
+                        const secondary =
+                            block.secondaryLabel &&
+                            block.secondaryHref &&
+                            (!block.secondaryHref.startsWith('#') ||
+                                anchors.has(block.secondaryHref.slice(1)))
+                                ? {
+                                      label: block.secondaryLabel,
+                                      href: block.secondaryHref,
+                                  }
+                                : null;
+                        const heading = (
+                            <>
+                                <Lines text={block.heading} />
+                                {block.headingLine2 && (
+                                    <>
+                                        <br />
+                                        {block.headingLine2}
+                                    </>
+                                )}
+                                {block.headingEmphasis && (
+                                    <>
+                                        <br />
+                                        <span className="an-wordmark">
+                                            {block.headingEmphasis}
+                                            <svg
+                                                viewBox="0 0 520 25"
+                                                fill="none"
                                                 aria-hidden="true"
+                                                focusable="false"
                                             >
-                                                <BookOpen
-                                                    className="h-16 w-16"
-                                                    style={{ color: accent }}
+                                                <path
+                                                    d="M5 16C120 2 345 1 512 12M18 23c172-15 310-14 473-4"
+                                                    stroke="currentColor"
+                                                    strokeWidth="4"
+                                                    strokeLinecap="round"
                                                 />
-                                            </div>
-                                        )}
-                                        <div
-                                            className="absolute top-7 -right-2 hidden text-[10px] tracking-[0.3em] text-slate-500 sm:block"
-                                            style={{
-                                                writingMode: 'vertical-rl',
-                                            }}
+                                            </svg>
+                                        </span>
+                                    </>
+                                )}
+                            </>
+                        );
+                        const actions = (
+                            <div className="an-hero-actions">
+                                <button
+                                    type="button"
+                                    className="an-button an-button-orange"
+                                    onClick={openVisitDialog}
+                                >
+                                    {visitLabel}{' '}
+                                    <span>
+                                        <ArrowUpRight
+                                            size={22}
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                </button>
+                                {secondary && (
+                                    <SmartLink
+                                        href={secondary.href}
+                                        className="an-text-link"
+                                    >
+                                        {secondary.label}{' '}
+                                        <span
+                                            className="an-play"
                                             aria-hidden="true"
                                         >
-                                            LEARN. DISCOVER. BECOME.
-                                        </div>
-                                        <div className="public-floating-card">
+                                            <ChevronRight size={17} />
+                                        </span>
+                                    </SmartLink>
+                                )}
+                            </div>
+                        );
+                        const image =
+                            block.imageUrl ??
+                            (isHome ? brand?.heroImageUrl : null);
+
+                        // Inner pages: the same type and rhythm, no photo
+                        // composition unless the editor gives one.
+                        if (!image) {
+                            return (
+                                <section
+                                    key={index}
+                                    className="an-page-hero an-wrap"
+                                >
+                                    {block.eyebrow && (
+                                        <p className="an-eyebrow">
                                             <span
-                                                className="inline-flex shrink-0 rounded-xl p-[13px]"
-                                                style={{
-                                                    backgroundColor: '#ffede7',
-                                                    color: '#c34621',
-                                                }}
+                                                className="an-live-dot"
+                                                aria-hidden="true"
+                                            />{' '}
+                                            {block.eyebrow}
+                                        </p>
+                                    )}
+                                    <h1>{heading}</h1>
+                                    {block.body && (
+                                        <p className="an-hero-lead">
+                                            <Lines text={block.body} />
+                                        </p>
+                                    )}
+                                    {actions}
+                                    <SunMark className="an-page-hero-sun" />
+                                </section>
+                            );
+                        }
+
+                        return (
+                            <section key={index} className="an-hero an-wrap">
+                                <div className="an-hero-copy">
+                                    {block.eyebrow && (
+                                        <p className="an-eyebrow">
+                                            <span
+                                                className="an-live-dot"
+                                                aria-hidden="true"
+                                            />{' '}
+                                            {block.eyebrow}
+                                        </p>
+                                    )}
+                                    <h1>{heading}</h1>
+                                    {block.body && (
+                                        <p className="an-hero-lead">
+                                            <Lines text={block.body} />
+                                        </p>
+                                    )}
+                                    {actions}
+                                    {block.note && (
+                                        <div className="an-hero-foot">
+                                            <span
+                                                className="an-tiny-sun"
+                                                aria-hidden="true"
                                             >
-                                                <BookOpen size={27} />
+                                                ✳
+                                            </span>
+                                            <p>
+                                                {block.note}
+                                                {block.noteEmphasis && (
+                                                    <>
+                                                        <br />
+                                                        <strong>
+                                                            {block.noteEmphasis}
+                                                        </strong>
+                                                    </>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="an-hero-art">
+                                    <div className="an-hero-image">
+                                        <img
+                                            src={image}
+                                            alt={block.imageAlt ?? ''}
+                                            width={1536}
+                                            height={1024}
+                                            fetchPriority="high"
+                                        />
+                                    </div>
+                                    {block.handNote && (
+                                        <div className="an-hand-note">
+                                            <Lines text={block.handNote} />
+                                            <svg
+                                                viewBox="0 0 100 60"
+                                                fill="none"
+                                                aria-hidden="true"
+                                                focusable="false"
+                                            >
+                                                <path
+                                                    d="M5 8c30 2 62 7 58 35m-14-7 14 14 17-16"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.8"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                            </svg>
+                                        </div>
+                                    )}
+                                    <SunMark className="an-hero-sun" />
+                                    {block.photoNoteTitle && (
+                                        <div className="an-photo-note">
+                                            <span aria-hidden="true">
+                                                <Sparkles size={20} />
                                             </span>
                                             <div>
-                                                <p className="text-sm font-semibold text-[var(--brand-primary)]">
-                                                    მეტი, ვიდრე გაკვეთილი
-                                                </p>
-                                                <p className="mt-1 text-xs text-slate-600">
-                                                    საკუთარი თავის აღმოჩენის
-                                                    ადგილი
-                                                </p>
+                                                <strong>
+                                                    {block.photoNoteTitle}
+                                                </strong>
+                                                {block.photoNoteBody && (
+                                                    <p>{block.photoNoteBody}</p>
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
+                                    {block.verticalNote && (
+                                        <p
+                                            className="an-vertical-note"
+                                            aria-hidden="true"
+                                        >
+                                            {block.verticalNote}
+                                        </p>
+                                    )}
                                 </div>
                             </section>
                         );
+                    }
 
-                    case 'values': {
-                        const valueIcons = [BookOpen, Users, Sparkles];
-
+                    case 'values':
                         return (
-                            <div
-                                key={index}
-                                className="border-y border-slate-100 bg-slate-50 py-6"
-                            >
-                                <div className="public-wrap flex flex-col gap-[18px] text-[13px] text-[var(--brand-primary)] sm:flex-row sm:flex-wrap sm:justify-between sm:gap-6 sm:text-sm">
-                                    {block.items.map((item, itemIndex) => {
-                                        const Icon =
-                                            valueIcons[
-                                                itemIndex % valueIcons.length
-                                            ];
-
-                                        return (
-                                            <span
-                                                key={item.label}
-                                                className="inline-flex items-center gap-2"
-                                            >
-                                                <Icon
-                                                    size={18}
-                                                    style={{ color: accent }}
-                                                />
-                                                {item.label}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
+                            <div key={index} className="an-values-ribbon">
+                                <ul className="an-wrap" role="list">
+                                    {block.items.map((item, itemIndex) => (
+                                        <Fragment key={itemIndex}>
+                                            {itemIndex > 0 && (
+                                                <li
+                                                    className="an-ribbon-flower"
+                                                    aria-hidden="true"
+                                                >
+                                                    ✳
+                                                </li>
+                                            )}
+                                            <li>{item.label}</li>
+                                        </Fragment>
+                                    ))}
+                                    <li aria-hidden="true">
+                                        <ArrowUpRight />
+                                    </li>
+                                </ul>
                             </div>
                         );
-                    }
 
                     case 'history':
                         return (
                             <section
                                 key={index}
                                 id="about"
-                                className="border-t border-slate-100 bg-slate-50 py-12 sm:py-[76px]"
+                                className="an-intro an-wrap"
                             >
-                                <div className="public-wrap grid gap-10 lg:grid-cols-2 lg:items-start">
+                                <SectionLabel
+                                    number={sectionNumber(block)}
+                                    text={block.eyebrow}
+                                />
+                                <div className="an-intro-grid">
+                                    <h2>
+                                        <TwoToneHeading
+                                            heading={block.heading}
+                                            accent={block.headingAccent}
+                                        />
+                                    </h2>
                                     <div>
-                                        {block.eyebrow && (
-                                            <p className="mb-4 text-xs font-bold tracking-widest text-slate-500">
-                                                {block.eyebrow}
-                                            </p>
-                                        )}
-                                        <h2 className="text-2xl sm:text-3xl">
-                                            {block.heading}
-                                        </h2>
-                                    </div>
-                                    <div>
-                                        {block.lead && (
-                                            <p className="text-lg font-medium text-slate-700">
-                                                {block.lead}
-                                            </p>
-                                        )}
-                                        <p className="mt-4 text-slate-600">
-                                            {block.body}
-                                        </p>
+                                        {block.lead && <p>{block.lead}</p>}
+                                        <p>{block.body}</p>
                                         {block.ctaHref && (
-                                            <Link
+                                            <SmartLink
                                                 href={block.ctaHref}
-                                                className="mt-6 inline-flex items-center gap-1 font-semibold"
-                                                style={{ color: primary }}
+                                                className="an-text-link"
                                             >
                                                 {block.ctaLabel ?? 'გაიგე მეტი'}{' '}
-                                                <ArrowUpRight size={16} />
-                                            </Link>
+                                                <ArrowUpRight
+                                                    size={20}
+                                                    aria-hidden="true"
+                                                />
+                                            </SmartLink>
                                         )}
                                     </div>
                                 </div>
+                                {block.belief && (
+                                    <div className="an-belief">
+                                        <Heart size={22} aria-hidden="true" />
+                                        <p>{block.belief}</p>
+                                        {block.beliefMeta && (
+                                            <span>{block.beliefMeta}</span>
+                                        )}
+                                    </div>
+                                )}
                             </section>
                         );
 
-                    case 'programs': {
-                        // design/app/globals.css .peach / .blue / .green
-                        const programTones = ['#ffede5', '#eaf1f9', '#e5f2ed'];
-                        // Each stage opens its own description on the
-                        // learning page (or an editor-set link). The learning
-                        // page itself is that description, so no link there.
-                        const stageHref = (
-                            item: (typeof block.items)[number],
-                            n: number,
-                        ) =>
-                            item.href ??
-                            (page.slug === 'learning'
-                                ? null
-                                : `/learning#stage-${n}`);
+                    case 'discoveries':
+                        return (
+                            <DiscoveriesSection
+                                key={index}
+                                block={block}
+                                blockIndex={index}
+                                number={sectionNumber(block)}
+                            />
+                        );
+
+                    case 'programs':
+                        return (
+                            <StagesSection
+                                key={index}
+                                block={block}
+                                blockIndex={index}
+                                number={sectionNumber(block)}
+                                isLearningPage={page.slug === 'learning'}
+                            />
+                        );
+
+                    case 'portal_promo': {
+                        const features = block.features?.length
+                            ? block.features
+                            : PORTAL_FEATURES;
 
                         return (
-                            <section
-                                key={index}
-                                className="bg-slate-50 py-12 sm:py-[76px]"
-                            >
-                                <div className="public-wrap">
-                                    <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
-                                        <h2 className="text-2xl sm:text-3xl">
-                                            {block.heading}
+                            <section key={index} className="an-portal-section">
+                                <div className="an-wrap an-portal-grid">
+                                    <div>
+                                        {block.eyebrow && (
+                                            <p className="an-eyebrow">
+                                                {block.eyebrow}
+                                            </p>
+                                        )}
+                                        <h2>
+                                            <TwoToneHeading
+                                                heading={block.heading}
+                                                accent={block.headingAccent}
+                                            />
                                         </h2>
-                                        <span
-                                            className="hidden text-sm whitespace-nowrap text-slate-600 sm:inline"
-                                            aria-hidden="true"
+                                        {block.body && (
+                                            <p className="an-portal-description">
+                                                {block.body}
+                                            </p>
+                                        )}
+                                        <SmartLink
+                                            href={block.ctaHref ?? '/login'}
+                                            className="an-button an-button-cream"
                                         >
-                                            01 —{' '}
-                                            {String(
-                                                block.items.length,
-                                            ).padStart(2, '0')}
-                                        </span>
+                                            {block.ctaLabel ?? 'შედი პორტალში'}{' '}
+                                            <span>
+                                                <ArrowUpRight
+                                                    size={22}
+                                                    aria-hidden="true"
+                                                />
+                                            </span>
+                                        </SmartLink>
                                     </div>
-                                    <ul className="grid gap-4 sm:gap-[22px] md:grid-cols-3">
-                                        {block.items.map((item, itemIndex) => {
-                                            const n = itemIndex + 1;
-                                            const href = stageHref(item, n);
-                                            const body = (
-                                                <>
-                                                    <span className="mb-[22px] flex w-full items-center justify-between sm:mb-[42px]">
-                                                        <span className="text-sm opacity-60">
-                                                            {String(n).padStart(
-                                                                2,
-                                                                '0',
-                                                            )}
-                                                        </span>
-                                                        {href && (
-                                                            <ArrowUpRight
-                                                                aria-hidden
-                                                            />
-                                                        )}
+                                    <figure className="an-portal-visual">
+                                        <figcaption className="sr-only">
+                                            პორტალის შესაძლებლობების ილუსტრაცია
+                                        </figcaption>
+                                        <span
+                                            className="an-portal-orbit an-orbit-one"
+                                            aria-hidden="true"
+                                        />
+                                        <span
+                                            className="an-portal-orbit an-orbit-two"
+                                            aria-hidden="true"
+                                        />
+                                        <div className="an-portal-card">
+                                            <div
+                                                className="an-app-header"
+                                                aria-hidden="true"
+                                            >
+                                                <Logo
+                                                    brand={brand}
+                                                    size="plain"
+                                                />
+                                                <span>
+                                                    ჩემი სივრცე{' '}
+                                                    <span className="an-avatar">
+                                                        {(
+                                                            brand?.shortName ??
+                                                            brand?.name ??
+                                                            ''
+                                                        ).charAt(0)}
                                                     </span>
-                                                    <span className="text-xs text-[#536877]">
-                                                        {item.grade}
-                                                    </span>
-                                                    <h3 className="mt-2.5 mb-[15px] text-[1.3rem] md:text-[1.15rem] xl:text-[1.3rem]">
-                                                        {item.title}
-                                                    </h3>
-                                                    <span className="text-sm leading-[1.9] text-[#596b7b]">
-                                                        {item.body}
-                                                    </span>
-                                                    {href && (
-                                                        <span className="mt-[30px] flex items-center gap-[18px] text-sm font-semibold">
-                                                            სწავლების გვერდზე
-                                                            <ArrowRight
-                                                                size={18}
-                                                                aria-hidden
-                                                            />
-                                                        </span>
-                                                    )}
-                                                </>
-                                            );
-                                            const card =
-                                                'public-program-card flex h-full flex-col items-start rounded-xl p-[27px] text-left md:p-5 xl:p-[30px]';
+                                                </span>
+                                            </div>
+                                            <h3>დღე მშვიდობისა ☀</h3>
+                                            <p>ყველაფერი მნიშვნელოვანი — აქ.</p>
+                                            <ul className="an-app-list">
+                                                {features.map(
+                                                    (feature, featureIndex) => {
+                                                        const {
+                                                            icon: Icon,
+                                                            tone,
+                                                        } =
+                                                            PORTAL_ICONS[
+                                                                featureIndex %
+                                                                    PORTAL_ICONS.length
+                                                            ];
 
-                                            return (
-                                                <li
-                                                    key={item.title}
-                                                    id={`stage-${n}`}
-                                                    className="scroll-mt-8"
-                                                >
-                                                    {href ? (
-                                                        <Link
-                                                            href={href}
-                                                            className={card}
-                                                            style={{
-                                                                backgroundColor:
-                                                                    programTones[
-                                                                        itemIndex %
-                                                                            3
-                                                                    ],
-                                                            }}
-                                                        >
-                                                            {body}
-                                                        </Link>
-                                                    ) : (
-                                                        <div
-                                                            className={card}
-                                                            style={{
-                                                                backgroundColor:
-                                                                    programTones[
-                                                                        itemIndex %
-                                                                            3
-                                                                    ],
-                                                            }}
-                                                        >
-                                                            {body}
-                                                        </div>
-                                                    )}
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
+                                                        return (
+                                                            <li
+                                                                key={
+                                                                    featureIndex
+                                                                }
+                                                                className="an-app-item"
+                                                            >
+                                                                <span
+                                                                    className={`an-app-icon ${tone}`}
+                                                                    aria-hidden="true"
+                                                                >
+                                                                    <Icon
+                                                                        size={
+                                                                            23
+                                                                        }
+                                                                    />
+                                                                </span>
+                                                                <div>
+                                                                    <strong>
+                                                                        {
+                                                                            feature.title
+                                                                        }
+                                                                    </strong>
+                                                                    {feature.body && (
+                                                                        <p>
+                                                                            {
+                                                                                feature.body
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                <ArrowUpRight
+                                                                    size={17}
+                                                                    aria-hidden="true"
+                                                                />
+                                                            </li>
+                                                        );
+                                                    },
+                                                )}
+                                            </ul>
+                                        </div>
+                                        {block.sticker && (
+                                            <span className="an-portal-sticker">
+                                                <Heart
+                                                    size={18}
+                                                    fill="currentColor"
+                                                    aria-hidden="true"
+                                                />{' '}
+                                                {block.sticker}
+                                            </span>
+                                        )}
+                                    </figure>
                                 </div>
                             </section>
                         );
                     }
 
-                    case 'portal_promo':
-                        return (
-                            <section
-                                key={index}
-                                className="py-16 text-white sm:py-24"
-                                style={{ backgroundColor: primary }}
-                            >
-                                <div className="public-wrap grid gap-10 lg:grid-cols-2 lg:items-center">
-                                    <div>
-                                        {block.eyebrow && (
-                                            <p
-                                                className="mb-4 text-xs font-bold tracking-widest"
-                                                style={{ color: accent }}
-                                            >
-                                                {block.eyebrow}
-                                            </p>
-                                        )}
-                                        <h2 className="text-2xl text-white sm:text-3xl">
-                                            {block.heading}
-                                        </h2>
-                                        {block.body && (
-                                            <p className="mt-4 text-white/80">
-                                                {block.body}
-                                            </p>
-                                        )}
-                                        <Link
-                                            href={block.ctaHref ?? '/login'}
-                                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 font-semibold"
-                                            style={{ color: primary }}
-                                        >
-                                            {block.ctaLabel ?? 'შედი პორტალში'}{' '}
-                                            <ArrowUpRight size={18} />
-                                        </Link>
-                                    </div>
-                                    <div
-                                        className="rounded-2xl bg-white/95 p-6 text-[var(--brand-primary,#132B45)] shadow-2xl"
-                                        aria-hidden="true"
-                                    >
-                                        <div className="mb-5 flex items-center justify-between">
-                                            <Logo
-                                                brand={brand}
-                                                size="compact"
-                                            />
-                                            <span
-                                                className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
-                                                style={{
-                                                    backgroundColor: `${accent}1a`,
-                                                    color: accent,
-                                                }}
-                                            >
-                                                მ
-                                            </span>
-                                        </div>
-                                        <h3 className="text-lg font-semibold">
-                                            დილა მშვიდობისა 👋
-                                        </h3>
-                                        <p className="mt-1 text-sm text-slate-500">
-                                            ილუსტრაციული მაგალითი · დემო
-                                        </p>
-                                        <div className="mt-4 flex items-center gap-3 rounded-lg bg-slate-50 p-3">
-                                            <span
-                                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                                                style={{
-                                                    backgroundColor: `${accent}1a`,
-                                                    color: accent,
-                                                }}
-                                            >
-                                                <BookOpen size={18} />
-                                            </span>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-semibold">
-                                                    შემდეგი გაკვეთილი
-                                                </p>
-                                                <p className="truncate text-xs text-slate-500">
-                                                    დღის განრიგიდან
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 grid grid-cols-2 gap-3">
-                                            <div className="rounded-lg bg-slate-50 p-3">
-                                                <p className="text-xs text-slate-500">
-                                                    შეტყობინებები
-                                                </p>
-                                            </div>
-                                            <div className="rounded-lg bg-slate-50 p-3">
-                                                <p className="text-xs text-slate-500">
-                                                    დოკუმენტები
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                        );
-
                     case 'text':
                         return (
                             <section
                                 key={index}
-                                className="mx-auto max-w-3xl px-6 py-16"
+                                className="an-text-block an-wrap"
                             >
-                                <h2 className="mb-6 text-2xl sm:text-3xl">
-                                    {block.heading}
-                                </h2>
-                                <div className="space-y-4 text-lg leading-relaxed text-slate-600">
+                                {block.heading && <h2>{block.heading}</h2>}
+                                <div className="an-text-body">
+                                    {/* Imported pages keep their paragraphs
+                                        as blank-line-separated text. */}
                                     {(Array.isArray(block.body)
                                         ? block.body
-                                        : [block.body]
+                                        : block.body
+                                              .split(/\n\s*\n/)
+                                              .map((part) => part.trim())
+                                              .filter(Boolean)
                                     ).map((paragraph, paragraphIndex) => (
                                         <p key={paragraphIndex}>{paragraph}</p>
                                     ))}
@@ -642,160 +900,160 @@ function CmsPageContent({
                             </section>
                         );
 
-                    case 'life':
+                    case 'life': {
+                        // The home page shows the design's asymmetric pair.
+                        const posts = isHome
+                            ? latestPosts.slice(0, 2)
+                            : latestPosts;
+
                         return (
                             <section
                                 key={index}
                                 id="life"
-                                className="public-wrap py-16"
+                                className="an-stories an-wrap"
                             >
-                                <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
-                                    <div>
-                                        {block.eyebrow && (
-                                            <p className="mb-2 text-xs font-bold tracking-widest text-slate-500">
-                                                {block.eyebrow}
-                                            </p>
-                                        )}
-                                        <h2 className="text-2xl sm:text-3xl">
-                                            {block.heading}
-                                        </h2>
-                                    </div>
-                                    {latestPosts.length > 0 && (
-                                        <Link
+                                <SectionLabel
+                                    number={sectionNumber(block)}
+                                    text={block.eyebrow}
+                                />
+                                <div className="an-stories-heading">
+                                    <h2>
+                                        <TwoToneHeading
+                                            heading={block.heading}
+                                            accent={block.headingAccent}
+                                        />
+                                    </h2>
+                                    {posts.length > 0 && (
+                                        <SmartLink
                                             href={block.ctaHref ?? '/news'}
-                                            className="inline-flex items-center gap-1 font-semibold"
-                                            style={{ color: primary }}
+                                            className="an-text-link"
                                         >
                                             {block.ctaLabel ?? 'ყველა ამბავი'}{' '}
-                                            <ArrowUpRight size={16} />
-                                        </Link>
+                                            <ArrowUpRight
+                                                size={20}
+                                                aria-hidden="true"
+                                            />
+                                        </SmartLink>
                                     )}
                                 </div>
 
-                                {latestPosts.length === 0 ? (
-                                    <p className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
+                                {posts.length === 0 ? (
+                                    <p className="an-empty-note">
                                         სიახლეები მალე გამოქვეყნდება.
                                     </p>
                                 ) : (
-                                    <div className="grid gap-6 sm:grid-cols-3">
-                                        {latestPosts.map((post) => (
+                                    <div
+                                        className={`an-stories-grid${isHome ? '' : ' an-stories-grid-wide'}`}
+                                    >
+                                        {posts.map((post) => (
                                             <Link
                                                 key={post.slug}
                                                 href={`/news/${post.slug}`}
-                                                className="block overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200"
+                                                className="an-story-card"
                                             >
-                                                {post.coverImageUrl && (
-                                                    <img
-                                                        src={post.coverImageUrl}
-                                                        alt=""
-                                                        className="h-40 w-full object-cover"
-                                                    />
-                                                )}
-                                                <div className="p-6">
-                                                    {post.publishedAt && (
-                                                        <p className="mb-2 text-xs font-semibold text-slate-500">
-                                                            {new Date(
-                                                                post.publishedAt,
-                                                            ).toLocaleDateString(
-                                                                'ka-GE',
-                                                            )}
-                                                        </p>
+                                                <div
+                                                    className={`an-story-photo${post.coverImageUrl ? '' : ' an-story-photo-empty'}`}
+                                                >
+                                                    {post.coverImageUrl ? (
+                                                        <img
+                                                            src={
+                                                                post.coverImageUrl
+                                                            }
+                                                            alt=""
+                                                            loading="lazy"
+                                                        />
+                                                    ) : (
+                                                        <SunMark />
                                                     )}
-                                                    <h3 className="mb-2 text-lg">
-                                                        {post.title}
-                                                    </h3>
-                                                    {post.excerpt && (
-                                                        <p className="text-sm text-slate-600">
-                                                            {post.excerpt}
-                                                        </p>
-                                                    )}
+                                                    <span
+                                                        className="an-story-open"
+                                                        aria-hidden="true"
+                                                    >
+                                                        <ArrowUpRight
+                                                            size={25}
+                                                        />
+                                                    </span>
                                                 </div>
+                                                {post.publishedAt && (
+                                                    <div className="an-story-meta">
+                                                        <time
+                                                            dateTime={
+                                                                post.publishedAt
+                                                            }
+                                                        >
+                                                            {formatPostDate(
+                                                                post.publishedAt,
+                                                            )}
+                                                        </time>
+                                                    </div>
+                                                )}
+                                                <h3>{post.title}</h3>
                                             </Link>
                                         ))}
                                     </div>
                                 )}
                             </section>
                         );
+                    }
 
                     case 'teachers':
                         return (
                             <section
                                 key={index}
                                 id="teachers"
-                                className="border-t border-slate-100 bg-slate-50 py-16"
+                                className="an-stories an-wrap"
                             >
-                                <div className="public-wrap">
-                                    <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
-                                        <div>
-                                            {block.eyebrow && (
-                                                <p className="mb-2 text-xs font-bold tracking-widest text-slate-500">
-                                                    {block.eyebrow}
-                                                </p>
-                                            )}
-                                            <h2 className="text-2xl sm:text-3xl">
-                                                {block.heading}
-                                            </h2>
-                                        </div>
-                                        {featuredTeachers.length > 0 && (
-                                            <Link
-                                                href={
-                                                    block.ctaHref ?? '/teachers'
-                                                }
-                                                className="inline-flex items-center gap-1 font-semibold"
-                                                style={{ color: primary }}
-                                            >
-                                                {block.ctaLabel ??
-                                                    'ყველა მასწავლებელი'}{' '}
-                                                <ArrowUpRight size={16} />
-                                            </Link>
-                                        )}
-                                    </div>
-
-                                    {featuredTeachers.length === 0 ? (
-                                        <p className="rounded-xl bg-white p-8 text-center text-slate-500">
-                                            მასწავლებლების სია მალე
-                                            გამოქვეყნდება.
-                                        </p>
-                                    ) : (
-                                        <div className="-mx-6 flex snap-x gap-6 overflow-x-auto px-6 pb-2">
-                                            {featuredTeachers.map((teacher) => (
-                                                <Link
-                                                    key={teacher.slug}
-                                                    href={`/teachers/${teacher.slug}`}
-                                                    className="w-40 shrink-0 snap-start text-center"
-                                                >
-                                                    {teacher.photoUrl ? (
-                                                        <img
-                                                            src={
-                                                                teacher.photoUrl
-                                                            }
-                                                            alt={teacher.name}
-                                                            className="mx-auto mb-3 h-24 w-24 rounded-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <span
-                                                            className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full text-xl font-semibold"
-                                                            style={{
-                                                                backgroundColor: `${accent}1a`,
-                                                                color: accent,
-                                                            }}
-                                                        >
-                                                            {teacher.name.charAt(
-                                                                0,
-                                                            )}
-                                                        </span>
-                                                    )}
-                                                    <p className="text-sm font-semibold">
-                                                        {teacher.name}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        {teacher.subject}
-                                                    </p>
-                                                </Link>
-                                            ))}
-                                        </div>
+                                <SectionLabel text={block.eyebrow} />
+                                <div className="an-stories-heading">
+                                    <h2>{block.heading}</h2>
+                                    {featuredTeachers.length > 0 && (
+                                        <SmartLink
+                                            href={block.ctaHref ?? '/teachers'}
+                                            className="an-text-link"
+                                        >
+                                            {block.ctaLabel ??
+                                                'ყველა მასწავლებელი'}{' '}
+                                            <ArrowUpRight
+                                                size={20}
+                                                aria-hidden="true"
+                                            />
+                                        </SmartLink>
                                     )}
                                 </div>
+
+                                {featuredTeachers.length === 0 ? (
+                                    <p className="an-empty-note">
+                                        მასწავლებლების სია მალე გამოქვეყნდება.
+                                    </p>
+                                ) : (
+                                    <div className="-mx-5 mt-10 flex snap-x gap-6 overflow-x-auto px-5 pb-2">
+                                        {featuredTeachers.map((teacher) => (
+                                            <Link
+                                                key={teacher.slug}
+                                                href={`/teachers/${teacher.slug}`}
+                                                className="w-40 shrink-0 snap-start text-center"
+                                            >
+                                                {teacher.photoUrl ? (
+                                                    <img
+                                                        src={teacher.photoUrl}
+                                                        alt={teacher.name}
+                                                        className="mx-auto mb-3 h-24 w-24 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <span className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full bg-[#f1ece1] text-xl font-semibold text-[#b04420]">
+                                                        {teacher.name.charAt(0)}
+                                                    </span>
+                                                )}
+                                                <p className="text-sm font-semibold">
+                                                    {teacher.name}
+                                                </p>
+                                                <p className="text-xs text-[#5a6865]">
+                                                    {teacher.subject}
+                                                </p>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
                             </section>
                         );
 
@@ -804,64 +1062,100 @@ function CmsPageContent({
                             <section
                                 key={index}
                                 id="contact"
-                                className="border-t border-slate-200 bg-[var(--brand-secondary,#F4F7FA)] py-16"
+                                className="an-final-section"
                             >
-                                <div className="public-wrap flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+                                <div className="an-wrap an-final-grid">
                                     <div>
                                         {block.eyebrow && (
-                                            <p className="mb-2 text-xs font-bold tracking-widest text-slate-500">
+                                            <p className="an-eyebrow">
                                                 {block.eyebrow}
                                             </p>
                                         )}
-                                        <h2 className="text-2xl sm:text-3xl">
-                                            {block.heading}
+                                        <h2>
+                                            <TwoToneHeading
+                                                heading={block.heading}
+                                                accent={block.headingAccent}
+                                            />
                                         </h2>
                                         {block.body && (
-                                            <p className="mt-3 text-slate-600">
+                                            <p className="an-final-body">
                                                 {block.body}
                                             </p>
                                         )}
-                                        {brand?.contact.phone && (
-                                            <p className="mt-4 text-sm text-slate-600">
-                                                {brand.contact.phone}
-                                                {brand.contact.email &&
-                                                    ` · ${brand.contact.email}`}
-                                            </p>
+                                        {/* Inner pages (contact, admissions) keep the school's contact details here. */}
+                                        {!isHome && brand && (
+                                            <ul className="an-final-contact">
+                                                {brand.contact.phone && (
+                                                    <li>
+                                                        <a
+                                                            href={`tel:${brand.contact.phone.replace(/\s+/g, '')}`}
+                                                        >
+                                                            {
+                                                                brand.contact
+                                                                    .phone
+                                                            }
+                                                        </a>
+                                                    </li>
+                                                )}
+                                                {brand.contact.email && (
+                                                    <li>
+                                                        <a
+                                                            href={`mailto:${brand.contact.email}`}
+                                                        >
+                                                            {
+                                                                brand.contact
+                                                                    .email
+                                                            }
+                                                        </a>
+                                                    </li>
+                                                )}
+                                                {brand.contact.address && (
+                                                    <li>
+                                                        {brand.contact.address}
+                                                    </li>
+                                                )}
+                                            </ul>
                                         )}
-                                        {brand?.contact.address && (
-                                            <p className="mt-1 text-sm text-slate-600">
-                                                {brand.contact.address}
+                                        <button
+                                            type="button"
+                                            className="an-button an-button-navy"
+                                            onClick={openVisitDialog}
+                                        >
+                                            {block.ctaLabel ?? 'დაგეგმე ვიზიტი'}{' '}
+                                            <span>
+                                                <ArrowUpRight
+                                                    size={22}
+                                                    aria-hidden="true"
+                                                />
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div
+                                        className="an-final-sun"
+                                        aria-hidden="true"
+                                    >
+                                        <SunMark />
+                                        {block.sunNote && (
+                                            <p>
+                                                <Lines text={block.sunNote} />
                                             </p>
                                         )}
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={openVisitDialog}
-                                        className="inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold"
-                                        style={{
-                                            backgroundColor: accent,
-                                            color: primary,
-                                        }}
-                                    >
-                                        დაგეგმე ვიზიტი{' '}
-                                        <ArrowUpRight size={18} />
-                                    </button>
                                 </div>
                             </section>
                         );
 
                     case 'documents':
                         return (
-                            <section key={index} className="public-wrap py-16">
-                                {block.heading && (
-                                    <h2 className="mb-10 text-2xl sm:text-3xl">
-                                        {block.heading}
-                                    </h2>
-                                )}
-                                <div className="grid gap-10 sm:grid-cols-2">
+                            <section
+                                key={index}
+                                className="an-text-block an-wrap"
+                            >
+                                {block.heading && <h2>{block.heading}</h2>}
+                                <div className="mt-10 grid gap-10 sm:grid-cols-2">
                                     {block.groups.map((group) => (
                                         <div key={group.heading}>
-                                            <h3 className="mb-4 text-lg font-semibold">
+                                            <h3 className="mb-4 text-xl">
                                                 {group.heading}
                                             </h3>
                                             <ul className="flex flex-col gap-2">
@@ -871,11 +1165,12 @@ function CmsPageContent({
                                                             href={item.url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 hover:bg-slate-50"
+                                                            className="flex min-h-11 items-center gap-2 rounded-xl bg-white/70 p-3 text-sm ring-1 ring-[#dedfd3] hover:bg-[#e7eddf]"
                                                         >
                                                             <FileText
                                                                 size={18}
-                                                                className="shrink-0 text-slate-400"
+                                                                className="shrink-0 text-[#69746f]"
+                                                                aria-hidden="true"
                                                             />
                                                             <span>
                                                                 {item.title}
@@ -895,9 +1190,298 @@ function CmsPageContent({
                 }
             })}
 
-            {media && <ContentMediaBlock media={media} />}
+            {media && (
+                <ContentMediaBlock
+                    media={media}
+                    className="an-wrap an-page-media pb-12"
+                />
+            )}
 
             {categorySection && <CategorySection section={categorySection} />}
         </>
+    );
+}
+
+/** "One day" tabs: arrow keys move between tabs, as in the design. */
+function DiscoveriesSection({
+    block,
+    blockIndex,
+    number,
+}: {
+    block: Extract<Block, { type: 'discoveries' }>;
+    blockIndex: number;
+    number?: number;
+}) {
+    const [active, setActive] = useState(0);
+    const items = block.items ?? [];
+    const current = items[Math.min(active, items.length - 1)];
+    const tabId = (i: number) => `an-tab-${blockIndex}-${i}`;
+    const panelId = `an-discovery-panel-${blockIndex}`;
+
+    const onKey = (event: KeyboardEvent<HTMLButtonElement>, i: number) => {
+        const moves: Record<string, number> = {
+            ArrowRight: (i + 1) % items.length,
+            ArrowLeft: (i - 1 + items.length) % items.length,
+            Home: 0,
+            End: items.length - 1,
+        };
+
+        if (event.key in moves) {
+            event.preventDefault();
+            setActive(moves[event.key]);
+            document.getElementById(tabId(moves[event.key]))?.focus();
+        }
+    };
+
+    return (
+        <section className="an-day-section" id="school-day">
+            <div className="an-wrap">
+                <SectionLabel number={number} text={block.eyebrow} />
+                <div className="an-day-heading">
+                    <h2>
+                        <TwoToneHeading
+                            heading={block.heading}
+                            accent={block.headingAccent}
+                        />
+                    </h2>
+                    {block.aside && (
+                        <p>
+                            <Lines text={block.aside} />
+                        </p>
+                    )}
+                    <SunMark className="an-day-sun" />
+                </div>
+                {current && (
+                    <>
+                        <div
+                            className="an-day-tabs"
+                            role="tablist"
+                            aria-label={block.eyebrow ?? block.heading}
+                        >
+                            {items.map((item, i) => (
+                                <button
+                                    key={i}
+                                    type="button"
+                                    id={tabId(i)}
+                                    role="tab"
+                                    aria-selected={active === i}
+                                    aria-controls={panelId}
+                                    tabIndex={active === i ? 0 : -1}
+                                    onClick={() => setActive(i)}
+                                    onKeyDown={(event) => onKey(event, i)}
+                                >
+                                    <span>{pad(i + 1)}</span>
+                                    {item.label}
+                                    <ArrowUpRight
+                                        size={18}
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                        <div
+                            className="an-discovery"
+                            id={panelId}
+                            role="tabpanel"
+                            aria-labelledby={tabId(active)}
+                            tabIndex={0}
+                        >
+                            <div className="an-discovery-photo">
+                                {current.imageUrl && (
+                                    <img
+                                        key={current.imageUrl}
+                                        src={current.imageUrl}
+                                        alt={current.imageAlt ?? ''}
+                                        loading="lazy"
+                                    />
+                                )}
+                                <span
+                                    className="an-photo-index"
+                                    aria-hidden="true"
+                                >
+                                    {pad(active + 1)}
+                                    <span>/ {pad(items.length)}</span>
+                                </span>
+                            </div>
+                            <div
+                                className="an-discovery-story"
+                                style={{
+                                    backgroundColor:
+                                        DISCOVERY_TINTS[
+                                            active % DISCOVERY_TINTS.length
+                                        ],
+                                }}
+                            >
+                                {current.tag && (
+                                    <span className="an-small-tag">
+                                        {current.tag}
+                                    </span>
+                                )}
+                                <h3>
+                                    <Lines text={current.title} />
+                                </h3>
+                                <p>{current.body}</p>
+                                {block.ctaHref && (
+                                    <SmartLink
+                                        href={block.ctaHref}
+                                        className="an-circle-link"
+                                        ariaLabel={
+                                            block.ctaLabel ?? 'გაიგე მეტი'
+                                        }
+                                    >
+                                        <ArrowUpRight
+                                            size={29}
+                                            aria-hidden="true"
+                                        />
+                                    </SmartLink>
+                                )}
+                                <span
+                                    className="an-story-scribble"
+                                    aria-hidden="true"
+                                >
+                                    ↝
+                                </span>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+        </section>
+    );
+}
+
+/**
+ * School stages as a one-open-at-a-time accordion. `/learning#stage-2`
+ * opens the second stage.
+ */
+function StagesSection({
+    block,
+    blockIndex,
+    number,
+    isLearningPage,
+}: {
+    block: Extract<Block, { type: 'programs' }>;
+    blockIndex: number;
+    number?: number;
+    isLearningPage: boolean;
+}) {
+    const [active, setActive] = useState(0);
+
+    useEffect(() => {
+        const openFromHash = () => {
+            const match = /^#stage-(\d+)$/.exec(window.location.hash);
+
+            if (match) {
+                setActive(Number(match[1]) - 1);
+            }
+        };
+
+        openFromHash();
+        window.addEventListener('hashchange', openFromHash);
+
+        return () => window.removeEventListener('hashchange', openFromHash);
+    }, []);
+
+    return (
+        <section className="an-learning an-wrap" id="learning-paths">
+            <SectionLabel number={number} text={block.eyebrow} />
+            <div className="an-learning-heading">
+                <h2>
+                    <TwoToneHeading
+                        heading={block.heading}
+                        accent={block.headingAccent}
+                    />
+                </h2>
+                {block.aside && (
+                    <p>
+                        <Lines text={block.aside} />
+                    </p>
+                )}
+            </div>
+            <div className="an-stages">
+                {block.items.map((item, i) => {
+                    const n = i + 1;
+                    const open = active === i;
+                    const bodyId = `an-stage-body-${blockIndex}-${i}`;
+                    // The learning page is itself the description.
+                    const href =
+                        item.href ??
+                        (isLearningPage ? null : `/learning#stage-${n}`);
+
+                    return (
+                        <article
+                            key={i}
+                            id={`stage-${n}`}
+                            className={`an-stage${open ? ' an-stage-active' : ''}`}
+                            style={
+                                {
+                                    '--stage-color':
+                                        STAGE_TINTS[i % STAGE_TINTS.length],
+                                } as CSSProperties
+                            }
+                        >
+                            <button
+                                type="button"
+                                className="an-stage-toggle"
+                                aria-expanded={open}
+                                aria-controls={bodyId}
+                                onClick={() => setActive(open ? -1 : i)}
+                            >
+                                <span className="an-stage-number">
+                                    {pad(n)}
+                                </span>
+                                <span className="an-stage-label">
+                                    {item.grade}
+                                </span>
+                                <h3>{item.title}</h3>
+                                <span
+                                    className="an-stage-plus"
+                                    aria-hidden="true"
+                                >
+                                    {open ? (
+                                        <Minus size={24} />
+                                    ) : (
+                                        <Plus size={24} />
+                                    )}
+                                </span>
+                            </button>
+                            <div
+                                id={bodyId}
+                                className="an-stage-body"
+                                hidden={!open}
+                            >
+                                <span
+                                    className="an-stage-symbol"
+                                    aria-hidden="true"
+                                >
+                                    {STAGE_SYMBOLS[i % STAGE_SYMBOLS.length]}
+                                </span>
+                                <div>
+                                    <p>{item.body}</p>
+                                    {href && (
+                                        <SmartLink
+                                            href={href}
+                                            className="an-text-link"
+                                        >
+                                            {block.linkLabel ??
+                                                'სწავლის შესახებ'}{' '}
+                                            <ArrowUpRight
+                                                size={19}
+                                                aria-hidden="true"
+                                            />
+                                        </SmartLink>
+                                    )}
+                                </div>
+                                {item.note && (
+                                    <span className="an-stage-note">
+                                        {item.note}
+                                    </span>
+                                )}
+                            </div>
+                        </article>
+                    );
+                })}
+            </div>
+        </section>
     );
 }

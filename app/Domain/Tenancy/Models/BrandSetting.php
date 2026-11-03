@@ -22,10 +22,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $contact_phone
  * @property string|null $contact_address
  * @property array<int, array<string, string>>|null $social_links
+ * @property array<string, mixed>|null $navigation
  */
 #[Fillable([
     'tenant_id', 'display_name', 'short_name', 'logo_path', 'logo_dark_path', 'icon_path', 'favicon_path', 'hero_image_path',
-    'colors', 'font_family', 'contact_email', 'contact_phone', 'contact_address', 'social_links',
+    'colors', 'font_family', 'contact_email', 'contact_phone', 'contact_address', 'social_links', 'navigation',
 ])]
 class BrandSetting extends Model
 {
@@ -34,6 +35,7 @@ class BrandSetting extends Model
         return [
             'colors' => 'array',
             'social_links' => 'array',
+            'navigation' => 'array',
         ];
     }
 

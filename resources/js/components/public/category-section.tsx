@@ -25,11 +25,14 @@ const formatDate = (iso: string) =>
 /** Link back to the section a page or post belongs to. */
 export function CategoryBreadcrumbNav({
     breadcrumb,
+    className = 'mx-auto max-w-3xl px-6 pt-8',
 }: {
     breadcrumb: CategoryBreadcrumb;
+    /** Layout of the wrapper; pages pass the new-vision grid. */
+    className?: string;
 }) {
     return (
-        <nav aria-label="განყოფილება" className="mx-auto max-w-3xl px-6 pt-8">
+        <nav aria-label="განყოფილება" className={className}>
             <Link
                 href={breadcrumb.href}
                 className="inline-flex min-h-11 items-center gap-1 text-sm text-slate-600 hover:underline"

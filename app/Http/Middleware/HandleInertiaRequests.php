@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Content\PublicLocales;
+use App\Domain\Content\PublicNavigation;
 use App\Domain\Platform\Models\PlatformOperator;
 use App\Domain\Tenancy\CurrentTenant;
 use App\Domain\Tenancy\PortalContext;
@@ -116,6 +117,9 @@ class HandleInertiaRequests extends Middleware
             'platformOperator' => $user !== null && $request->routeIs('profile.*', 'security.*')
                 && PlatformOperator::query()->where('user_id', $user->id)->where('is_active', true)->exists(),
             'publicLocale' => $publicLocale,
+            // The public header/footer menu. A closure, so a portal page's
+            // partial reloads never run its query.
+            'publicNavigation' => fn () => $tenant !== null ? app(PublicNavigation::class)->for($tenant) : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

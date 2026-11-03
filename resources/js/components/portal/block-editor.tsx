@@ -34,16 +34,61 @@ export const BLOCK_SCHEMAS: Record<string, Schema> = {
         label: 'მთავარი ბანერი',
         fields: [
             { key: 'eyebrow', label: 'ზედა წარწერა', kind: 'text' },
-            { key: 'heading', label: 'სათაური', kind: 'text' },
+            { key: 'heading', label: 'სათაური', kind: 'textarea' },
             { key: 'headingLine2', label: 'სათაურის მეორე ხაზი', kind: 'text' },
             {
                 key: 'headingEmphasis',
-                label: 'გამოკვეთილი სიტყვა (ფერით)',
+                label: 'გამოკვეთილი ბოლო ხაზი (ფერით, ხაზგასმით)',
                 kind: 'text',
             },
             { key: 'body', label: 'ტექსტი', kind: 'textarea' },
+            {
+                key: 'ctaLabel',
+                label: 'ვიზიტის ღილაკის ტექსტი',
+                kind: 'text',
+            },
+            {
+                key: 'secondaryLabel',
+                label: 'მეორე ბმულის ტექსტი',
+                kind: 'text',
+            },
+            {
+                key: 'secondaryHref',
+                label: 'მეორე ბმული (მაგ. #school-day)',
+                kind: 'link',
+            },
             { key: 'note', label: 'მცირე შენიშვნა', kind: 'text' },
+            {
+                key: 'noteEmphasis',
+                label: 'შენიშვნის გამოკვეთილი ხაზი',
+                kind: 'text',
+            },
+            {
+                key: 'imageUrl',
+                label: 'ფოტო (ცარიელი = მხოლოდ ტექსტი; მთავარზე ბრენდის ფოტო)',
+                kind: 'link',
+            },
             { key: 'imageAlt', label: 'სურათის აღწერა (alt)', kind: 'text' },
+            {
+                key: 'handNote',
+                label: 'ხელნაწერი წარწერა ფოტოზე',
+                kind: 'textarea',
+            },
+            {
+                key: 'photoNoteTitle',
+                label: 'ფოტოს ბარათის სათაური',
+                kind: 'text',
+            },
+            {
+                key: 'photoNoteBody',
+                label: 'ფოტოს ბარათის ტექსტი',
+                kind: 'text',
+            },
+            {
+                key: 'verticalNote',
+                label: 'ვერტიკალური წარწერა',
+                kind: 'text',
+            },
         ],
     },
     values: {
@@ -63,27 +108,88 @@ export const BLOCK_SCHEMAS: Record<string, Schema> = {
         fields: [
             { key: 'eyebrow', label: 'ზედა წარწერა', kind: 'text' },
             { key: 'heading', label: 'სათაური', kind: 'text' },
+            {
+                key: 'headingAccent',
+                label: 'სათაურის მეორე (ფერადი) ხაზი',
+                kind: 'text',
+            },
             { key: 'lead', label: 'შესავალი წინადადება', kind: 'text' },
             { key: 'body', label: 'ტექსტი', kind: 'textarea' },
             ...cta,
+            { key: 'belief', label: 'ქვედა ხაზის ფრაზა', kind: 'text' },
+            {
+                key: 'beliefMeta',
+                label: 'ქვედა ხაზის მარჯვენა წარწერა',
+                kind: 'text',
+            },
+        ],
+    },
+    discoveries: {
+        label: 'ერთი დღე სკოლაში (ჩანართები)',
+        fields: [
+            { key: 'eyebrow', label: 'ზედა წარწერა', kind: 'text' },
+            { key: 'heading', label: 'სათაური', kind: 'text' },
+            {
+                key: 'headingAccent',
+                label: 'სათაურის მეორე (ფერადი) ხაზი',
+                kind: 'text',
+            },
+            { key: 'aside', label: 'გვერდითი ტექსტი', kind: 'textarea' },
+            {
+                key: 'ctaLabel',
+                label: 'მრგვალი ბმულის აღწერა (ეკრანის მკითხველისთვის)',
+                kind: 'text',
+            },
+            { key: 'ctaHref', label: 'მრგვალი ბმული', kind: 'link' },
+            {
+                key: 'items',
+                label: 'ჩანართები',
+                kind: 'list',
+                itemLabel: 'ჩანართი',
+                fields: [
+                    { key: 'label', label: 'ჩანართის სახელი', kind: 'text' },
+                    { key: 'tag', label: 'იარლიყი', kind: 'text' },
+                    { key: 'title', label: 'სათაური', kind: 'textarea' },
+                    { key: 'body', label: 'ტექსტი', kind: 'textarea' },
+                    { key: 'imageUrl', label: 'ფოტო', kind: 'link' },
+                    {
+                        key: 'imageAlt',
+                        label: 'ფოტოს აღწერა (alt)',
+                        kind: 'text',
+                    },
+                ],
+            },
         ],
     },
     programs: {
         label: 'სასწავლო საფეხურები',
         fields: [
+            { key: 'eyebrow', label: 'ზედა წარწერა', kind: 'text' },
             { key: 'heading', label: 'სათაური', kind: 'text' },
+            {
+                key: 'headingAccent',
+                label: 'სათაურის მეორე (ფერადი) ხაზი',
+                kind: 'text',
+            },
+            { key: 'aside', label: 'გვერდითი ტექსტი', kind: 'textarea' },
+            {
+                key: 'linkLabel',
+                label: 'საფეხურის ბმულის ტექსტი',
+                kind: 'text',
+            },
             {
                 key: 'items',
                 label: 'საფეხურები',
                 kind: 'list',
                 itemLabel: 'საფეხური',
                 fields: [
-                    { key: 'title', label: 'სახელი', kind: 'text' },
                     { key: 'grade', label: 'საფეხური/კლასები', kind: 'text' },
+                    { key: 'title', label: 'სათაური', kind: 'text' },
                     { key: 'body', label: 'აღწერა', kind: 'textarea' },
+                    { key: 'note', label: 'ხელნაწერი შენიშვნა', kind: 'text' },
                     {
                         key: 'href',
-                        label: '„გაიგე მეტი“ ბმული (არასავალდებულო)',
+                        label: 'ბმული (არასავალდებულო; ცარიელი = /learning#stage-N)',
                         kind: 'link',
                     },
                 ],
@@ -106,8 +212,24 @@ export const BLOCK_SCHEMAS: Record<string, Schema> = {
         fields: [
             { key: 'eyebrow', label: 'ზედა წარწერა', kind: 'text' },
             { key: 'heading', label: 'სათაური', kind: 'text' },
+            {
+                key: 'headingAccent',
+                label: 'სათაურის მეორე (ფერადი) ხაზი',
+                kind: 'text',
+            },
             { key: 'body', label: 'ტექსტი', kind: 'textarea' },
             ...cta,
+            {
+                key: 'features',
+                label: 'ილუსტრაციის პუნქტები (მხოლოდ მოქმედი შესაძლებლობები)',
+                kind: 'list',
+                itemLabel: 'პუნქტი',
+                fields: [
+                    { key: 'title', label: 'სახელი', kind: 'text' },
+                    { key: 'body', label: 'აღწერა', kind: 'text' },
+                ],
+            },
+            { key: 'sticker', label: 'სტიკერის ტექსტი', kind: 'text' },
         ],
     },
     life: {
@@ -115,6 +237,11 @@ export const BLOCK_SCHEMAS: Record<string, Schema> = {
         fields: [
             { key: 'eyebrow', label: 'ზედა წარწერა', kind: 'text' },
             { key: 'heading', label: 'სათაური', kind: 'text' },
+            {
+                key: 'headingAccent',
+                label: 'სათაურის მეორე (ფერადი) ხაზი',
+                kind: 'text',
+            },
             ...cta,
         ],
     },
@@ -131,7 +258,14 @@ export const BLOCK_SCHEMAS: Record<string, Schema> = {
         fields: [
             { key: 'eyebrow', label: 'ზედა წარწერა', kind: 'text' },
             { key: 'heading', label: 'სათაური', kind: 'text' },
+            {
+                key: 'headingAccent',
+                label: 'სათაურის მეორე (ფერადი) ხაზი',
+                kind: 'text',
+            },
             { key: 'body', label: 'ტექსტი', kind: 'textarea' },
+            { key: 'ctaLabel', label: 'ღილაკის ტექსტი', kind: 'text' },
+            { key: 'sunNote', label: 'მზის წარწერა', kind: 'textarea' },
         ],
     },
     documents: {

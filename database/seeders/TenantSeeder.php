@@ -7,6 +7,7 @@ use App\Domain\Content\AdmissionsPageBlueprint;
 use App\Domain\Content\DocumentsPageBlueprint;
 use App\Domain\Content\HomePageBlueprint;
 use App\Domain\Content\Models\Page;
+use App\Domain\Content\NavigationBlueprint;
 use App\Domain\Content\SchoolLifePageBlueprint;
 use App\Domain\Documents\Models\DocumentWorkspace;
 use App\Domain\Tenancy\Models\BrandSetting;
@@ -67,6 +68,7 @@ class TenantSeeder extends Seeder
             'contact_phone' => '+995 599 159 800',
             'contact_address' => 'თბილისი, დიდი დიღომი, დავარის 64',
             'social_links' => [],
+            'navigation' => NavigationBlueprint::definition(),
         ]);
 
         // Local/dev only: the optional operations modules are switched on so
