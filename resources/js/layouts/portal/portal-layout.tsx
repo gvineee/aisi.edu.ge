@@ -1,5 +1,5 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { type CSSProperties, type PropsWithChildren } from 'react';
+import { Link, router, usePage } from "@inertiajs/react";
+import { type CSSProperties, type PropsWithChildren } from "react";
 import {
     Activity,
     BookOpen,
@@ -40,21 +40,21 @@ import {
     UserPlus,
     Users,
     Wallet,
-} from 'lucide-react';
-import AccountMenu from '@/components/account-menu';
+} from "lucide-react";
+import AccountMenu from "@/components/account-menu";
 import {
     Sheet,
     SheetContent,
     SheetTitle,
     SheetTrigger,
-} from '@/components/ui/sheet';
+} from "@/components/ui/sheet";
 import {
     Sidebar,
     SidebarContent,
     SidebarProvider,
-} from '@/components/ui/sidebar';
-import Logo from '@/components/public/logo';
-import type { Brand, PortalContextProps, PortalNavIconKey } from '@/types';
+} from "@/components/ui/sidebar";
+import Logo from "@/components/public/logo";
+import type { Brand, PortalContextProps, PortalNavIconKey } from "@/types";
 
 type Auth = { user: { name: string; email: string } | null };
 
@@ -66,37 +66,37 @@ const NAV_ICONS: Record<PortalNavIconKey, typeof House> = {
     members: Users,
     teachers: GraduationCap,
     assignments: ClipboardList,
-    'academic-structure': CalendarRange,
+    "academic-structure": CalendarRange,
     substitutions: Repeat,
     timetable: CalendarClock,
-    'admissions-pipeline': UserPlus,
-    'school-visits': CalendarPlus,
+    "admissions-pipeline": UserPlus,
+    "school-visits": CalendarPlus,
     books: BookOpen,
-    'book-lists': ListChecks,
-    'library-desk': LibraryBig,
+    "book-lists": ListChecks,
+    "library-desk": LibraryBig,
     pickup: UserCheck,
     consents: FileCheck2,
-    'absence-notes': MailCheck,
+    "absence-notes": MailCheck,
     gradebook: PenLine,
-    'assessment-settings': Scale,
+    "assessment-settings": Scale,
     progress: ChartLine,
-    'report-cards': ScrollText,
+    "report-cards": ScrollText,
     health: HeartPulse,
     appointments: CalendarCheck,
     services: LayoutGrid,
     pulse: Activity,
     finance: Wallet,
-    'support-access': LifeBuoy,
-    'teacher-workspace': Presentation,
+    "support-access": LifeBuoy,
+    "teacher-workspace": Presentation,
     staff: IdCard,
-    'worked-hours': Timer,
+    "worked-hours": Timer,
     calendar: CalendarDays,
     curriculum: BookOpenCheck,
-    'academic-overview': ChartColumn,
+    "academic-overview": ChartColumn,
     permissions: ShieldCheck,
     surveys: Vote,
     certificates: Award,
-    'time-clock': Clock,
+    "time-clock": Clock,
     students: GraduationCap,
 };
 
@@ -118,19 +118,19 @@ export default function PortalLayout({ children }: PropsWithChildren) {
 
     const colors = brand?.colors ?? {};
     const brandVars = {
-        '--brand-primary': colors.primary ?? '#132B45',
-        '--brand-accent': colors.accent ?? '#F5683C',
-        '--brand-secondary': colors.secondary ?? '#F4F7FA',
+        "--brand-primary": colors.primary ?? "#132B45",
+        "--brand-accent": colors.accent ?? "#F5683C",
+        "--brand-secondary": colors.secondary ?? "#F4F7FA",
     } as CSSProperties;
 
     const navItems = portal?.navItems ?? [];
     const { url } = usePage();
-    const currentPath = url.split('?')[0];
+    const currentPath = url.split("?")[0];
     const isActive = (href: string) => {
-        const path = new URL(href, 'http://x').pathname;
+        const path = new URL(href, "http://x").pathname;
         return (
             currentPath === path ||
-            (path !== '/dashboard' && currentPath.startsWith(`${path}/`))
+            (path !== "/dashboard" && currentPath.startsWith(`${path}/`))
         );
     };
     // Consecutive items of one section (the server sends them in order).
@@ -156,8 +156,8 @@ export default function PortalLayout({ children }: PropsWithChildren) {
             <Link
                 key={item.key}
                 href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={`${className} ${active ? 'bg-slate-100 font-semibold' : ''}`}
+                aria-current={active ? "page" : undefined}
+                className={`${className} ${active ? "bg-slate-100 font-semibold" : ""}`}
             >
                 <Icon size={18} aria-hidden />
                 {item.label}
@@ -179,14 +179,14 @@ export default function PortalLayout({ children }: PropsWithChildren) {
     const showRoleSwitcher = availableRoles.length > 1;
 
     const switchRole = (role: string) => {
-        router.post('/portal/active-role', { role }, { preserveScroll: true });
+        router.post("/portal/active-role", { role }, { preserveScroll: true });
     };
 
-    const RoleSwitcher = ({ className = '' }: { className?: string }) => (
+    const RoleSwitcher = ({ className = "" }: { className?: string }) => (
         <label className={`flex items-center gap-2 text-sm ${className}`}>
             <span className="sr-only">პორტალის როლი</span>
             <select
-                value={portal?.activeRole ?? ''}
+                value={portal?.activeRole ?? ""}
                 onChange={(event) => switchRole(event.target.value)}
                 className="h-9 min-w-0 rounded-md border border-slate-300 bg-white px-2 text-sm"
                 aria-label="სივრცის დათვალიერება — აირჩიეთ როლი"
@@ -213,7 +213,7 @@ export default function PortalLayout({ children }: PropsWithChildren) {
             </a>
 
             <header className="border-b border-slate-200 bg-white">
-                <div className="mx-auto flex h-[76px] max-w-6xl items-center justify-between gap-4 px-6">
+                <div className="flex h-[76px] items-center justify-between gap-4 px-6">
                     <div className="flex items-center gap-3">
                         <Logo brand={brand} size="compact" />
                         <span className="hidden text-sm text-slate-400 sm:inline">
@@ -239,7 +239,7 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                 )}
             </header>
 
-            <SidebarProvider className="mx-auto max-w-6xl items-start bg-transparent">
+            <SidebarProvider className="w-full items-start bg-transparent">
                 <Sidebar
                     collapsible="none"
                     className="sticky top-0 hidden h-[calc(100vh-76px)] w-56 shrink-0 border-r border-slate-200 bg-white md:flex"
@@ -258,7 +258,7 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                                         {section.items.map((item) =>
                                             navLink(
                                                 item,
-                                                'flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none',
+                                                "flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none",
                                             ),
                                         )}
                                     </div>
@@ -287,7 +287,7 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                                             {section.items.map((item) =>
                                                 navLink(
                                                     item,
-                                                    'flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none',
+                                                    "flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none",
                                                 ),
                                             )}
                                         </div>
@@ -310,7 +310,7 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                 <nav
                     aria-label="მობილური პორტალის ნავიგაცია"
                     className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white md:hidden"
-                    style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                    style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
                 >
                     {mobilePinned.map((item) => {
                         const Icon = NAV_ICONS[item.icon];
@@ -344,7 +344,7 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                                 className="max-h-[80vh] overflow-y-auto"
                                 style={{
                                     paddingBottom:
-                                        'env(safe-area-inset-bottom)',
+                                        "env(safe-area-inset-bottom)",
                                 }}
                             >
                                 <SheetTitle className="px-4 pt-4">
@@ -369,7 +369,7 @@ export default function PortalLayout({ children }: PropsWithChildren) {
                                                         <li key={item.key}>
                                                             {navLink(
                                                                 item,
-                                                                'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none',
+                                                                "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--brand-primary)] hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:outline-none",
                                                             )}
                                                         </li>
                                                     ))}
