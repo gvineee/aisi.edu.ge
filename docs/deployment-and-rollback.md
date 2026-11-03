@@ -326,3 +326,13 @@
   - bundle-ში არის „დახურვა“ და „სწავლების გვერდზე“;
   - ბრძანება `uploads:scan-unscanned` სერვერზე რეგისტრირებულია.
 - **ღიაა:** ClamAV-ის დაყენება root-ით (`deploy/clamav-setup.sh`); `.env`-ში `UPLOADS_SCANNER` ჯერ დაყენებული არ არის.
+
+## Deploy — 2026-11-03 (`6d0f278..62b311e`, `bash deploy/deploy.sh`)
+
+- მომხმარებლის მითითებით („Yes, deploy now“). new-vision დიზაინი, BPG Nino Mtavruli მენიუ, ძველი საიტის მენიუს იერარქია. 26 ფაილი + `public/build`.
+- **Migration:** `2026_11_02_000001_add_navigation_to_brand_settings` (rollback: `migrate:rollback --step=1`).
+- **Backup:** `_backups/files-20261103-113205.tar.gz`, `db-20261103-113205.sql.gz`, `env-20261103-113205`.
+- **კონტენტი:** `content:refresh-home`; `content:publish-menu-pages` (ჯერ `--dry-run`; 7 გვერდი ახალი განლაგებით, „სკოლის ისტორია“ (2371) გამოქვეყნდა, lorem 1241 — არა); `content:refresh-navigation`; `content:sync-redirects aisi --commit` (2 ახალი: `/1225`, `/2284`); ხელით `/contact-1 → /contact`, `/events → /import-wp-pages-2347`; `cache:clear`.
+- **Smoke:** home/login/up 200, guest finance/documents 302, log-ში შეცდომა არ არის.
+- **მოქმედ საიტზე ბრაუზერით (მხოლოდ კითხვა):** 7 გვერდი 200, 1241 → 404; რეგულაციებზე 28 PDF ბმული, PDF 200 `application/pdf`; overflow 0 1440/360px; desktop/მობილური მენიუ ძველი საიტის იერარქიით; footer: ჩარიცხვის წესი, მასწავლებლები, კონტაქტი, რატომ აისი?; `/events`, `/about-us-3` → 301. ეკრანის სურათები: `storage/app/design-vision/production/menu/`.
+- **ღიაა:** მთავარის ფოტო AI-კონცეფციაა — ჩასანაცვლებელია; არქივის ფოტოების უფლებები; „ადმინისტრაციის“ გვერდის ტექსტი; ძველი ტექსტების აქტუალობა სკოლამ გადაამოწმოს.
