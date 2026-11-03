@@ -43,7 +43,7 @@
 ### ჯერ არ გაკეთებული production-ზე
 
 - **queue worker არ მუშაობს** (`QUEUE_CONNECTION=redis`, მაგრამ supervisor/worker პროცესი არ არის აწყობილი). ამჟამად კრიტიკული არაფერი არ არის queue-ზე დამოკიდებული (`MAIL_MAILER=log`), მაგრამ რეალურ ელფოსტამდე ეს აუცილებელია.
-- **რეალური SMTP არ არის** — `MAIL_MAILER=log`, ანუ წერილები არ იგზავნება, მხოლოდ ლოგში იწერება.
+- ~~რეალური SMTP არ არის~~ — ჩართულია 2026-11-03 (იხ. „ფოსტა — 2026-11-03“).
 - **S3/object storage არ არის მიბმული** (`FILESYSTEM_DISK=local`); დოკუმენტების ცენტრი ამიტომ ლოკალურ private დისკზე ინახავს.
 - **backup/restore drill არ ჩატარებულა** ამ სერვერზე (`clpctl db:export` ხელმისაწვდომია და ამისთვისაა).
 - 301 redirect mapping ძველი URL-ებიდან **არ არის ჩართული** (`content-migration/redirect-map.csv` მხოლოდ შემოთავაზებაა). ეს ჩანს ლოგებშიც: crawler-ები კვლავ ძველ WordPress URL-ებს ითხოვენ.
@@ -336,3 +336,10 @@
 - **Smoke:** home/login/up 200, guest finance/documents 302, log-ში შეცდომა არ არის.
 - **მოქმედ საიტზე ბრაუზერით (მხოლოდ კითხვა):** 7 გვერდი 200, 1241 → 404; რეგულაციებზე 28 PDF ბმული, PDF 200 `application/pdf`; overflow 0 1440/360px; desktop/მობილური მენიუ ძველი საიტის იერარქიით; footer: ჩარიცხვის წესი, მასწავლებლები, კონტაქტი, რატომ აისი?; `/events`, `/about-us-3` → 301. ეკრანის სურათები: `storage/app/design-vision/production/menu/`.
 - **ღიაა:** მთავარის ფოტო AI-კონცეფციაა — ჩასანაცვლებელია; არქივის ფოტოების უფლებები; „ადმინისტრაციის“ გვერდის ტექსტი; ძველი ტექსტების აქტუალობა სკოლამ გადაამოწმოს.
+
+## ფოსტა — 2026-11-03: რეალური SMTP ჩართულია
+
+- მომხმარებლის მითითებით production `.env`: `MAIL_MAILER=smtp`, `MAIL_HOST=www19.serv.ge`, `MAIL_PORT=587` (STARTTLS), `MAIL_USERNAME`/`MAIL_FROM_ADDRESS=noreplay@aisi.edu.ge`; პაროლი მხოლოდ სერვერის `.env`-შია. `.env`-ის ასლი ცვლილებამდე: `_backups/env-*-premail`.
+- `mail.aisi.edu.ge` Cloudflare-ის proxy-ზეა (ნარინჯისფერი ღრუბელი) და SMTP-ს არ ატარებს — ამიტომ host არის ფოსტის რეალური სერვერი `www19.serv.ge` (91.212.213.19), რომლის TLS სერტიფიკატიც ამ სახელზეა. SPF უკვე შეიცავს `ip4:91.212.213.19`.
+- სატესტო წერილი გაიგზავნა (SMTP-მ მიიღო). `config:cache`, `queue:restart`.
+- **ღიაა:** DMARC ჩანაწერი არ არსებობს; DKIM შესამოწმებელია ჰოსტინგთან; სასურველია Cloudflare-ში `mail` ჩანაწერი DNS-only გახდეს.
